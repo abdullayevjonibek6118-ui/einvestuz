@@ -56,7 +56,7 @@ export default function Home() {
               <Star size={18} fill="currentColor" />
             </span>
             <span>
-              <span className="block text-base font-semibold">InvestAI</span>
+              <span className="block text-base font-semibold">Einvestuz</span>
               <span className="block text-xs font-medium text-[#64748b]">Uzbekistan</span>
             </span>
           </Link>
@@ -65,7 +65,7 @@ export default function Home() {
             <a href="#academy" className="hover:text-[#1e40af]">Обучение</a>
             <a href="#safety" className="hover:text-[#1e40af]">Безопасность</a>
           </nav>
-          <Link href="/dashboard" className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-[#0f172a] px-4 text-sm font-semibold text-white hover:bg-[#1e293b]">
+          <Link href="/dashboard" className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-[#0b63f6] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#084fc7]">
             Открыть платформу
             <ArrowRight size={16} />
           </Link>
@@ -83,14 +83,14 @@ export default function Home() {
               Учитесь инвестировать и анализировать рынки в одном приложении
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-[#475569]">
-              InvestAI помогает следить за мировыми активами, изучать компании, собирать виртуальный портфель и получать понятные AI-разборы без реальных сделок.
+              Einvestuz помогает следить за мировыми активами, изучать компании, собирать виртуальный портфель и получать понятные AI-разборы без реальных сделок.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link href="/dashboard" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#1e40af] px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#1d4ed8]">
+              <Link href="/dashboard" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#0b63f6] px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#084fc7]">
                 Начать анализ
                 <ArrowRight size={17} />
               </Link>
-              <Link href="/academy" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#dbe4ef] bg-white px-5 text-sm font-semibold text-[#0f172a] hover:bg-[#f8fafc]">
+              <Link href="/academy" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#bfd0e3] bg-white px-5 text-sm font-semibold text-[#0f172a] shadow-sm hover:border-[#0b63f6] hover:bg-[#eff6ff]">
                 Посмотреть академию
               </Link>
             </div>
@@ -108,8 +108,8 @@ export default function Home() {
             <div className="absolute inset-6 rounded-[28px] bg-[#dbeafe] blur-3xl" />
             <div className="relative overflow-hidden rounded-[28px] border border-[#dbe4ef] bg-[#f8fafc] shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
               <Image
-                src="/images/investai-hero.png"
-                alt="InvestAI mobile app mockup with market dashboard, AI analysis, and virtual portfolio"
+                src="/images/einvestuz-hero.png"
+                alt="Einvestuz mobile app mockup with market dashboard, AI analysis, and virtual portfolio"
                 width={1200}
                 height={900}
                 priority
@@ -205,11 +205,11 @@ export default function Home() {
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-[#93c5fd]">
               <TrendingUp size={18} />
-              InvestAI Uzbekistan
+              Einvestuz
             </div>
             <h2 className="mt-3 text-3xl font-semibold">Откройте рабочее пространство инвестора</h2>
           </div>
-          <Link href="/dashboard" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#f59e0b] px-5 text-sm font-semibold text-[#111827] hover:bg-[#fbbf24]">
+          <Link href="/dashboard" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#f59e0b] px-5 text-sm font-semibold text-[#111827] shadow-sm hover:bg-[#fbbf24]">
             Запустить платформу
             <ArrowRight size={17} />
           </Link>

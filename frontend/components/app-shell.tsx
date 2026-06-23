@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import { BarChart3, Bell, BookOpen, Bot, BriefcaseBusiness, Clock3, LayoutDashboard, Search, Settings, ShieldCheck, Star } from "lucide-react";
 
 const nav = [
@@ -15,6 +16,14 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const ticker = query.trim().toUpperCase();
+    if (ticker) router.push(`/stocks/${encodeURIComponent(ticker)}`);
+  }
 
   if (pathname === "/") {
     return <>{children}</>;
@@ -31,16 +40,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Star size={18} fill="currentColor" />
           </div>
           <div>
-            <p className="text-base font-semibold text-[#0f172a]">InvestAI</p>
+            <p className="text-base font-semibold text-[#0f172a]">Einvestuz</p>
             <p className="text-xs font-medium text-[#64748b]">Uzbekistan analytics</p>
           </div>
         </div>
         <div className="border-b border-[#eef2f7] p-3">
-          <div className="flex h-10 items-center gap-2 rounded-md border border-[#dbe4ef] bg-[#f8fafc] px-3 text-sm text-[#64748b]">
+          <form onSubmit={submitSearch} className="flex h-10 items-center gap-2 rounded-md border border-[#bfd0e3] bg-[#f8fafc] px-3 text-sm text-[#64748b] focus-within:border-[#0b63f6] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#bfdbfe]">
             <Search size={15} />
-            <span>Поиск активов</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="AAPL, NVDA, SBER..."
+              className="min-w-0 flex-1 bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#64748b]"
+              aria-label="Поиск активов"
+            />
             <kbd className="tabular-data ml-auto rounded border border-[#dbe4ef] bg-white px-1.5 py-0.5 text-[10px] text-[#64748b]">/</kbd>
-          </div>
+          </form>
         </div>
         <nav className="space-y-1 p-3" aria-label="Основная навигация">
           {nav.map((item) => {
@@ -72,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-10 border-b border-[#dbe4ef] bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <Link href="/dashboard" className="text-base font-semibold text-[#0f172a]">
-            InvestAI
+            Einvestuz
           </Link>
           <div className="flex gap-1" aria-label="Мобильная навигация">
             {nav.slice(0, 5).map((item) => {
@@ -98,9 +113,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Clock3 size={15} />
               UTC+5 рынок
             </div>
-            <button className="grid size-9 cursor-pointer place-items-center rounded-md border border-[#dbe4ef] bg-white text-[#475569] hover:bg-[#f8fafc]" aria-label="Уведомления">
+            <Link href="/profile" className="grid size-9 cursor-pointer place-items-center rounded-md border border-[#bfd0e3] bg-white text-[#0f172a] hover:border-[#0b63f6] hover:bg-[#eff6ff]" aria-label="Уведомления">
               <Bell size={16} />
-            </button>
+            </Link>
           </div>
         </div>
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-6">{children}</div>

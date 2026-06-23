@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from .market_data import DataSource as MarketDataSource
+from .market_data import STOCK_UNIVERSE
 from .market_data import get_quotes as fetch_live_quotes
 from .market_data import get_market as fetch_market
 from .market_data import get_sources as fetch_sources
@@ -14,7 +15,7 @@ from .market_data import get_stock as fetch_stock
 from .market_data import get_stocks as fetch_stocks
 
 app = FastAPI(
-    title="InvestAI Uzbekistan API",
+    title="Einvestuz API",
     version="0.1.0",
     description="MVP API for market data, company analysis, virtual portfolios, chat, and academy lessons.",
 )
@@ -225,15 +226,16 @@ def remove_position(payload: RemovePosition) -> dict[str, bool]:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
-    stocks = fetch_stocks()
-    company = next((stock for stock in stocks if stock.ticker.lower() in payload.message.lower() or stock.name.lower() in payload.message.lower()), None)
+    message = payload.message.lower()
+    company = next((stock for stock in STOCK_UNIVERSE.values() if stock.ticker.lower() in message or stock.name.lower() in message), None)
     if company is None:
         response = "I can explain investing terms, portfolio risk, ETFs, dividends, and the companies available in the MVP universe."
     else:
         response = (
             f"{company.name} is a {company.description.lower()} "
-            f"Latest available price is ${company.price:.2f}, P/E is {company.pe}, and market cap is {company.market_cap}. "
-            "Potential positives include scale and market leadership. Key risks include valuation, competition, and market volatility."
+            "Potential positives include scale, market position, and long-term demand drivers. "
+            "Key risks include valuation, competition, regulation, and market volatility. "
+            "For the latest price and valuation metrics, use the stock page or dashboard live data."
         )
     return ChatResponse(message=payload.message, response=response)
 

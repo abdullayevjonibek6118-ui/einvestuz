@@ -29,12 +29,12 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="inline-flex h-10 items-center gap-2 rounded-md border border-[#dde3eb] px-3 text-sm font-semibold hover:bg-[#f1f4f8]">
+              <Link href="/profile" className="inline-flex h-10 items-center gap-2 rounded-md border border-[#bfd0e3] bg-white px-3 text-sm font-semibold text-[#0f172a] hover:border-[#0b63f6] hover:bg-[#eff6ff]">
                 <Star size={16} /> Watchlist
-              </button>
-              <button className="inline-flex h-10 items-center gap-2 rounded-md bg-[#2563eb] px-3 text-sm font-semibold text-white hover:bg-[#1d4ed8]">
+              </Link>
+              <Link href={`/portfolio?ticker=${encodeURIComponent(stock.ticker)}`} className="inline-flex h-10 items-center gap-2 rounded-md bg-[#0b63f6] px-3 text-sm font-semibold text-white shadow-sm hover:bg-[#084fc7]">
                 <Plus size={16} /> В портфель
-              </button>
+              </Link>
             </div>
           </div>
           <div className="mt-5 h-[360px] overflow-hidden rounded-md border border-[#dde3eb] bg-[#0f172a]">
@@ -57,7 +57,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <Panel title="AI-анализ" action={<Bot size={18} className="text-[#2563eb]" />}>
+        <Panel title="AI-анализ" action={<Bot size={18} className="text-[#0b63f6]" />}>
           <div className="space-y-3 text-sm text-[#344054]">
             <p>{stock.name} остается качественной компанией, но решение зависит от горизонта, оценки и доли актива в портфеле.</p>
             <p><span className="font-semibold text-[#111827]">Плюсы:</span> сильный бренд, масштаб, денежный поток и лидерство в своем сегменте.</p>

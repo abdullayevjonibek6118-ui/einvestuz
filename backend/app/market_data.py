@@ -373,7 +373,7 @@ PROVIDERS: dict[str, MarketDataProvider] = {
 
 
 def _fetch_json(url: str, timeout: int) -> dict[str, Any] | None:
-    request = Request(url, headers={"User-Agent": "InvestAI-Uzbekistan/0.1"})
+    request = Request(url, headers={"User-Agent": "Einvestuz/0.1"})
     try:
         with urlopen(request, timeout=timeout, context=_ssl_context()) as response:
             return json.loads(response.read().decode("utf-8"))

@@ -1,4 +1,4 @@
-# InvestAI Uzbekistan MVP
+# Einvestuz MVP
 
 MVP investment analytics platform for Uzbekistan users. It does not accept deposits and does not execute real trades.
 

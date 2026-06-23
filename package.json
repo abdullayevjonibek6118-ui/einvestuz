@@ -1,5 +1,5 @@
 {
-  "name": "investai-uzbekistan",
+  "name": "einvestuz",
   "private": true,
   "scripts": {
     "dev": "npm --prefix frontend run dev",

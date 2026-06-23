@@ -15,7 +15,7 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: "InvestAI Uzbekistan",
+  title: "Einvestuz",
   description: "Market analytics, virtual portfolios, and AI education for Uzbekistan investors.",
 };
 
