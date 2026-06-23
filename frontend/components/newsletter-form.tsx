@@ -42,7 +42,7 @@ export function NewsletterForm() {
           placeholder="Email"
           type="email"
         />
-        <button className="grid h-11 w-12 shrink-0 place-items-center rounded bg-[#0A1F44] text-white hover:opacity-90 disabled:bg-[#75777F]" disabled={loading || !email.trim()} aria-label="Подписаться">
+        <button className="grid h-11 w-12 shrink-0 place-items-center rounded bg-[#071A38] text-[#FFFFFF] shadow-sm hover:bg-[#0A1F44] disabled:bg-[#A9ACB5] disabled:text-[#2F3137]" disabled={loading || !email.trim()} aria-label="Подписаться">
           <Send size={18} />
         </button>
       </div>

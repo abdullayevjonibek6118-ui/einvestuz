@@ -49,7 +49,7 @@ export default function Home() {
               <a className="text-xs font-semibold uppercase tracking-[0.05em] text-[#44464E] hover:text-[#0A1F44]" href="#security">Безопасность</a>
             </nav>
           </div>
-          <Link href="/dashboard" className="rounded px-6 py-2 text-xs font-semibold uppercase tracking-[0.05em] text-white transition hover:opacity-90 bg-[#0A1F44]">
+          <Link href="/dashboard" className="rounded bg-[#071A38] px-6 py-2.5 text-sm font-bold text-[#FFFFFF] shadow-sm transition hover:bg-[#0A1F44]">
             Открыть платформу
           </Link>
         </div>
@@ -69,11 +69,11 @@ export default function Home() {
               Einvestuz помогает следить за мировыми активами, изучать компании, собирать виртуальный портфель и получать понятные AI-разборы без реальных сделок.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row">
-              <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded bg-[#0A1F44] px-8 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-white shadow-sm transition hover:opacity-95">
+              <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded bg-[#071A38] px-8 py-4 text-sm font-bold text-[#FFFFFF] shadow-sm transition hover:bg-[#0A1F44]">
                 Начать анализ
                 <ArrowRight size={18} />
               </Link>
-              <Link href="/academy" className="inline-flex items-center justify-center rounded border border-[#75777F] px-8 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#0A1F44] transition hover:bg-[#EDEEEF]">
+              <Link href="/academy" className="inline-flex items-center justify-center rounded border-2 border-[#0A1F44] bg-white px-8 py-4 text-sm font-bold text-[#071A38] transition hover:bg-[#EDEEEF]">
                 Посмотреть академию
               </Link>
             </div>
@@ -150,7 +150,7 @@ export default function Home() {
             <p className="mb-10 max-w-xl text-base leading-6 text-white/70">
               Пользователь учится определять границы рынка, барьеры входа, модель конкуренции, value chain, жизненный цикл отрасли и ключевые финансовые метрики.
             </p>
-            <Link href="/academy" className="inline-flex rounded bg-[#CCA730] px-8 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#0A1F44] transition hover:opacity-90">
+            <Link href="/academy" className="inline-flex rounded bg-[#F4C542] px-8 py-4 text-sm font-bold text-[#071A38] shadow-sm transition hover:bg-[#FFD761]">
               Перейти к урокам
             </Link>
           </div>
@@ -193,7 +193,7 @@ export default function Home() {
             Einvestuz
           </div>
           <h2 className="font-display text-5xl font-bold leading-tight md:text-[56px]">Откройте рабочее пространство инвестора</h2>
-          <Link href="/dashboard" className="mx-auto inline-flex items-center justify-center gap-3 rounded bg-[#CCA730] px-10 py-5 text-xl font-semibold text-[#0A1F44] shadow-lg transition hover:opacity-90">
+          <Link href="/dashboard" className="mx-auto inline-flex items-center justify-center gap-3 rounded bg-[#F4C542] px-10 py-5 text-xl font-bold text-[#071A38] shadow-lg transition hover:bg-[#FFD761]">
             Запустить платформу
             <Rocket size={22} />
           </Link>
