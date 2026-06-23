@@ -189,6 +189,26 @@ MARKET_UNIVERSE: dict[str, SymbolSpec] = {
 QUOTE_UNIVERSE = {**STOCK_UNIVERSE, **MARKET_UNIVERSE}
 _QUOTE_CACHE = TTLCache(ttl_seconds=20)
 
+FALLBACK_QUOTES: dict[str, tuple[float, float]] = {
+    "AAPL": (298.0, 0.4),
+    "NVDA": (201.0, -1.2),
+    "MSFT": (373.0, -0.6),
+    "TSLA": (383.0, -1.4),
+    "AMZN": (234.0, -0.5),
+    "META": (563.0, -0.8),
+    "SBER": (307.0, 0.1),
+    "GAZP": (102.0, 0.1),
+    "LKOH": (4270.0, 0.2),
+    "SPX": (7380.0, -0.4),
+    "IXIC": (25680.0, -0.5),
+    "DJI": (51690.0, -0.2),
+    "IMOEX": (2318.0, 0.1),
+    "BTC": (62200.0, -0.6),
+    "ETH": (1655.0, -0.7),
+    "XAU": (4145.0, 0.1),
+    "WTI": (73.0, -0.2),
+}
+
 
 def get_sources() -> list[dict[str, str]]:
     return [asdict(source) for source in SOURCES]
@@ -436,6 +456,25 @@ def _prefer_board_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _empty_quote(spec: SymbolSpec) -> Quote:
+    fallback = FALLBACK_QUOTES.get(spec.ticker)
+    if fallback is not None:
+        price, change = fallback
+        return Quote(
+            ticker=spec.ticker,
+            name=spec.name,
+            price=price,
+            change=change,
+            description=spec.description,
+            category=spec.category,
+            exchange=spec.exchange,
+            currency=spec.currency,
+            source="fallback-snapshot",
+            provider=spec.provider,
+            status="fallback",
+            is_realtime=False,
+            as_of=datetime.now(timezone.utc),
+        )
+
     return Quote(
         ticker=spec.ticker,
         name=spec.name,

@@ -11,7 +11,11 @@ import {
 } from "@/lib/data";
 import { normalizeSource, normalizeSourceStatus, type BackendSource } from "@/lib/live-market";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+function normalizeApiUrl(value?: string) {
+  return (value ?? "http://localhost:8000").replace(/^\uFEFF/, "").trim().replace(/\/$/, "");
+}
+
+const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
 type BackendStock = {
   ticker: string;

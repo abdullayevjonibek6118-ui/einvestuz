@@ -75,16 +75,21 @@ export function normalizeSource(source: BackendSource): MarketDataSource {
 }
 
 export function getWebSocketUrl(path = "/ws/quotes") {
-  const explicit = process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, "");
+  const explicit = cleanUrl(process.env.NEXT_PUBLIC_WS_URL);
   if (explicit) return `${explicit}${path}`;
 
-  const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+  const apiUrl = cleanUrl(process.env.NEXT_PUBLIC_API_URL) ?? "http://localhost:8000";
   return `${apiUrl.replace(/^http/, "ws")}${path}`;
 }
 
 export function getApiUrl(path = "") {
-  const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+  const apiUrl = cleanUrl(process.env.NEXT_PUBLIC_API_URL) ?? "http://localhost:8000";
   return `${apiUrl}${path}`;
+}
+
+function cleanUrl(value?: string) {
+  const cleaned = value?.replace(/^\uFEFF/, "").trim().replace(/\/$/, "");
+  return cleaned || undefined;
 }
 
 export function normalizeQuoteMessages(message: BackendQuoteMessage): LiveQuote[] {

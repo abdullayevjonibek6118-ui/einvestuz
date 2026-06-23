@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
-import { Fira_Code, Fira_Sans } from "next/font/google";
+import { Bodoni_Moda, Fira_Code, Inter } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 
-const firaSans = Fira_Sans({
+const inter = Inter({
   subsets: ["latin", "cyrillic"],
-  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sans",
+});
+const bodoni = Bodoni_Moda({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-display",
 });
 const firaCode = Fira_Code({
   subsets: ["latin", "cyrillic"],
@@ -26,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${firaSans.variable} ${firaCode.variable}`}>
+      <body className={`${inter.variable} ${bodoni.variable} ${firaCode.variable}`}>
         <AppShell>{children}</AppShell>
       </body>
     </html>
