@@ -3,10 +3,13 @@ import {
   indexes as fallbackIndexes,
   news as fallbackNews,
   stocks as fallbackStocks,
+  type LiveSourceStatus,
   type MarketIndex,
+  type MarketDataSource,
   type NewsItem,
   type Stock,
 } from "@/lib/data";
+import { normalizeSource, normalizeSourceStatus, type BackendSource } from "@/lib/live-market";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
@@ -21,6 +24,11 @@ type BackendStock = {
   dividend: string;
   sector?: string;
   description: string;
+  source?: string;
+  source_status?: string;
+  sourceStatus?: LiveSourceStatus;
+  as_of?: string;
+  asOf?: string;
 };
 
 type BackendNewsItem = {
@@ -40,7 +48,10 @@ type BackendMarketAsset = {
   change: number;
   category: "index" | "crypto" | "commodity";
   source?: string;
+  source_status?: string;
+  sourceStatus?: LiveSourceStatus;
   as_of?: string;
+  asOf?: string;
 };
 
 const categoryLabels: Record<string, NewsItem["category"]> = {
@@ -81,6 +92,9 @@ function normalizeStock(stock: BackendStock): Stock {
     dividend: stock.dividend,
     sector: stock.sector ?? fallback?.sector ?? "N/A",
     description: stock.description || fallback?.description || "",
+    source: stock.source ?? fallback?.source,
+    sourceStatus: normalizeSourceStatus(stock.sourceStatus ?? stock.source_status ?? fallback?.sourceStatus),
+    asOf: stock.asOf ?? stock.as_of ?? fallback?.asOf,
   };
 }
 
@@ -90,6 +104,9 @@ function normalizeMarketAsset(asset: BackendMarketAsset): MarketIndex {
     name: asset.name,
     value: asset.value ?? (asset.category === "index" ? asset.price.toLocaleString("en-US") : `$${asset.price.toLocaleString("en-US")}`),
     change: asset.change,
+    source: asset.source,
+    sourceStatus: normalizeSourceStatus(asset.sourceStatus ?? asset.source_status),
+    asOf: asset.asOf ?? asset.as_of,
   };
 }
 
@@ -127,6 +144,23 @@ export async function getMarket(): Promise<MarketIndex[]> {
   const data = await fetchJson<BackendMarketAsset[]>("/market");
   if (!data?.length) return fallbackIndexes;
   return data.map(normalizeMarketAsset);
+}
+
+export async function getSources(): Promise<MarketDataSource[]> {
+  const data = await fetchJson<BackendSource[]>("/sources");
+  if (!data?.length) {
+    return [
+      {
+        id: "fallback",
+        name: "Demo fallback",
+        status: "fallback",
+        assetClasses: ["indexes", "stocks"],
+        detail: "Backend live sources are not connected yet.",
+      },
+    ];
+  }
+
+  return data.map(normalizeSource);
 }
 
 export async function getStock(ticker: string): Promise<Stock | undefined> {

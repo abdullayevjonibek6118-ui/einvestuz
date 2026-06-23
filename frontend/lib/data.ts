@@ -3,6 +3,9 @@ export type MarketIndex = {
   ticker: string;
   value: string;
   change: number;
+  source?: string;
+  sourceStatus?: LiveSourceStatus;
+  asOf?: string;
 };
 
 export type Stock = {
@@ -15,6 +18,26 @@ export type Stock = {
   dividend: string;
   sector: string;
   description: string;
+  source?: string;
+  sourceStatus?: LiveSourceStatus;
+  asOf?: string;
+};
+
+export type LiveSourceStatus = "live" | "delayed" | "stale" | "offline" | "fallback" | "needs_license";
+
+export type MarketDataSource = {
+  id: string;
+  name: string;
+  status: LiveSourceStatus;
+  market?: string;
+  coverage?: string;
+  updateMode?: string;
+  url?: string;
+  notes?: string;
+  assetClasses?: string[];
+  latencyMs?: number;
+  lastUpdate?: string;
+  detail?: string;
 };
 
 export type NewsItem = {

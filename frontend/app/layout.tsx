@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Fira_Code, Fira_Sans } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 
-const inter = Inter({ subsets: ["latin", "cyrillic"] });
+const firaSans = Fira_Sans({
+  subsets: ["latin", "cyrillic"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sans",
+});
+const firaCode = Fira_Code({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
   title: "InvestAI Uzbekistan",
@@ -17,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={inter.className}>
+      <body className={`${firaSans.variable} ${firaCode.variable}`}>
         <AppShell>{children}</AppShell>
       </body>
     </html>

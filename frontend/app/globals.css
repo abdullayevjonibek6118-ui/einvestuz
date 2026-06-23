@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f8fb;
-  --foreground: #111827;
-  --muted: #667085;
-  --line: #dde3eb;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #475569;
+  --line: #dbe4ef;
   --panel: #ffffff;
-  --green: #0f9f6e;
+  --green: #16a34a;
   --red: #dc2626;
-  --blue: #2563eb;
-  --amber: #d97706;
+  --blue: #1e40af;
+  --blue-soft: #dbeafe;
+  --amber: #f59e0b;
+  --teal: #0f766e;
 }
 
 * {
@@ -18,13 +20,17 @@
 
 html {
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    linear-gradient(180deg, rgba(219, 234, 254, 0.72), rgba(248, 250, 252, 0) 280px),
+    var(--background);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  text-rendering: geometricPrecision;
 }
 
 a {
@@ -36,6 +42,41 @@ button,
 input,
 select {
   font: inherit;
+}
+
+button,
+a,
+select,
+input {
+  outline-color: var(--blue);
+}
+
+button,
+a {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+code,
+.tabular-data {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  z-index: 50;
+  transform: translateY(-140%);
+  border-radius: 6px;
+  background: #0f172a;
+  color: white;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 .tradingview-widget-copyright {

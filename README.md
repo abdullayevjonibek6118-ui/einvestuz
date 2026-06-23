@@ -58,9 +58,37 @@ After backend deployment, copy the public Railway URL into Vercel as `NEXT_PUBLI
 
 ## Backend market data
 
-Market quotes use `yfinance` first and fall back to Yahoo Finance's public chart endpoint, with the public quote endpoint as a last attempt. Results are cached in-process for 60 seconds to avoid repeated upstream calls.
+Market data uses a provider architecture:
 
-- `GET /stocks` returns stock objects with `ticker`, `name`, `price`, `change`, `market_cap`, `pe`, `dividend`, `description`.
-- `GET /stock/{ticker}` returns one stock object with the same fields.
-- `GET /market` returns indices, crypto, and commodities with `ticker`, `name`, `price`, `value`, `change`, `category`, `source`, `as_of`.
+```text
+provider adapters -> in-memory TTL cache -> FastAPI REST/WebSocket -> Next.js dashboard
+```
+
+Active MVP providers:
+
+- `yfinance` for US equities, indexes, crypto, gold, and oil. This is a no-key prototype source and should be treated as best-effort.
+- `moex-iss` for Moscow Exchange snapshots through the official MOEX ISS HTTP API.
+
+Enterprise providers prepared as metadata/stubs:
+
+- `uzse-bloomberg` for UZSE through Bloomberg Data License / B-PIPE. Requires a commercial agreement.
+- `bloomberg-bpipe` for global licensed real-time feeds. Requires a commercial agreement.
+- `lseg` for global licensed real-time feeds. Requires a commercial agreement.
+
+Endpoints:
+
+- `GET /sources` returns provider metadata, status, coverage, update mode, notes, and URLs.
+- `GET /stocks` returns stock objects with `ticker`, `name`, `price`, `change`, `market_cap`, `pe`, `dividend`, `description`, `source`, `source_status`, `as_of`.
+- `GET /stock/{ticker}` returns one stock object with the same fields. US and selected MOEX tickers are supported in the MVP universe.
+- `GET /market` returns indices, crypto, and commodities with `ticker`, `name`, `price`, `value`, `change`, `category`, `source`, `source_status`, `is_realtime`, `delay_seconds`, `as_of`.
+- `GET /quotes/live?symbols=AAPL,SBER,IMOEX` returns quote snapshots with source status and currency.
+- `WS /ws/quotes?symbols=AAPL,SBER&interval=15` streams quote snapshots over WebSocket.
 - `GET /news` remains usable with demo/fallback news items.
+
+Status values:
+
+- `live` - best-effort live quote source in the MVP.
+- `delayed` - official/public snapshot source, not low-latency exchange feed.
+- `fallback` - backup parser/provider.
+- `needs_license` - authoritative real-time provider is configured as a stub and requires a contract.
+- `offline` - quote unavailable.

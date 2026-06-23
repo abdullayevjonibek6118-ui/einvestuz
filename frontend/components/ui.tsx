@@ -1,14 +1,16 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
+import type { LiveSourceStatus } from "@/lib/data";
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-5 flex flex-col gap-3 border-b border-[#dbe4ef] pb-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-2xl font-semibold tracking-normal text-[#111827]">{title}</h1>
-        <p className="mt-1 text-sm text-[#667085]">{subtitle}</p>
+        <h1 className="text-2xl font-semibold tracking-normal text-[#0f172a]">{title}</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-[#475569]">{subtitle}</p>
       </div>
-      <div className="rounded-md border border-[#dde3eb] bg-white px-3 py-2 text-xs text-[#667085]">
-        Данные демо. Не инвестиционная рекомендация.
+      <div className="inline-flex w-fit items-center gap-2 rounded-md border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium text-[#9a3412]">
+        <span className="size-2 rounded-full bg-[#f59e0b]" />
+        Образовательная аналитика, не инвестрекомендация
       </div>
     </div>
   );
@@ -26,10 +28,10 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-md border border-[#dde3eb] bg-white ${className}`}>
+    <section className={`rounded-lg border border-[#dbe4ef] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className}`}>
       {(title || action) && (
-        <div className="flex min-h-12 items-center justify-between border-b border-[#dde3eb] px-4">
-          {title ? <h2 className="text-sm font-semibold">{title}</h2> : <span />}
+        <div className="flex min-h-12 items-center justify-between border-b border-[#e2e8f0] px-4">
+          {title ? <h2 className="text-sm font-semibold text-[#0f172a]">{title}</h2> : <span />}
           {action}
         </div>
       )}
@@ -42,7 +44,7 @@ export function ChangeBadge({ value }: { value: number }) {
   const positive = value >= 0;
   const Icon = positive ? TrendingUp : TrendingDown;
   return (
-    <span className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold ${positive ? "bg-[#e8f8f0] text-[#0f9f6e]" : "bg-[#fdecec] text-[#dc2626]"}`}>
+    <span className={`tabular-data inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold ${positive ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#fee2e2] text-[#b91c1c]"}`}>
       <Icon size={13} />
       {positive ? "+" : ""}
       {value.toFixed(2)}%
@@ -50,11 +52,40 @@ export function ChangeBadge({ value }: { value: number }) {
   );
 }
 
+const sourceStatusStyles: Record<LiveSourceStatus, string> = {
+  live: "border-[#bbf7d0] bg-[#f0fdf4] text-[#166534]",
+  delayed: "border-[#bfdbfe] bg-[#eff6ff] text-[#1e40af]",
+  stale: "border-[#fed7aa] bg-[#fff7ed] text-[#9a3412]",
+  offline: "border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]",
+  fallback: "border-[#dbe4ef] bg-[#f8fafc] text-[#475569]",
+  needs_license: "border-[#ddd6fe] bg-[#f5f3ff] text-[#6d28d9]",
+};
+
+const sourceStatusLabels: Record<LiveSourceStatus, string> = {
+  live: "Live",
+  delayed: "Delayed",
+  stale: "Stale",
+  offline: "Offline",
+  fallback: "Fallback",
+  needs_license: "License",
+};
+
+export function SourceStatusBadge({ status, source }: { status?: LiveSourceStatus; source?: string }) {
+  const resolved = status ?? "fallback";
+
+  return (
+    <span className={`inline-flex h-6 items-center gap-1.5 rounded border px-2 text-[11px] font-semibold ${sourceStatusStyles[resolved]}`}>
+      <span className={`size-1.5 rounded-full ${resolved === "live" ? "bg-[#16a34a]" : resolved === "offline" ? "bg-[#dc2626]" : resolved === "needs_license" ? "bg-[#7c3aed]" : "bg-current"}`} />
+      {source ? `${source} · ${sourceStatusLabels[resolved]}` : sourceStatusLabels[resolved]}
+    </span>
+  );
+}
+
 export function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-[#dde3eb] bg-[#fbfcfe] p-3">
-      <p className="text-xs text-[#667085]">{label}</p>
-      <p className="mt-1 text-base font-semibold">{value}</p>
+    <div className="rounded-md border border-[#dbe4ef] bg-[#f8fafc] p-3">
+      <p className="text-xs font-medium text-[#475569]">{label}</p>
+      <p className="tabular-data mt-1 text-base font-semibold text-[#0f172a]">{value}</p>
     </div>
   );
 }
