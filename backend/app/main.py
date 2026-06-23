@@ -1,4 +1,5 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -39,6 +40,7 @@ class Stock(BaseModel):
     market_cap: str
     pe: float
     dividend: str
+    sector: str
     description: str
     source: str
     source_status: Literal["live", "delayed", "fallback", "needs_license", "offline"]
@@ -119,10 +121,10 @@ class ChatResponse(BaseModel):
 
 
 NEWS = [
-    NewsItem(id=1, title="Nvidia expands AI server partnerships across cloud providers", source="Market Watch", category="Technology", published_at=datetime.now(timezone.utc)),
-    NewsItem(id=2, title="US indexes edge higher as investors watch inflation data", source="Reuters", category="US", published_at=datetime.now(timezone.utc)),
-    NewsItem(id=3, title="Spot Bitcoin ETF inflows recover after volatile week", source="CoinDesk", category="Crypto", published_at=datetime.now(timezone.utc)),
-    NewsItem(id=4, title="Dividend ETF demand rises among long-term investors", source="ETF.com", category="ETF", published_at=datetime.now(timezone.utc)),
+    NewsItem(id=1, title="Nvidia расширяет партнерства по AI-серверам с облачными провайдерами", source="Market Watch", category="Technology", published_at=datetime.now(timezone.utc)),
+    NewsItem(id=2, title="Индексы США растут на фоне ожидания новых данных по инфляции", source="Reuters", category="US", published_at=datetime.now(timezone.utc)),
+    NewsItem(id=3, title="Притоки в спотовые Bitcoin ETF восстановились после волатильной недели", source="CoinDesk", category="Crypto", published_at=datetime.now(timezone.utc)),
+    NewsItem(id=4, title="Спрос на дивидендные ETF растет среди долгосрочных инвесторов", source="ETF.com", category="ETF", published_at=datetime.now(timezone.utc)),
 ]
 
 POSITIONS: list[Position] = [
@@ -131,21 +133,98 @@ POSITIONS: list[Position] = [
 ]
 
 ACADEMY = [
-    {"level": "Beginner", "title": "Stocks, ETFs, and dividends", "duration_minutes": 22, "source": "Site literature"},
-    {"level": "Beginner", "title": "Industry and market definitions", "duration_minutes": 28, "source": "Lecture 1.pdf"},
-    {"level": "Beginner", "title": "Industry types and business models", "duration_minutes": 24, "source": "Lecture 1.pdf"},
-    {"level": "Intermediate", "title": "Entry and exit barriers", "duration_minutes": 32, "source": "Lecture 2.pdf"},
-    {"level": "Intermediate", "title": "Market models and competition", "duration_minutes": 30, "source": "Lecture 2.pdf"},
-    {"level": "Intermediate", "title": "Industry overview template", "duration_minutes": 26, "source": "Applied industry analysis part 1.pdf"},
-    {"level": "Advanced", "title": "Value chain and competitive advantage", "duration_minutes": 34, "source": "03 Value chain.pdf"},
-    {"level": "Advanced", "title": "Industry life cycle and investment activity", "duration_minutes": 31, "source": "03 Value chain.pdf"},
-    {"level": "Advanced", "title": "Risk management through industry analysis", "duration_minutes": 27, "source": "Lectures + site literature"},
+    {"level": "Beginner", "title": "Акции, ETF и дивиденды", "duration_minutes": 22, "source": "Материалы сайта"},
+    {"level": "Beginner", "title": "Определение отрасли и рынка", "duration_minutes": 28, "source": "Lecture 1.pdf"},
+    {"level": "Beginner", "title": "Типы отраслей и бизнес-моделей", "duration_minutes": 24, "source": "Lecture 1.pdf"},
+    {"level": "Intermediate", "title": "Барьеры входа и выхода", "duration_minutes": 32, "source": "Lecture 2.pdf"},
+    {"level": "Intermediate", "title": "Модели рынка и конкуренция", "duration_minutes": 30, "source": "Lecture 2.pdf"},
+    {"level": "Intermediate", "title": "Шаблон отраслевого обзора", "duration_minutes": 26, "source": "Applied industry analysis part 1.pdf"},
+    {"level": "Advanced", "title": "Value chain и конкурентное преимущество", "duration_minutes": 34, "source": "03 Value chain.pdf"},
+    {"level": "Advanced", "title": "Жизненный цикл отрасли и инвестиционная активность", "duration_minutes": 31, "source": "03 Value chain.pdf"},
+    {"level": "Advanced", "title": "Риск-менеджмент через отраслевой анализ", "duration_minutes": 27, "source": "Лекции и материалы сайта"},
 ]
+
+NEWSLETTER_SUBSCRIBERS: list[str] = []
+
+SECTOR_BY_TICKER = {
+    "AAPL": "Технологии",
+    "NVDA": "Полупроводники",
+    "MSFT": "Программное обеспечение",
+    "TSLA": "Автомобили",
+    "AMZN": "E-commerce и облака",
+    "META": "Социальные платформы",
+    "SBER": "Финансы",
+    "GAZP": "Энергетика",
+    "LKOH": "Нефтегаз",
+}
+
+
+class NewsletterRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=320)
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/homepage")
+def homepage() -> dict:
+    return {
+        "brand": "Einvestuz",
+        "title": "Инвестиционная аналитика для Узбекистана",
+        "hero": {
+            "eyebrow": "Инвестиционная аналитика для Узбекистана",
+            "headline": "Учитесь инвестировать и анализировать рынки в одном приложении",
+            "description": "Einvestuz помогает следить за мировыми активами, изучать компании, собирать виртуальный портфель и получать понятные AI-разборы без реальных сделок.",
+            "primary_cta": {"label": "Начать анализ", "href": "/dashboard"},
+            "secondary_cta": {"label": "Посмотреть академию", "href": "/academy"},
+        },
+        "stats": [
+            {"value": "0 сум", "label": "реальных денег"},
+            {"value": str(len(ACADEMY)), "label": "уроков в академии"},
+            {"value": "24/7", "label": "доступ"},
+        ],
+        "features": [
+            {"title": "Мировые рынки", "text": "S&P 500, Nasdaq, Dow Jones, Bitcoin, золото, нефть и акции крупных компаний в одном рабочем экране.", "icon": "leaderboard"},
+            {"title": "AI-аналитик", "text": "Помощник объясняет компанию, плюсы, риски и фундаментальные показатели простым языком.", "icon": "psychology"},
+            {"title": "Виртуальный портфель", "text": "Собирайте позиции без реальных денег и смотрите, как меняется доходность.", "icon": "account_balance_wallet"},
+            {"title": "Академия инвестора", "text": "Курс по акциям, ETF, дивидендам, отраслевому анализу, value chain и риск-менеджменту.", "icon": "school"},
+        ],
+        "steps": ["Выберите компанию", "Проверьте показатели", "Спросите AI", "Виртуальный портфель"],
+        "academy_highlights": [
+            "Акции, ETF и дивиденды",
+            "Барьеры входа и модели рынка",
+            "Value chain и конкурентные преимущества",
+            "Риск-менеджмент через отраслевой анализ",
+        ],
+        "security": {
+            "title": "Сначала обучение и симуляция, потом реальные интеграции",
+            "text": "Платформа не хранит клиентские деньги, не даёт персональных инвестиционных рекомендаций и не исполняет сделки.",
+            "disclaimer": "Аналитика носит образовательный характер и не является инвестиционной рекомендацией.",
+        },
+        "market_status": _market_status(),
+    }
+
+
+@app.get("/dashboard-data")
+def dashboard_data() -> dict:
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        market_future = executor.submit(fetch_market)
+        stocks_future = executor.submit(fetch_stocks)
+        sources_future = executor.submit(fetch_sources)
+
+        market_assets = [_market_response(asset).model_dump(mode="json") for asset in market_future.result()]
+        stocks = [_stock_response(stock).model_dump(mode="json") for stock in stocks_future.result()]
+        sources = [_source_response(source).model_dump(mode="json") for source in sources_future.result()]
+    return {
+        "market": market_assets,
+        "stocks": stocks,
+        "news": [item.model_dump(mode="json") for item in NEWS],
+        "sources": sources,
+        "as_of": datetime.now(timezone.utc).isoformat(),
+        "market_status": _market_status(),
+    }
 
 
 @app.get("/stocks", response_model=list[Stock])
@@ -230,6 +309,16 @@ def remove_position(payload: RemovePosition) -> dict[str, bool]:
     return {"removed": len(POSITIONS) < before}
 
 
+@app.post("/newsletter")
+def newsletter(payload: NewsletterRequest) -> dict[str, bool | str]:
+    email = payload.email.strip().lower()
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(status_code=422, detail="Некорректный email")
+    if email not in NEWSLETTER_SUBSCRIBERS:
+        NEWSLETTER_SUBSCRIBERS.append(email)
+    return {"ok": True, "message": "Вы подписаны на обновления Einvestuz."}
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
     message = payload.message.lower()
@@ -260,6 +349,7 @@ def _stock_response(stock) -> Stock:
         market_cap=stock.market_cap,
         pe=stock.pe,
         dividend=stock.dividend,
+        sector=_sector_for_ticker(stock.ticker),
         description=stock.description,
         source=stock.source,
         source_status=stock.status,
@@ -330,3 +420,18 @@ def _format_market_value(price: float, category: str) -> str:
     if category in {"crypto", "commodity"}:
         return f"${price:,.2f}"
     return f"{price:,.2f}"
+
+
+def _sector_for_ticker(ticker: str) -> str:
+    return SECTOR_BY_TICKER.get(ticker.upper(), "Рынок")
+
+
+def _market_status() -> dict[str, str | bool]:
+    now = datetime.now(timezone.utc)
+    is_weekday = now.weekday() < 5
+    return {
+        "label": "Рынок открыт" if is_weekday else "Рынок закрыт",
+        "is_open": is_weekday,
+        "timezone": "UTC",
+        "as_of": now.isoformat(),
+    }

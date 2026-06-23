@@ -54,6 +54,13 @@ type BackendMarketAsset = {
   asOf?: string;
 };
 
+type BackendDashboardData = {
+  market?: BackendMarketAsset[];
+  stocks?: BackendStock[];
+  news?: BackendNewsItem[];
+  sources?: BackendSource[];
+};
+
 const categoryLabels: Record<string, NewsItem["category"]> = {
   US: "США",
   Technology: "Технологии",
@@ -66,7 +73,7 @@ const categoryLabels: Record<string, NewsItem["category"]> = {
 
 async function fetchJson<T>(path: string): Promise<T | null> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
     const response = await fetch(`${API_URL}${path}`, { cache: "no-store", signal: controller.signal });
@@ -135,18 +142,59 @@ function relativeTime(value?: string) {
 }
 
 export async function getStocks(): Promise<Stock[]> {
+  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
+  if (dashboardData?.stocks?.length) return dashboardData.stocks.map(normalizeStock);
+
   const data = await fetchJson<BackendStock[]>("/stocks");
   if (!data?.length) return fallbackStocks;
   return data.map(normalizeStock);
 }
 
+export async function getDashboardData(): Promise<{
+  indexes: MarketIndex[];
+  stocks: Stock[];
+  news: NewsItem[];
+  sources: MarketDataSource[];
+}> {
+  const data = await fetchJson<BackendDashboardData>("/dashboard-data");
+  if (!data) {
+    return {
+      indexes: fallbackIndexes,
+      stocks: fallbackStocks,
+      news: fallbackNews,
+      sources: [
+        {
+          id: "fallback",
+          name: "Резервные демо-данные",
+          status: "fallback",
+          assetClasses: ["indexes", "stocks"],
+          detail: "API котировок пока недоступен, показываются резервные данные.",
+        },
+      ],
+    };
+  }
+
+  return {
+    indexes: data.market?.length ? data.market.map(normalizeMarketAsset) : fallbackIndexes,
+    stocks: data.stocks?.length ? data.stocks.map(normalizeStock) : fallbackStocks,
+    news: data.news?.length ? data.news.map(normalizeNewsItem) : fallbackNews,
+    sources: data.sources?.length ? data.sources.map(normalizeSource) : [],
+  };
+}
+
 export async function getMarket(): Promise<MarketIndex[]> {
+  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
+  if (dashboardData?.market?.length) return dashboardData.market.map(normalizeMarketAsset);
+
   const data = await fetchJson<BackendMarketAsset[]>("/market");
   if (!data?.length) return fallbackIndexes;
   return data.map(normalizeMarketAsset);
 }
 
 export async function getSources(): Promise<MarketDataSource[]> {
+  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
+  if (dashboardData?.sources?.length) return dashboardData.sources.map(normalizeSource);
+
   const data = await fetchJson<BackendSource[]>("/sources");
   if (!data?.length) {
     return [
@@ -170,6 +218,9 @@ export async function getStock(ticker: string): Promise<Stock | undefined> {
 }
 
 export async function getNews(): Promise<NewsItem[]> {
+  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
+  if (dashboardData?.news?.length) return dashboardData.news.map(normalizeNewsItem);
+
   const data = await fetchJson<BackendNewsItem[]>("/news");
   if (!data?.length) return fallbackNews;
   return data.map(normalizeNewsItem);

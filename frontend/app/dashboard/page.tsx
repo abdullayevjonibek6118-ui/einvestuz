@@ -2,11 +2,11 @@ import Link from "next/link";
 import { Bot, Gauge, Newspaper, ShieldCheck } from "lucide-react";
 import { LiveMarketStatus } from "@/components/live-market-status";
 import { ChangeBadge, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
-import { getMarket, getNews, getSources, getStocks } from "@/lib/api";
+import { getDashboardData } from "@/lib/api";
 import { type Stock } from "@/lib/data";
 
 export default async function DashboardPage() {
-  const [indexes, stocks, news, sources] = await Promise.all([getMarket(), getStocks(), getNews(), getSources()]);
+  const { indexes, stocks, news, sources } = await getDashboardData();
   const gainers = [...stocks].sort((a, b) => b.change - a.change).slice(0, 3);
   const losers = [...stocks].sort((a, b) => a.change - b.change).slice(0, 3);
   const activeSourceCount = sources.filter((source) => source.status === "live" || source.status === "delayed").length;

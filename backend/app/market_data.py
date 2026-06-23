@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import json
@@ -198,7 +199,7 @@ def get_source_catalog() -> list[dict[str, str]]:
 
 
 def get_stocks() -> list[Quote]:
-    return [_get_quote(spec) for spec in STOCK_UNIVERSE.values()]
+    return _get_quotes_parallel(list(STOCK_UNIVERSE.values()))
 
 
 def get_stock(ticker: str) -> Quote | None:
@@ -209,19 +210,36 @@ def get_stock(ticker: str) -> Quote | None:
 
 
 def get_market() -> list[Quote]:
-    return [_get_quote(spec) for spec in MARKET_UNIVERSE.values()]
+    return _get_quotes_parallel(list(MARKET_UNIVERSE.values()))
 
 
 def get_quotes(symbols: list[str]) -> list[Quote]:
-    quotes: list[Quote] = []
+    specs: list[SymbolSpec] = []
     for symbol in symbols:
         ticker = symbol.upper()
         spec = QUOTE_UNIVERSE.get(ticker)
         if spec is None:
-            quotes.append(_empty_quote(SymbolSpec(ticker, ticker, ticker, "unknown")))
+            specs.append(SymbolSpec(ticker, ticker, ticker, "unknown"))
         else:
-            quotes.append(_get_quote(spec))
-    return quotes
+            specs.append(spec)
+    return _get_quotes_parallel(specs)
+
+
+def _get_quotes_parallel(specs: list[SymbolSpec]) -> list[Quote]:
+    if not specs:
+        return []
+
+    results: dict[int, Quote] = {}
+    with ThreadPoolExecutor(max_workers=min(10, len(specs))) as executor:
+        futures = {executor.submit(_get_quote, spec): index for index, spec in enumerate(specs)}
+        for future in as_completed(futures):
+            index = futures[future]
+            spec = specs[index]
+            try:
+                results[index] = future.result()
+            except Exception:
+                results[index] = _empty_quote(spec)
+    return [results[index] for index in range(len(specs))]
 
 
 def _get_quote(spec: SymbolSpec) -> Quote:
@@ -379,7 +397,7 @@ def _quote_from_moex(spec: SymbolSpec) -> Quote | None:
 
 
 PROVIDERS: dict[str, MarketDataProvider] = {
-    "yfinance": FunctionProvider("yfinance", lambda spec: _quote_from_yahoo_chart(spec) or _quote_from_yfinance(spec)),
+    "yfinance": FunctionProvider("yfinance", _quote_from_yahoo_chart),
     "moex-iss": FunctionProvider("moex-iss", _quote_from_moex),
     "uzse-bloomberg": LicensedProviderStub("uzse-bloomberg"),
     "lseg": LicensedProviderStub("lseg"),
