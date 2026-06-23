@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Activity, Database, Radio, WifiOff } from "lucide-react";
 import { SourceStatusBadge } from "@/components/ui";
 import type { MarketDataSource } from "@/lib/data";
-import { getWebSocketUrl, normalizeQuoteMessages, type BackendQuoteMessage, type LiveQuote } from "@/lib/live-market";
+import { getApiUrl, getWebSocketUrl, normalizeQuoteMessages, type BackendQuoteMessage, type LiveQuote } from "@/lib/live-market";
 
 type ConnectionState = "connecting" | "live" | "offline";
 
@@ -23,6 +23,35 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
     const query = `?symbols=${encodeURIComponent(uniqueSymbols.join(","))}`;
     const socket = new WebSocket(getWebSocketUrl(`/ws/quotes${query}`));
     let closedByEffect = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+    const applyQuotes = (incoming: LiveQuote[]) => {
+      if (!incoming.length) return;
+
+      setQuotes((current) => {
+        const next = { ...current };
+        for (const quote of incoming) next[quote.ticker] = quote;
+        return next;
+      });
+      setLastUpdate(new Date());
+      setConnection("live");
+    };
+
+    const pollQuotes = async () => {
+      try {
+        const response = await fetch(getApiUrl(`/quotes/live${query}`), { cache: "no-store" });
+        if (!response.ok) throw new Error("Quote polling failed");
+        applyQuotes(normalizeQuoteMessages((await response.json()) as BackendQuoteMessage));
+      } catch {
+        setConnection("offline");
+      }
+    };
+
+    const startPolling = () => {
+      if (pollTimer) return;
+      void pollQuotes();
+      pollTimer = setInterval(pollQuotes, 15000);
+    };
 
     socket.addEventListener("open", () => {
       setConnection("live");
@@ -31,31 +60,28 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
 
     socket.addEventListener("message", (event) => {
       try {
-        const incoming = normalizeQuoteMessages(JSON.parse(event.data) as BackendQuoteMessage);
-        if (!incoming.length) return;
-
-        setQuotes((current) => {
-          const next = { ...current };
-          for (const quote of incoming) next[quote.ticker] = quote;
-          return next;
-        });
-        setLastUpdate(new Date());
-        setConnection("live");
+        applyQuotes(normalizeQuoteMessages(JSON.parse(event.data) as BackendQuoteMessage));
       } catch {
         setConnection("offline");
+        startPolling();
       }
     });
 
     socket.addEventListener("close", () => {
-      if (!closedByEffect) setConnection("offline");
+      if (!closedByEffect) {
+        setConnection("offline");
+        startPolling();
+      }
     });
 
     socket.addEventListener("error", () => {
       setConnection("offline");
+      startPolling();
     });
 
     return () => {
       closedByEffect = true;
+      if (pollTimer) clearInterval(pollTimer);
       socket.close();
     };
   }, [uniqueSymbols]);

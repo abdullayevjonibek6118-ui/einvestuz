@@ -82,6 +82,11 @@ export function getWebSocketUrl(path = "/ws/quotes") {
   return `${apiUrl.replace(/^http/, "ws")}${path}`;
 }
 
+export function getApiUrl(path = "") {
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+  return `${apiUrl}${path}`;
+}
+
 export function normalizeQuoteMessages(message: BackendQuoteMessage): LiveQuote[] {
   if (Array.isArray(message)) return message.map(normalizeQuote).filter(Boolean) as LiveQuote[];
   if (hasKey(message, "quotes") && Array.isArray(message.quotes)) return message.quotes.map(normalizeQuote).filter(Boolean) as LiveQuote[];
