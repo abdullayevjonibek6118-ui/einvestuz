@@ -152,10 +152,10 @@ export async function getSources(): Promise<MarketDataSource[]> {
     return [
       {
         id: "fallback",
-        name: "Demo fallback",
+        name: "Резервные демо-данные",
         status: "fallback",
         assetClasses: ["indexes", "stocks"],
-        detail: "Backend live sources are not connected yet.",
+        detail: "API котировок пока недоступен, показываются резервные данные.",
       },
     ];
   }

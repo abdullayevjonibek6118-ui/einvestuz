@@ -10,6 +10,7 @@ from .market_data import DataSource as MarketDataSource
 from .market_data import STOCK_UNIVERSE
 from .market_data import get_quotes as fetch_live_quotes
 from .market_data import get_market as fetch_market
+from .market_data import get_source_catalog as fetch_source_catalog
 from .market_data import get_sources as fetch_sources
 from .market_data import get_stock as fetch_stock
 from .market_data import get_stocks as fetch_stocks
@@ -114,7 +115,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     message: str
     response: str
-    disclaimer: str = "This is educational information and not investment advice."
+    disclaimer: str = "Это образовательная информация, не индивидуальная инвестиционная рекомендация."
 
 
 NEWS = [
@@ -168,6 +169,11 @@ def market() -> list[MarketAsset]:
 @app.get("/sources", response_model=list[DataSource])
 def sources() -> list[DataSource]:
     return [_source_response(source) for source in fetch_sources()]
+
+
+@app.get("/sources/catalog", response_model=list[DataSource])
+def source_catalog() -> list[DataSource]:
+    return [_source_response(source) for source in fetch_source_catalog()]
 
 
 @app.get("/quotes/live", response_model=list[LiveQuote])
@@ -229,13 +235,13 @@ def chat(payload: ChatRequest) -> ChatResponse:
     message = payload.message.lower()
     company = next((stock for stock in STOCK_UNIVERSE.values() if stock.ticker.lower() in message or stock.name.lower() in message), None)
     if company is None:
-        response = "I can explain investing terms, portfolio risk, ETFs, dividends, and the companies available in the MVP universe."
+        response = "Я могу объяснять инвестиционные термины, риск портфеля, ETF, дивиденды и компании из текущего MVP-списка."
     else:
         response = (
-            f"{company.name} is a {company.description.lower()} "
-            "Potential positives include scale, market position, and long-term demand drivers. "
-            "Key risks include valuation, competition, regulation, and market volatility. "
-            "For the latest price and valuation metrics, use the stock page or dashboard live data."
+            f"{company.name}: {company.description} "
+            "Плюсы: масштаб бизнеса, рыночная позиция и долгосрочные драйверы спроса. "
+            "Риски: оценка компании, конкуренция, регулирование и волатильность рынка. "
+            "Актуальную цену и показатели смотрите на странице акции или в дашборде."
         )
     return ChatResponse(message=payload.message, response=response)
 

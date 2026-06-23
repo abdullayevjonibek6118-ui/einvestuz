@@ -62,12 +62,12 @@ const sourceStatusStyles: Record<LiveSourceStatus, string> = {
 };
 
 const sourceStatusLabels: Record<LiveSourceStatus, string> = {
-  live: "Live",
-  delayed: "Delayed",
-  stale: "Stale",
-  offline: "Offline",
-  fallback: "Fallback",
-  needs_license: "License",
+  live: "Онлайн",
+  delayed: "С задержкой",
+  stale: "Устарело",
+  offline: "Недоступно",
+  fallback: "Резерв",
+  needs_license: "Нужна лицензия",
 };
 
 export function SourceStatusBadge({ status, source }: { status?: LiveSourceStatus; source?: string }) {

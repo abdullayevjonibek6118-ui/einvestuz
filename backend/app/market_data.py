@@ -108,74 +108,77 @@ class TTLCache:
 SOURCES: list[DataSource] = [
     DataSource(
         id="yfinance",
-        name="Yahoo Finance via yfinance",
-        market="Global / US",
-        coverage="US equities, indexes, crypto and commodities used by MVP",
-        update_mode="near-real-time public quotes, best-effort",
+        name="Yahoo Finance Chart",
+        market="США / глобальные рынки",
+        coverage="Акции США, индексы, криптовалюты и сырьевые активы MVP",
+        update_mode="Публичные HTTP-котировки с задержкой, best-effort",
         status="delayed",
-        url="https://pypi.org/project/yfinance/",
-        notes="No-key MVP source. Not exchange-licensed; use only as fallback/prototype source.",
+        url="https://query1.finance.yahoo.com/v8/finance/chart/AAPL",
+        notes="Рабочий источник без API-ключа для MVP. Не является лицензированной биржевой лентой.",
     ),
     DataSource(
         id="moex-iss",
         name="MOEX ISS",
-        market="Russia",
-        coverage="Moscow Exchange securities, marketdata, candles and reference data",
-        update_mode="official public HTTP snapshots; real-time/low-latency requires MOEX FAST",
+        market="Россия",
+        coverage="Акции, индексы и справочные данные Московской биржи",
+        update_mode="Официальные публичные HTTP-снимки с задержкой",
         status="delayed",
         url="https://iss.moex.com/iss/reference/",
-        notes="Authoritative MOEX web API. For licensed low-latency production use MOEX FAST/ASTS/Plaza feeds.",
+        notes="Официальный web API MOEX. Для real-time/low-latency production нужна лицензия MOEX FAST/ASTS/Plaza.",
     ),
+]
+
+LICENSED_SOURCE_CANDIDATES: list[DataSource] = [
     DataSource(
         id="uzse-bloomberg",
         name="UZSE via Bloomberg Data License / B-PIPE",
-        market="Uzbekistan",
-        coverage="Republican Stock Exchange Toshkent equities and bonds",
-        update_mode="licensed real-time enterprise feed",
+        market="Узбекистан",
+        coverage="Акции и облигации Республиканской фондовой биржи Тошкент",
+        update_mode="Лицензируемая real-time лента",
         status="needs_license",
         url="https://uzse.uz/",
-        notes="Official UZSE data is available through Bloomberg products; requires commercial agreement.",
+        notes="В MVP не подключено: нужен коммерческий договор с поставщиком данных.",
     ),
     DataSource(
         id="lseg",
         name="LSEG Real-Time",
-        market="Global",
-        coverage="Global exchange and OTC real-time market data",
-        update_mode="licensed real-time enterprise feed",
+        market="Глобальные рынки",
+        coverage="Глобальные биржевые и OTC real-time данные",
+        update_mode="Лицензируемая real-time лента",
         status="needs_license",
         url="https://www.lseg.com/en/data-analytics/market-data/data-feeds",
-        notes="Production-grade global source candidate for broad exchange coverage.",
+        notes="Кандидат для production после покупки лицензии.",
     ),
     DataSource(
         id="bloomberg-bpipe",
         name="Bloomberg B-PIPE",
-        market="Global",
-        coverage="Global normalized real-time market data",
-        update_mode="licensed real-time enterprise feed",
+        market="Глобальные рынки",
+        coverage="Нормализованные глобальные real-time данные",
+        update_mode="Лицензируемая real-time лента",
         status="needs_license",
         url="https://professional.bloomberg.com/products/data/enterprise-catalog/real-time-data-feed/",
-        notes="Production-grade source for real-time global equities, indexes and cross-asset data.",
+        notes="Кандидат для production после покупки лицензии.",
     ),
 ]
 
 
 STOCK_UNIVERSE: dict[str, SymbolSpec] = {
-    "AAPL": SymbolSpec("AAPL", "AAPL", "Apple", "yfinance", description="Consumer devices, services, and software ecosystem."),
-    "NVDA": SymbolSpec("NVDA", "NVDA", "Nvidia", "yfinance", description="AI accelerators, GPUs, networking, and data-center software."),
-    "MSFT": SymbolSpec("MSFT", "MSFT", "Microsoft", "yfinance", description="Cloud, productivity software, operating systems, gaming, and AI services."),
-    "TSLA": SymbolSpec("TSLA", "TSLA", "Tesla", "yfinance", description="Electric vehicles, energy systems, charging, and autonomy software."),
-    "AMZN": SymbolSpec("AMZN", "AMZN", "Amazon", "yfinance", description="E-commerce, logistics, advertising, subscriptions, and AWS."),
-    "META": SymbolSpec("META", "META", "Meta", "yfinance", description="Social platforms, advertising, messaging, AI, and Reality Labs."),
-    "SBER": SymbolSpec("SBER", "SBER", "Sberbank", "moex-iss", exchange="MOEX", currency="RUB", description="Russian banking and financial services group."),
-    "GAZP": SymbolSpec("GAZP", "GAZP", "Gazprom", "moex-iss", exchange="MOEX", currency="RUB", description="Russian gas producer and energy company."),
-    "LKOH": SymbolSpec("LKOH", "LKOH", "Lukoil", "moex-iss", exchange="MOEX", currency="RUB", description="Russian oil and gas company."),
+    "AAPL": SymbolSpec("AAPL", "AAPL", "Apple", "yfinance", description="Потребительская электроника, сервисы, программное обеспечение и экосистема устройств."),
+    "NVDA": SymbolSpec("NVDA", "NVDA", "Nvidia", "yfinance", description="AI-ускорители, GPU, сетевые решения и ПО для дата-центров."),
+    "MSFT": SymbolSpec("MSFT", "MSFT", "Microsoft", "yfinance", description="Облачная инфраструктура, офисное ПО, операционные системы, игры и AI-сервисы."),
+    "TSLA": SymbolSpec("TSLA", "TSLA", "Tesla", "yfinance", description="Электромобили, энергетические системы, зарядная инфраструктура и автономное вождение."),
+    "AMZN": SymbolSpec("AMZN", "AMZN", "Amazon", "yfinance", description="E-commerce, логистика, реклама, подписки и облачная платформа AWS."),
+    "META": SymbolSpec("META", "META", "Meta", "yfinance", description="Социальные платформы, реклама, мессенджеры, AI-продукты и Reality Labs."),
+    "SBER": SymbolSpec("SBER", "SBER", "Сбербанк", "moex-iss", exchange="MOEX", currency="RUB", description="Российская банковская и финансовая группа."),
+    "GAZP": SymbolSpec("GAZP", "GAZP", "Газпром", "moex-iss", exchange="MOEX", currency="RUB", description="Российская газовая и энергетическая компания."),
+    "LKOH": SymbolSpec("LKOH", "LKOH", "Лукойл", "moex-iss", exchange="MOEX", currency="RUB", description="Российская нефтегазовая компания."),
 }
 
 MARKET_UNIVERSE: dict[str, SymbolSpec] = {
     "SPX": SymbolSpec("SPX", "^GSPC", "S&P 500", "yfinance", "index"),
     "IXIC": SymbolSpec("IXIC", "^IXIC", "Nasdaq Composite", "yfinance", "index"),
     "DJI": SymbolSpec("DJI", "^DJI", "Dow Jones Industrial Average", "yfinance", "index"),
-    "IMOEX": SymbolSpec("IMOEX", "IMOEX", "MOEX Russia Index", "moex-iss", "index", "MOEX", "RUB"),
+    "IMOEX": SymbolSpec("IMOEX", "IMOEX", "Индекс МосБиржи", "moex-iss", "index", "MOEX", "RUB"),
     "BTC": SymbolSpec("BTC", "BTC-USD", "Bitcoin", "yfinance", "crypto"),
     "ETH": SymbolSpec("ETH", "ETH-USD", "Ethereum", "yfinance", "crypto"),
     "XAU": SymbolSpec("XAU", "GC=F", "Gold Futures", "yfinance", "commodity"),
@@ -188,6 +191,10 @@ _QUOTE_CACHE = TTLCache(ttl_seconds=20)
 
 def get_sources() -> list[dict[str, str]]:
     return [asdict(source) for source in SOURCES]
+
+
+def get_source_catalog() -> list[dict[str, str]]:
+    return [asdict(source) for source in [*SOURCES, *LICENSED_SOURCE_CANDIDATES]]
 
 
 def get_stocks() -> list[Quote]:
@@ -298,16 +305,16 @@ def _quote_from_yahoo_chart(spec: SymbolSpec) -> Quote | None:
         return None
     return Quote(
         ticker=spec.ticker,
-        name=spec.name,
+        name=str(meta.get("longName") or meta.get("shortName") or spec.name),
         price=round(price, 2),
         change=round(_percent_change(price, previous_close), 2),
         description=spec.description,
         category=spec.category,
         exchange=spec.exchange,
         currency=spec.currency,
-        source="yahoo_chart",
+        source="yahoo-chart",
         provider=spec.provider,
-        status="fallback",
+        status="delayed",
         is_realtime=False,
         delay_seconds=None,
         as_of=datetime.now(timezone.utc),
@@ -330,13 +337,21 @@ def _quote_from_moex(spec: SymbolSpec) -> Quote | None:
             "&securities.columns=SECID,SHORTNAME,PREVPRICE"
         )
     payload = _fetch_json(url, timeout=8)
+    if payload is None and spec.category != "index":
+        url = (
+            "https://iss.moex.com/iss/engines/stock/markets/shares/securities/"
+            f"{spec.provider_symbol}.json?iss.meta=off&iss.only=marketdata,securities"
+            "&marketdata.columns=SECID,BOARDID,LAST,LCURRENTPRICE,LASTCHANGEPRCNT,LASTTOPREVPRICE,SYSTIME"
+            "&securities.columns=SECID,BOARDID,SHORTNAME,PREVPRICE"
+        )
+        payload = _fetch_json(url, timeout=8)
     if payload is None:
         return None
 
     marketdata = _iss_rows(payload.get("marketdata", {}))
     securities = _iss_rows(payload.get("securities", {}))
-    row = marketdata[0] if marketdata else {}
-    security = securities[0] if securities else {}
+    row = _prefer_board_row(marketdata)
+    security = _prefer_board_row(securities)
     price = _coerce_float(row.get("LAST") or row.get("LCURRENTPRICE") or row.get("LASTVALUE") or row.get("CURRENTVALUE"))
     if price is None:
         return None
@@ -364,7 +379,7 @@ def _quote_from_moex(spec: SymbolSpec) -> Quote | None:
 
 
 PROVIDERS: dict[str, MarketDataProvider] = {
-    "yfinance": FunctionProvider("yfinance", lambda spec: _quote_from_yfinance(spec) or _quote_from_yahoo_chart(spec)),
+    "yfinance": FunctionProvider("yfinance", lambda spec: _quote_from_yahoo_chart(spec) or _quote_from_yfinance(spec)),
     "moex-iss": FunctionProvider("moex-iss", _quote_from_moex),
     "uzse-bloomberg": LicensedProviderStub("uzse-bloomberg"),
     "lseg": LicensedProviderStub("lseg"),
@@ -394,6 +409,12 @@ def _iss_rows(table: dict[str, Any]) -> list[dict[str, Any]]:
     columns = table.get("columns", [])
     data = table.get("data", [])
     return [dict(zip(columns, row)) for row in data]
+
+
+def _prefer_board_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        return {}
+    return next((row for row in rows if row.get("BOARDID") == "TQBR"), rows[0])
 
 
 def _empty_quote(spec: SymbolSpec) -> Quote:

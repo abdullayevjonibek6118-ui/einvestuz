@@ -56,7 +56,7 @@ export function normalizeSourceStatus(value?: string): LiveSourceStatus {
 }
 
 export function normalizeSource(source: BackendSource): MarketDataSource {
-  const name = source.name ?? source.provider ?? source.id ?? "Market data";
+  const name = source.name ?? source.provider ?? source.id ?? "Рыночные данные";
 
   return {
     id: source.id ?? name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),

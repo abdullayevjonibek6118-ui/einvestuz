@@ -88,7 +88,7 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
 
   const latestQuotes = Object.values(quotes).slice(0, 4);
   const activeSources = sources.filter((source) => source.status === "live" || source.status === "delayed").length;
-  const connectionLabel = connection === "live" ? "Live refresh" : connection === "connecting" ? "Connecting" : "Awaiting backend";
+  const connectionLabel = connection === "live" ? "Обновляется" : connection === "connecting" ? "Подключение" : "Ожидание API";
   const ConnectionIcon = connection === "offline" ? WifiOff : Radio;
 
   return (
@@ -101,7 +101,7 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
           </div>
           <div className="inline-flex h-8 items-center gap-2 rounded-md border border-[#dbe4ef] bg-[#f8fafc] px-3 text-xs font-medium text-[#475569]">
             <Database size={15} />
-            {activeSources}/{sources.length} sources active
+            {activeSources}/{sources.length} источника активны
           </div>
           {lastUpdate ? (
             <div className="tabular-data inline-flex h-8 items-center gap-2 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-3 text-xs font-semibold text-[#166534]">

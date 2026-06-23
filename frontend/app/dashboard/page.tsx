@@ -19,9 +19,9 @@ export default async function DashboardPage() {
       <LiveMarketStatus sources={sources} symbols={dashboardSymbols} />
 
       <div className="mb-4 grid gap-3 md:grid-cols-3">
-        <StatusMetric label="Market coverage" value={`${indexes.length} активов`} detail="Индексы, крипто, commodities" />
-        <StatusMetric label="Watch universe" value={`${stocks.length} компаний`} detail="US mega-cap список MVP" />
-        <StatusMetric label="Data sources" value={`${activeSourceCount}/${sources.length} active`} detail="REST + WebSocket quotes" />
+        <StatusMetric label="Охват рынка" value={`${indexes.length} активов`} detail="Индексы, криптовалюты и сырье" />
+        <StatusMetric label="Список наблюдения" value={`${stocks.length} компаний`} detail="Компании США и MOEX для MVP" />
+        <StatusMetric label="Источники данных" value={`${activeSourceCount}/${sources.length} активны`} detail="REST-котировки и live polling" />
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
                 <SourceStatusBadge source={index.source} status={index.sourceStatus} />
               </div>
             </div>
-            {index.asOf ? <p className="tabular-data mt-3 text-xs text-[#64748b]">as of {new Date(index.asOf).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</p> : null}
+            {index.asOf ? <p className="tabular-data mt-3 text-xs text-[#64748b]">обновлено {new Date(index.asOf).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</p> : null}
             <div className="mt-4 h-1.5 rounded-full bg-[#e2e8f0]">
               <div className={`h-1.5 rounded-full ${index.change >= 0 ? "bg-[#16a34a]" : "bg-[#dc2626]"}`} style={{ width: `${Math.min(92, Math.max(16, Math.abs(index.change) * 28))}%` }} />
             </div>
