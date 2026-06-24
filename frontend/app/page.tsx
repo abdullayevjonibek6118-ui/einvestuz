@@ -93,12 +93,12 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-3 text-base font-semibold">
-              <span className="grid size-9 place-items-center rounded-lg border border-[#2A3441] bg-[#171F2F] text-[#3861FB]">
+              <span className="grid size-9 place-items-center rounded-xl border border-[#2A3441] bg-[#171F2F] text-[#3861FB]">
                 <Sparkles size={18} />
               </span>
               Einvestuz
             </Link>
-            <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#3861FB] px-4 py-2 text-sm font-semibold transition hover:bg-[#2f54df]">
+            <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#3861FB] px-4 py-2 text-sm font-semibold transition hover:bg-[#2f54df]">
               Открыть
               <ArrowRight size={16} />
             </Link>
@@ -111,7 +111,7 @@ export default function Home() {
               ["Портфель", "/portfolio"],
               ["Академия", "/academy"],
             ].map(([label, href]) => (
-              <Link key={href} href={href} className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-[#2A3441] bg-[#171F2F] px-3 transition hover:border-[#3861FB] hover:text-white">
+              <Link key={href} href={href} className="inline-flex min-h-10 shrink-0 items-center rounded-xl border border-[#2A3441] bg-[#171F2F] px-3 transition hover:border-[#3861FB] hover:text-white">
                 {label}
               </Link>
             ))}
@@ -132,17 +132,17 @@ export default function Home() {
             Следите за Apple, Nvidia, Tesla и рынком Узбекистана в одном месте. Получайте AI-анализ акций, понимайте риски до инвестирования и собирайте виртуальные портфели без реальных денег.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/portfolio" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#3861FB] px-6 py-3 text-sm font-bold transition hover:bg-[#2f54df]">
+            <Link href="/portfolio" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#3861FB] px-6 py-3 text-sm font-bold transition hover:bg-[#2f54df]">
               Создать виртуальный портфель
               <ArrowRight size={17} />
             </Link>
-            <Link href="/ai" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#2A3441] bg-[#171F2F] px-6 py-3 text-sm font-bold transition hover:border-[#3861FB] hover:bg-[#1d2940]">
+            <Link href="/ai" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#2A3441] bg-[#171F2F] px-6 py-3 text-sm font-bold transition hover:border-[#3861FB] hover:bg-[#1d2940]">
               Спросить AI об акции
             </Link>
           </div>
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {["500+ компаний", "AI-анализ за 10 секунд", "Рынки США и Узбекистана", "Без реальных денег"].map((item) => (
-              <div key={item} className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-3 text-xs font-semibold leading-5 text-[#D7DEE8]">
+              <div key={item} className="rounded-2xl border border-[#2A3441] bg-[#171F2F] p-3 text-xs font-semibold leading-5 text-[#D7DEE8]">
                 {item}
               </div>
             ))}
@@ -156,7 +156,7 @@ export default function Home() {
 
       <section className="border-y border-[#2A3441] bg-[#11182A]">
         <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto px-4 py-4 sm:px-6 lg:px-8" aria-label="Живая рыночная лента">
-          <div className="sticky left-0 z-10 shrink-0 rounded-lg border border-[#2A3441] bg-[#171F2F] px-3 py-2 text-xs font-bold uppercase tracking-wide text-[#A0AEC0]">
+          <div className="sticky left-0 z-10 shrink-0 rounded-xl border border-[#2A3441] bg-[#171F2F] px-3 py-2 text-xs font-bold uppercase tracking-wide text-[#A0AEC0]">
             Живые рынки
           </div>
           {marketBar.map((item) => (
@@ -167,7 +167,7 @@ export default function Home() {
 
       <section id="stocks" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <SectionHeader eyebrow="Популярные акции" title="Компании, за которыми чаще всего следят начинающие инвесторы." text="Табличная структура в духе финансовых агрегаторов: понятная AI-оценка, риск и движение цены." />
-        <div className="overflow-hidden rounded-lg border border-[#2A3441] bg-[#171F2F]">
+        <div className="overflow-hidden rounded-3xl border border-[#2A3441] bg-[#171F2F]">
           <div className="overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-0">
               <thead className="bg-[#11182A] text-left text-xs uppercase tracking-wide text-[#A0AEC0]">
@@ -184,7 +184,7 @@ export default function Home() {
                   <tr key={stock.ticker} tabIndex={0} className="group cursor-pointer outline-none transition hover:bg-[#1C273A] focus-visible:bg-[#1C273A] focus-visible:shadow-[inset_0_0_0_2px_#3861FB]">
                     <td className="border-t border-[#2A3441] px-4 py-4 sm:px-6">
                       <div className="flex items-center gap-3">
-                        <span className="grid size-10 place-items-center rounded-lg bg-[#11182A] text-sm font-bold">{stock.ticker.slice(0, 1)}</span>
+                        <span className="grid size-10 place-items-center rounded-xl bg-[#11182A] text-sm font-bold">{stock.ticker.slice(0, 1)}</span>
                         <div>
                           <p className="font-semibold">{stock.company}</p>
                           <p className="text-xs text-[#A0AEC0]">{stock.ticker}</p>
@@ -226,22 +226,22 @@ export default function Home() {
 
       <section id="uzbekistan" className="border-y border-[#2A3441] bg-[#11182A]">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
-          <div className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-6">
+          <div className="rounded-3xl border border-[#2A3441] bg-[#171F2F] p-6">
             <div className="mb-5 h-1 rounded-full bg-[linear-gradient(90deg,#2FA7DF_0_34%,#FFFFFF_34%_42%,#EA3943_42%_46%,#16C784_46%_100%)]" />
             <SectionHeader eyebrow="Центр рынка Узбекистана" title="Глобальные инвестиции с локальным контекстом." text="Локальный хаб для курса валют, инфляции, политики Центрального банка, IPO, новостей рынка капитала и компаний Узбекистана." compact />
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {uzbekistanHub.map((item) => (
-                <div key={item.label} className="rounded-lg border border-[#2A3441] bg-[#11182A] p-4">
+                <div key={item.label} className="rounded-2xl border border-[#2A3441] bg-[#11182A] p-4">
                   <p className="text-xs font-medium text-[#A0AEC0]">{item.label}</p>
                   <div className="mt-2 flex items-end justify-between gap-3">
                     <p className="tabular-data text-2xl font-bold">{item.value}</p>
-                    <span className="rounded-md border border-[#2A3441] px-2 py-1 text-xs font-semibold text-[#A0AEC0]">{item.change}</span>
+                    <span className="rounded-lg border border-[#2A3441] px-2 py-1 text-xs font-semibold text-[#A0AEC0]">{item.change}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-6">
+          <div className="rounded-3xl border border-[#2A3441] bg-[#171F2F] p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#A0AEC0]">Локальный срез</p>
@@ -249,7 +249,7 @@ export default function Home() {
               </div>
               <MapPinned className="text-[#3861FB]" size={24} />
             </div>
-            <div className="mt-8 h-56 rounded-lg border border-[#2A3441] bg-[#0B1426] p-4">
+            <div className="mt-8 h-56 rounded-2xl border border-[#2A3441] bg-[#0B1426] p-4">
               <div className="flex h-full items-end gap-2" aria-label="Малый рыночный график">
                 {[36, 42, 38, 48, 55, 52, 64, 59, 70, 76, 72, 82].map((height, index) => (
                   <span key={index} className="flex-1 rounded-t bg-[#3861FB]" style={{ height: `${height}%`, opacity: 0.35 + index * 0.04 }} />
@@ -267,10 +267,10 @@ export default function Home() {
         <SectionHeader eyebrow="AI-инсайты" title="AI-инсайты на сегодня" text="Короткие динамичные карточки показывают, как Einvestuz объясняет возможности и риски до того, как новичок инвестирует." />
         <div className="grid gap-4 lg:grid-cols-3">
           {insights.map((item) => (
-            <article key={item.title} className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-5 transition hover:border-[#3861FB]">
+            <article key={item.title} className="rounded-2xl border border-[#2A3441] bg-[#171F2F] p-5 transition hover:border-[#3861FB]">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#A0AEC0]">{item.title}</p>
-                <span className="rounded-md border border-[#3861FB]/40 bg-[#3861FB]/10 px-2 py-1 text-xs font-semibold text-[#8FA7FF]">{item.tag}</span>
+                <span className="rounded-lg border border-[#3861FB]/40 bg-[#3861FB]/10 px-2 py-1 text-xs font-semibold text-[#8FA7FF]">{item.tag}</span>
               </div>
               <h3 className="mt-4 text-lg font-semibold">{item.headline}</h3>
               <p className="mt-3 text-sm leading-6 text-[#A0AEC0]">{item.text}</p>
@@ -283,19 +283,19 @@ export default function Home() {
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-16 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
           <div>
             <SectionHeader eyebrow="Превью виртуального портфеля" title="Практикуйтесь перед инвестированием" text="Реалистичный виджет портфеля помогает новичкам учиться на практике до использования реальных денег." compact />
-            <Link href="/portfolio" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-lg bg-[#3861FB] px-6 py-3 text-sm font-bold transition hover:bg-[#2f54df]">
+            <Link href="/portfolio" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#3861FB] px-6 py-3 text-sm font-bold transition hover:bg-[#2f54df]">
               Собрать мой портфель
               <ArrowRight size={17} />
             </Link>
           </div>
-          <div className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-6">
+          <div className="rounded-3xl border border-[#2A3441] bg-[#171F2F] p-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <Metric label="Стоимость портфеля" value="$10,000" />
               <Metric label="Доходность" value="+12.4%" positive />
             </div>
             <div className="mt-6 space-y-3">
               {["Nvidia", "Microsoft", "ETF на S&P 500"].map((holding, index) => (
-                <div key={holding} className="rounded-lg border border-[#2A3441] bg-[#11182A] p-4">
+                <div key={holding} className="rounded-2xl border border-[#2A3441] bg-[#11182A] p-4">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold">{holding}</p>
                     <p className="text-sm text-[#A0AEC0]">{[38, 34, 28][index]}%</p>
@@ -314,7 +314,7 @@ export default function Home() {
         <SectionHeader eyebrow="Инвестиционная академия" title="Учитесь инвестировать через практику" text="Уроки используют реальные компании и упражнения с портфелем вместо отдельных сухих определений." />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {academyTopics.map((topic, index) => (
-            <article key={topic} className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-5">
+            <article key={topic} className="rounded-2xl border border-[#2A3441] bg-[#171F2F] p-5">
               <BookOpen size={20} className="text-[#3861FB]" />
               <h3 className="mt-4 font-semibold">{topic}</h3>
               <p className="mt-2 text-sm leading-6 text-[#A0AEC0]">{12 + index * 3} минут обучения на примере реального рынка.</p>
@@ -324,12 +324,12 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-8 text-center">
+        <div className="rounded-3xl border border-[#2A3441] bg-[#171F2F] p-8 text-center">
           <h2 className="text-3xl font-bold sm:text-5xl">Начните инвестировать без риска</h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#A0AEC0] sm:text-base">
             Разбирайтесь в компаниях, задавайте вопросы AI и тестируйте инвестиционные идеи до использования реальных денег.
           </p>
-          <Link href="/dashboard" className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-lg bg-[#3861FB] px-7 py-3 text-sm font-bold transition hover:bg-[#2f54df]">
+          <Link href="/dashboard" className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#3861FB] px-7 py-3 text-sm font-bold transition hover:bg-[#2f54df]">
             Открыть Einvestuz
             <ArrowRight size={17} />
           </Link>
@@ -353,7 +353,7 @@ export default function Home() {
 
 function AICopilotCard() {
   return (
-    <div className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
+    <div className="rounded-3xl border border-[#2A3441] bg-[#171F2F] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
       <div className="flex items-center justify-between gap-4 border-b border-[#2A3441] pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#A0AEC0]">Вопрос</p>
@@ -364,8 +364,8 @@ function AICopilotCard() {
           AI-анализ за 10 сек
         </span>
       </div>
-      <div className="mt-5 rounded-lg border border-[#2A3441] bg-[#11182A] p-4">
-        <div className="flex items-center gap-3 rounded-lg border border-[#2A3441] bg-[#0B1426] px-4 py-3">
+      <div className="mt-5 rounded-2xl border border-[#2A3441] bg-[#11182A] p-4">
+        <div className="flex items-center gap-3 rounded-xl border border-[#2A3441] bg-[#0B1426] px-4 py-3">
           <Search size={16} className="text-[#A0AEC0]" />
           <p className="text-sm text-[#D7DEE8]">Стоит ли покупать Nvidia?</p>
         </div>
@@ -379,19 +379,19 @@ function AICopilotCard() {
         </div>
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-[0.85fr_1.15fr]">
-        <div className="rounded-lg border border-[#2A3441] bg-[#11182A] p-4">
+        <div className="rounded-2xl border border-[#2A3441] bg-[#11182A] p-4">
           <p className="text-xs font-medium text-[#A0AEC0]">AI-оценка</p>
           <p className="mt-2 text-4xl font-bold">84<span className="text-lg text-[#A0AEC0]">/100</span></p>
           <div className="mt-4 h-2 rounded-full bg-[#0B1426]"><div className="h-2 w-[84%] rounded-full bg-[#16C784]" /></div>
         </div>
-        <div className="rounded-lg border border-[#2A3441] bg-[#11182A] p-4">
+        <div className="rounded-2xl border border-[#2A3441] bg-[#11182A] p-4">
           <p className="text-xs font-medium text-[#A0AEC0]">Краткое объяснение</p>
           <p className="mt-2 text-sm leading-6 text-[#D7DEE8]">Сильный бизнес, но новичкам стоит выбирать размер позиции осторожно: в цене уже заложены высокие ожидания.</p>
         </div>
       </div>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-        <Link href="/stocks/NVDA" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg bg-[#3861FB] px-4 py-2 text-sm font-bold transition hover:bg-[#2f54df]">Открыть компанию</Link>
-        <Link href="/dashboard" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg border border-[#2A3441] bg-[#11182A] px-4 py-2 text-sm font-bold transition hover:border-[#3861FB]">Добавить в список</Link>
+        <Link href="/stocks/NVDA" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#3861FB] px-4 py-2 text-sm font-bold transition hover:bg-[#2f54df]">Открыть компанию</Link>
+        <Link href="/dashboard" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-[#2A3441] bg-[#11182A] px-4 py-2 text-sm font-bold transition hover:border-[#3861FB]">Добавить в список</Link>
       </div>
     </div>
   );
@@ -409,7 +409,7 @@ function SectionHeader({ eyebrow, title, text, compact = false }: { eyebrow: str
 
 function MarketTicker({ name, value, change }: { name: string; value: string; change: number }) {
   return (
-    <div className="min-w-48 shrink-0 rounded-lg border border-[#2A3441] bg-[#171F2F] px-4 py-3 transition hover:border-[#3861FB]">
+    <div className="min-w-48 shrink-0 rounded-2xl border border-[#2A3441] bg-[#171F2F] px-4 py-3 transition hover:border-[#3861FB]">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold">{name}</p>
         <Change value={change} />
@@ -437,8 +437,8 @@ function RiskBadge({ value }: { value: string }) {
 
 function InfoCard({ title, text, icon: Icon }: { title: string; text: string; icon: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
-    <article className="rounded-lg border border-[#2A3441] bg-[#171F2F] p-5 transition hover:border-[#3861FB]">
-      <div className="grid size-11 place-items-center rounded-lg bg-[#11182A] text-[#3861FB]"><Icon size={21} /></div>
+    <article className="rounded-2xl border border-[#2A3441] bg-[#171F2F] p-5 transition hover:border-[#3861FB]">
+      <div className="grid size-11 place-items-center rounded-xl bg-[#11182A] text-[#3861FB]"><Icon size={21} /></div>
       <h3 className="mt-4 text-lg font-bold">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-[#A0AEC0]">{text}</p>
     </article>
@@ -447,7 +447,7 @@ function InfoCard({ title, text, icon: Icon }: { title: string; text: string; ic
 
 function Metric({ label, value, positive = false }: { label: string; value: string; positive?: boolean }) {
   return (
-    <div className="rounded-lg border border-[#2A3441] bg-[#11182A] p-5">
+    <div className="rounded-2xl border border-[#2A3441] bg-[#11182A] p-5">
       <p className="text-xs font-medium text-[#A0AEC0]">{label}</p>
       <p className={`mt-2 text-3xl font-bold ${positive ? "text-[#16C784]" : "text-white"}`}>{value}</p>
     </div>

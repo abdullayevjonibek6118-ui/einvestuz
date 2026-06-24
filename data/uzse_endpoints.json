@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-06-24T00:00:00+00:00",
+  "base_url": "https://uzse.uz",
+  "pages_investigated": [
+    "https://uzse.uz/isu_infos/",
+    "https://uzse.uz/price_indices/",
+    "https://uzse.uz/listing",
+    "https://uzse.uz/trade_results"
+  ],
+  "confirmed_json_endpoints": [
+    {
+      "method": "GET",
+      "url": "https://uzse.uz/isu_infos/names?mkt_id=STK",
+      "referer": "https://uzse.uz/isu_infos/",
+      "notes": "Returns arrays [isin, ticker, issuer_name]. Requires XMLHttpRequest headers; a plain request can return 406."
+    },
+    {
+      "method": "GET",
+      "url": "https://uzse.uz/price_indices/range?idx_ind_cd=001&range_type=1y",
+      "referer": "https://uzse.uz/price_indices/",
+      "notes": "Returns {last_index, indices}; idx_ind_cd 001..008, range_type 1d/1m/1y."
+    },
+    {
+      "method": "GET",
+      "url": "https://uzse.uz/price_indices/histories?ind_idx_cd=001",
+      "referer": "https://uzse.uz/price_indices/",
+      "notes": "Returns historical rows with bz_dd, clsprc_idx, prevdd_idx, acc_trdvol, acc_trdval."
+    }
+  ],
+  "confirmed_downloads": [
+    "https://uzse.uz/price_indices/histories.xlsx"
+  ],
+  "html_sources": [
+    {
+      "url": "https://uzse.uz/isu_infos/",
+      "use": "Listings and current price table"
+    },
+    {
+      "url": "https://uzse.uz/trade_results",
+      "use": "Latest trade results table"
+    }
+  ],
+  "not_found": [
+    {
+      "url": "https://uzse.uz/listing",
+      "status": 404
+    }
+  ],
+  "script_assets": [
+    "https://uzse.uz/assets/application.js"
+  ],
+  "keywords_observed": [
+    "/price_indices",
+    "/price_indices/range",
+    "/price_indices/histories",
+    "/isu_infos",
+    "/isu_infos/names",
+    "/listing",
+    "/trade_results",
+    "/issuer"
+  ]
+}

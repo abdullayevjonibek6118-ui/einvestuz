@@ -70,7 +70,7 @@ export function AIChatClient() {
           return (
             <div key={`${message.role}-${index}`} className={`flex gap-3 ${assistant ? "" : "justify-end"}`}>
               {assistant && <Avatar icon={<Icon size={17} />} />}
-              <div className={`max-w-[760px] rounded-md px-4 py-3 text-sm leading-6 ${assistant ? "bg-[#eff6ff] text-[#1e3a8a]" : "bg-[#0f172a] text-white"}`}>
+              <div className={`max-w-[760px] rounded-2xl px-4 py-3 text-sm leading-6 ${assistant ? "bg-[#eff6ff] text-[#1e3a8a]" : "bg-[#0f172a] text-white"}`}>
                 {message.text}
               </div>
               {!assistant && <Avatar icon={<Icon size={17} />} />}
@@ -83,9 +83,9 @@ export function AIChatClient() {
           value={input}
           onChange={(event) => setInput(event.target.value)}
           placeholder="Спросите про компанию, ETF, риск или термин..."
-          className="h-11 flex-1 rounded-md border border-[#bfd0e3] px-3 text-sm outline-none focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]"
+          className="h-11 flex-1 rounded-xl border border-[#bfd0e3] px-3 text-sm outline-none focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]"
         />
-        <button className="grid size-11 place-items-center rounded-md bg-[#0b63f6] text-white shadow-sm hover:bg-[#084fc7] disabled:cursor-not-allowed disabled:bg-[#94a3b8]" disabled={loading || !input.trim()} aria-label="Отправить">
+        <button className="grid size-11 place-items-center rounded-xl bg-[#0b63f6] text-white shadow-sm hover:bg-[#084fc7] disabled:cursor-not-allowed disabled:bg-[#94a3b8]" disabled={loading || !input.trim()} aria-label="Отправить">
           <Send size={18} />
         </button>
       </form>
@@ -94,5 +94,5 @@ export function AIChatClient() {
 }
 
 function Avatar({ icon }: { icon: React.ReactNode }) {
-  return <div className="grid size-9 shrink-0 place-items-center rounded-md border border-[#dbe4ef] bg-white text-[#334155]">{icon}</div>;
+  return <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-[#dbe4ef] bg-white text-[#334155]">{icon}</div>;
 }

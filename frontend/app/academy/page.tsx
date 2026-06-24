@@ -40,7 +40,7 @@ export default function AcademyPage() {
         <Panel title="Источники">
           <div className="space-y-2">
             {sources.map((source) => (
-              <div key={source} className="flex gap-2 rounded-md border border-[#dde3eb] p-3 text-sm text-[#344054]">
+              <div key={source} className="flex gap-2 rounded-2xl border border-[#dde3eb] p-3 text-sm text-[#344054]">
                 <FileText size={16} className="mt-0.5 shrink-0 text-[#2563eb]" />
                 <span>{source}</span>
               </div>
@@ -57,7 +57,7 @@ export default function AcademyPage() {
                 <LessonCard key={lesson.title} lesson={lesson} />
               ))}
               {lessons.filter((lesson) => lesson.level === level).length === 0 && (
-                <div className="rounded-md border border-dashed border-[#dde3eb] p-4 text-sm text-[#667085]">
+                <div className="rounded-2xl border border-dashed border-[#dde3eb] p-4 text-sm text-[#667085]">
                   <BookOpen className="mb-2" size={18} />
                   Уроки появятся после MVP.
                 </div>
@@ -85,7 +85,7 @@ export default function AcademyPage() {
               "Ключевые игроки и market share",
               "Value chain, life cycle и риски",
             ].map((item) => (
-              <div key={item} className="rounded-md border border-[#dde3eb] bg-[#fbfcfe] p-3 text-sm text-[#344054]">
+              <div key={item} className="rounded-2xl border border-[#dde3eb] bg-[#fbfcfe] p-3 text-sm text-[#344054]">
                 {item}
               </div>
             ))}
@@ -98,7 +98,7 @@ export default function AcademyPage() {
 
 function LessonCard({ lesson }: { lesson: AcademyLesson }) {
   return (
-    <article className="rounded-md border border-[#dde3eb] p-3">
+    <article className="rounded-2xl border border-[#dde3eb] p-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold leading-5">{lesson.title}</h2>
@@ -107,8 +107,8 @@ function LessonCard({ lesson }: { lesson: AcademyLesson }) {
         {lesson.progress === 100 ? <CheckCircle2 size={18} className="shrink-0 text-[#0f9f6e]" /> : <PlayCircle size={18} className="shrink-0 text-[#2563eb]" />}
       </div>
       <p className="mt-3 text-sm leading-6 text-[#344054]">{lesson.summary}</p>
-      <div className="mt-3 h-2 rounded bg-[#eef2f6]">
-        <div className="h-2 rounded bg-[#2563eb]" style={{ width: `${lesson.progress}%` }} />
+      <div className="mt-3 h-2 rounded-full bg-[#eef2f6]">
+        <div className="h-2 rounded-full bg-[#2563eb]" style={{ width: `${lesson.progress}%` }} />
       </div>
       <div className="mt-3 space-y-2">
         {lesson.outcomes.map((outcome) => (
@@ -118,7 +118,7 @@ function LessonCard({ lesson }: { lesson: AcademyLesson }) {
           </div>
         ))}
       </div>
-      <div className="mt-3 rounded-md bg-[#fff7ed] p-3 text-xs leading-5 text-[#9a3412]">
+      <div className="mt-3 rounded-2xl bg-[#fff7ed] p-3 text-xs leading-5 text-[#9a3412]">
         Практика: {lesson.practice}
       </div>
     </article>
@@ -127,7 +127,7 @@ function LessonCard({ lesson }: { lesson: AcademyLesson }) {
 
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-md border border-[#dde3eb] bg-[#fbfcfe] p-3">
+    <div className="rounded-2xl border border-[#dde3eb] bg-[#fbfcfe] p-3">
       <div className="flex items-center gap-2 text-[#2563eb]">
         {icon}
         <span className="text-xs font-semibold uppercase">{label}</span>

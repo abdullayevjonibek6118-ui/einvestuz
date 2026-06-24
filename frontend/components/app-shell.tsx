@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-[#dbe4ef] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3">
-            <Link href="/dashboard" className="flex min-h-11 items-center gap-3 rounded-md pr-2 text-base font-semibold text-[#0f172a]">
+            <Link href="/dashboard" className="flex min-h-11 items-center gap-3 rounded-xl pr-2 text-base font-semibold text-[#0f172a]">
               <span className="grid size-10 place-items-center rounded-lg bg-[#3861fb] text-white shadow-sm">
                 <Sparkles size={18} />
               </span>
@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
 
-            <form onSubmit={submitSearch} className="hidden h-11 w-full max-w-sm items-center gap-2 rounded-md border border-[#bfd0e3] bg-[#f8fafc] px-3 text-sm text-[#64748b] focus-within:border-[#3861fb] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#dbe4ff] md:flex">
+            <form onSubmit={submitSearch} className="hidden h-11 w-full max-w-sm items-center gap-2 rounded-xl border border-[#bfd0e3] bg-[#f8fafc] px-3 text-sm text-[#64748b] focus-within:border-[#3861fb] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#dbe4ff] md:flex">
               <Search size={16} />
               <input
                 value={query}
@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               />
             </form>
 
-            <Link href="/profile" className="grid size-11 shrink-0 place-items-center rounded-md border border-[#bfd0e3] bg-white text-[#0f172a] hover:border-[#3861fb] hover:bg-[#eff6ff]" aria-label="Профиль и настройки">
+            <Link href="/profile" className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#bfd0e3] bg-white text-[#0f172a] hover:border-[#3861fb] hover:bg-[#eff6ff]" aria-label="Профиль и настройки">
               <Settings size={18} />
             </Link>
           </div>
@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm font-semibold transition ${
+                  className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${
                     active
                       ? "border-[#3861fb] bg-[#eff6ff] text-[#1e40af]"
                       : "border-[#dbe4ef] bg-white text-[#334155] hover:border-[#bfd0e3] hover:bg-[#f8fafc] hover:text-[#0f172a]"
@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </div>
 
-          <form onSubmit={submitSearch} className="flex h-11 items-center gap-2 rounded-md border border-[#bfd0e3] bg-[#f8fafc] px-3 text-sm text-[#64748b] focus-within:border-[#3861fb] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#dbe4ff] md:hidden">
+          <form onSubmit={submitSearch} className="flex h-11 items-center gap-2 rounded-xl border border-[#bfd0e3] bg-[#f8fafc] px-3 text-sm text-[#64748b] focus-within:border-[#3861fb] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#dbe4ff] md:hidden">
             <Search size={16} />
             <input
               value={query}

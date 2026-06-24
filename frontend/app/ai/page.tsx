@@ -17,7 +17,7 @@ export default async function AIPage() {
         <Panel title="Контекст">
           <div className="space-y-3">
             {stocks.slice(0, 5).map((stock) => (
-              <div key={stock.ticker} className="rounded-md border border-[#dde3eb] p-3">
+              <div key={stock.ticker} className="rounded-2xl border border-[#dde3eb] p-3">
                 <div className="flex justify-between gap-3">
                   <p className="text-sm font-semibold">{stock.ticker}</p>
                   <p className="text-sm">${stock.price.toFixed(2)}</p>

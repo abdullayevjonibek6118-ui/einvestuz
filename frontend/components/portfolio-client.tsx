@@ -83,7 +83,7 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
         <form onSubmit={addPosition} className="grid gap-3">
           <label className="text-sm font-medium text-[#0f172a]">
             Тикер
-            <select value={ticker} onChange={(event) => setTicker(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-[#bfd0e3] bg-white px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]">
+            <select value={ticker} onChange={(event) => setTicker(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[#bfd0e3] bg-white px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]">
               {stocks.map((stock) => (
                 <option key={stock.ticker}>{stock.ticker}</option>
               ))}
@@ -91,13 +91,13 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
           </label>
           <label className="text-sm font-medium text-[#0f172a]">
             Количество
-            <input value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} type="number" min="1" className="mt-1 h-10 w-full rounded-md border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
+            <input value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} type="number" min="1" className="mt-1 h-10 w-full rounded-xl border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
           </label>
           <label className="text-sm font-medium text-[#0f172a]">
             Цена покупки
-            <input value={buyPrice} onChange={(event) => setBuyPrice(Number(event.target.value))} type="number" min="0.01" step="0.01" className="mt-1 h-10 w-full rounded-md border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
+            <input value={buyPrice} onChange={(event) => setBuyPrice(Number(event.target.value))} type="number" min="0.01" step="0.01" className="mt-1 h-10 w-full rounded-xl border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
           </label>
-          <button className="mt-1 h-11 rounded-md bg-[#0b63f6] text-sm font-semibold text-white shadow-sm hover:bg-[#084fc7] focus-visible:ring-2 focus-visible:ring-[#93c5fd]">
+          <button className="mt-1 h-11 rounded-xl bg-[#0b63f6] text-sm font-semibold text-white shadow-sm hover:bg-[#084fc7] focus-visible:ring-2 focus-visible:ring-[#93c5fd]">
             Добавить в портфель
           </button>
         </form>
@@ -132,7 +132,7 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
                   <td>{formatCurrency(row.value)}</td>
                   <td><ChangeBadge value={row.pnlPercent} /></td>
                   <td>
-                    <button onClick={() => removePosition(row.ticker)} className="grid size-8 place-items-center rounded-md border border-transparent text-[#b91c1c] hover:border-[#fecaca] hover:bg-[#fef2f2]" aria-label={`Удалить ${row.ticker}`}>
+                    <button onClick={() => removePosition(row.ticker)} className="grid size-8 place-items-center rounded-xl border border-transparent text-[#b91c1c] hover:border-[#fecaca] hover:bg-[#fef2f2]" aria-label={`Удалить ${row.ticker}`}>
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -148,7 +148,7 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
 
 function Summary({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" }) {
   return (
-    <div className="rounded-md border border-[#dbe4ef] bg-[#f8fafc] p-3">
+    <div className="rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
       <p className="text-xs text-[#64748b]">{label}</p>
       <p className={`mt-1 text-lg font-semibold ${tone === "green" ? "text-[#15803d]" : tone === "red" ? "text-[#dc2626]" : "text-[#0f172a]"}`}>{value}</p>
     </div>

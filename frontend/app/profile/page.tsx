@@ -15,7 +15,7 @@ export default async function ProfilePage() {
         <Panel title="Watchlist" action={<Star size={18} className="text-[#d97706]" fill="currentColor" />}>
           <div className="space-y-3">
             {watchlist.map((stock) => (
-              <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="flex items-center justify-between rounded-md border border-[#dde3eb] p-3 hover:bg-[#fbfcfe]">
+              <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="flex items-center justify-between rounded-2xl border border-[#dde3eb] p-3 transition hover:bg-[#fbfcfe]">
                 <div>
                   <p className="text-sm font-semibold">{stock.ticker}</p>
                   <p className="text-xs text-[#667085]">{stock.name}</p>
@@ -38,7 +38,7 @@ export default async function ProfilePage() {
       <Panel title="История запросов" action={<History size={18} className="text-[#667085]" />} className="mt-4">
         <div className="space-y-2 text-sm">
           {["Стоит ли покупать Nvidia?", "Объясни ETF простыми словами", "Какие риски у Tesla?"].map((item) => (
-            <div key={item} className="rounded-md border border-[#dde3eb] p-3">{item}</div>
+            <div key={item} className="rounded-2xl border border-[#dde3eb] p-3">{item}</div>
           ))}
         </div>
       </Panel>
@@ -48,7 +48,7 @@ export default async function ProfilePage() {
 
 function Toggle({ title, subtitle, checked = false }: { title: string; subtitle: string; checked?: boolean }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-md border border-[#dde3eb] p-3">
+    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-[#dde3eb] p-3">
       <span className="flex gap-3">
         <Bell size={18} className="mt-0.5 text-[#2563eb]" />
         <span>

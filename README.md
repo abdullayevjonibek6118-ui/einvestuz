@@ -5,7 +5,7 @@ MVP investment analytics platform for Uzbekistan users. It does not accept depos
 ## Structure
 
 - `frontend` - Next.js 15, Tailwind CSS, app pages from the PRD.
-- `backend` - FastAPI API with live no-key market data, demo/fallback news, portfolio, chat, and academy endpoints.
+- `backend` - FastAPI API with Finnhub-backed market data where available, CBU Uzbekistan FX, macro placeholders, fallback news, portfolio, chat, and academy endpoints.
 
 ## Run
 
@@ -23,6 +23,12 @@ npm run backend
 
 Frontend: http://localhost:3000
 Backend docs: http://localhost:8000/docs
+
+Optional backend environment variables:
+
+```bash
+FINNHUB_API_KEY=your_finnhub_key_here
+```
 
 ## Deploy
 
@@ -66,6 +72,8 @@ provider adapters -> in-memory TTL cache -> FastAPI REST/WebSocket -> Next.js da
 
 Active MVP providers:
 
+- `finnhub` for quotes, profile, metrics, earnings, and company news when `FINNHUB_API_KEY` is present.
+- `cbu-uz` for USD/EUR/RUB FX snapshots from the official CBU JSON archive.
 - `yfinance` for US equities, indexes, crypto, gold, and oil. This is a no-key prototype source and should be treated as best-effort.
 - `moex-iss` for Moscow Exchange snapshots through the official MOEX ISS HTTP API.
 
@@ -78,12 +86,20 @@ Enterprise providers prepared as metadata/stubs:
 Endpoints:
 
 - `GET /sources` returns provider metadata, status, coverage, update mode, notes, and URLs.
+- `GET /sources/catalog` returns the active providers plus licensed/source placeholders.
 - `GET /stocks` returns stock objects with `ticker`, `name`, `price`, `change`, `market_cap`, `pe`, `dividend`, `description`, `source`, `source_status`, `as_of`.
 - `GET /stock/{ticker}` returns one stock object with the same fields. US and selected MOEX tickers are supported in the MVP universe.
+- `GET /quote/{ticker}` returns a richer quote snapshot with open, high, low, previous_close, and source metadata.
+- `GET /fundamentals/{ticker}` returns Finnhub-backed profile and metric data with fallback metadata.
+- `GET /earnings/{ticker}` returns earnings history with source metadata and fallback placeholders.
 - `GET /market` returns indices, crypto, and commodities with `ticker`, `name`, `price`, `value`, `change`, `category`, `source`, `source_status`, `is_realtime`, `delay_seconds`, `as_of`.
+- `GET /dashboard/market-table` returns dashboard market rows with `rank`, `branding.logo_url`, `branding.monogram`, `branding.monogram_color`, `name`, `ticker`, `price`, `change_1h`, `change_24h`, `change_7d`, `market_cap`, `volume_24h`, `circulating_supply`, `sparkline_7d`, `source`, `status`, and `as_of`.
+- `GET /dashboard-data` includes `market_table` alongside `market`, `stocks`, `news`, `sources`, `fx_rates`, and `macro`.
+- `GET /fx/rates` returns USD, EUR, and RUB from the CBU JSON archive with fallback data if needed.
 - `GET /quotes/live?symbols=AAPL,SBER,IMOEX` returns quote snapshots with source status and currency.
 - `WS /ws/quotes?symbols=AAPL,SBER&interval=15` streams quote snapshots over WebSocket.
-- `GET /news` remains usable with demo/fallback news items.
+- `GET /news` returns Finnhub company news where available and falls back to demo items if needed.
+- `GET /macro/summary` returns source metadata and macro placeholders for `data.egov.uz` and `stat.uz` until direct machine-readable endpoints are confirmed.
 
 Status values:
 

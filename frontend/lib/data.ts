@@ -21,9 +21,90 @@ export type Stock = {
   source?: string;
   sourceStatus?: LiveSourceStatus;
   asOf?: string;
+  fundamentals?: StockFundamentals;
+  earnings?: StockEarningPoint[];
+  news?: NewsItem[];
+  sources?: StockSourceMeta[];
+};
+
+export type MarketTableRow = {
+  ticker: string;
+  name: string;
+  price: number;
+  change1h: number;
+  change24h: number;
+  change7d: number;
+  marketCap: string;
+  volume24h: string;
+  circulatingSupply: string;
+  marketCapValue?: number;
+  volume24hValue?: number;
+  circulatingSupplyValue?: number;
+  sparkline7d: number[];
+  source?: string;
+  sourceStatus?: LiveSourceStatus;
+  asOf?: string;
 };
 
 export type LiveSourceStatus = "live" | "delayed" | "stale" | "offline" | "fallback" | "needs_license";
+
+export type StockFundamentals = {
+  marketCap?: string;
+  pe?: number;
+  eps?: number;
+  revenueGrowth?: string;
+  grossMargin?: string;
+  operatingMargin?: string;
+  debtToEquity?: string;
+  beta?: number;
+  dividendYield?: string;
+  asOf?: string;
+  source?: string;
+  sourceStatus?: LiveSourceStatus;
+};
+
+export type StockEarningPoint = {
+  period: string;
+  epsActual?: number;
+  epsEstimate?: number;
+  revenueActual?: string;
+  revenueEstimate?: string;
+  surprisePercent?: number;
+  asOf?: string;
+  source?: string;
+  sourceStatus?: LiveSourceStatus;
+};
+
+export type StockSourceMeta = {
+  source: string;
+  status?: LiveSourceStatus;
+  asOf?: string;
+  detail?: string;
+  notes?: string;
+  market?: string;
+};
+
+export type FxRate = {
+  pair: string;
+  base?: string;
+  quote?: string;
+  rate: number;
+  change?: number;
+  asOf?: string;
+  source?: string;
+  sourceStatus?: LiveSourceStatus;
+};
+
+export type MacroMetric = {
+  key: string;
+  label: string;
+  value: string;
+  change?: number;
+  unit?: string;
+  asOf?: string;
+  source?: string;
+  sourceStatus?: LiveSourceStatus;
+};
 
 export type MarketDataSource = {
   id: string;

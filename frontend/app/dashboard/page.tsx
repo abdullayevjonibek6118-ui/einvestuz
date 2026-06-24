@@ -1,14 +1,30 @@
 import Link from "next/link";
-import { Bot, Gauge, Newspaper, ShieldCheck } from "lucide-react";
+import { Activity, Bot, Globe2, Newspaper, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { LiveMarketStatus } from "@/components/live-market-status";
-import { ChangeBadge, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
+import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
 import { getDashboardData } from "@/lib/api";
-import { type Stock } from "@/lib/data";
+import { type MarketTableRow } from "@/lib/data";
 
-export default async function DashboardPage() {
-  const { indexes, stocks, news, sources } = await getDashboardData();
-  const gainers = [...stocks].sort((a, b) => b.change - a.change).slice(0, 3);
-  const losers = [...stocks].sort((a, b) => a.change - b.change).slice(0, 3);
+type DashboardSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type MarketSortKey = "marketCap" | "volume24h" | "price" | "change1h" | "change24h" | "change7d" | "name";
+
+const sortOptions: Array<{ key: MarketSortKey; label: string }> = [
+  { key: "marketCap", label: "Market cap" },
+  { key: "volume24h", label: "Volume" },
+  { key: "price", label: "Price" },
+  { key: "change1h", label: "1h %" },
+  { key: "change24h", label: "24h %" },
+  { key: "change7d", label: "7d %" },
+  { key: "name", label: "Name" },
+];
+
+export default async function DashboardPage({ searchParams }: { searchParams?: DashboardSearchParams }) {
+  const { indexes, stocks, marketTable, news, sources, fxRates, macro } = await getDashboardData();
+  const resolvedSearchParams = (await Promise.resolve(searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>;
+  const query = firstQueryValue(resolvedSearchParams.q).trim();
+  const sort = normalizeSort(firstQueryValue(resolvedSearchParams.sort));
+  const filteredRows = applyMarketFilters(marketTable, query);
+  const sortedRows = sortMarketRows(filteredRows, sort);
   const activeSourceCount = sources.filter((source) => source.status === "live" || source.status === "delayed").length;
   const dashboardSymbols = [...indexes.map((index) => index.ticker), ...stocks.map((stock) => stock.ticker)];
 
@@ -19,9 +35,63 @@ export default async function DashboardPage() {
       <LiveMarketStatus sources={sources} symbols={dashboardSymbols} />
 
       <div className="mb-4 grid gap-3 md:grid-cols-3">
-        <StatusMetric label="Охват рынка" value={`${indexes.length} активов`} detail="Индексы, криптовалюты и сырье" />
-        <StatusMetric label="Список наблюдения" value={`${stocks.length} компаний`} detail="Компании США и MOEX для MVP" />
-        <StatusMetric label="Источники данных" value={`${activeSourceCount}/${sources.length} активны`} detail="REST-котировки и live polling" />
+        <Metric label="Охват рынка" value={`${indexes.length} активов`} detail="Индексы, криптовалюты и сырье" />
+        <Metric label="Список наблюдения" value={`${stocks.length} компаний`} detail="Компании США и MOEX для MVP" />
+        <Metric label="Источники данных" value={`${activeSourceCount}/${sources.length} активны`} detail="REST-котировки и live polling" />
+      </div>
+
+      <Panel title="Рынок" action={<span className="tabular-data text-xs font-semibold text-[#475569]">{sortedRows.length.toLocaleString("ru-RU")} строк</span>}>
+        <MarketToolbar query={query} sort={sort} total={marketTable.length} visible={sortedRows.length} />
+        {sortedRows.length ? (
+          <>
+            <MarketDesktopTable rows={sortedRows} />
+            <MarketMobileCards rows={sortedRows} />
+          </>
+        ) : (
+          <EmptyMarketState query={query} />
+        )}
+      </Panel>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <Panel title="FX" action={<Globe2 size={18} className="text-[#1e40af]" />}>
+          <CompactMarketList
+            emptyLabel="FX-данные пока не пришли из backend."
+            items={fxRates.map((rate) => ({
+              key: rate.pair,
+              title: rate.pair,
+              value: rate.rate.toLocaleString("en-US", { maximumFractionDigits: 4 }),
+              detail: rate.asOf ? `обновлено ${formatTime(rate.asOf)}` : rate.base && rate.quote ? `${rate.base} / ${rate.quote}` : undefined,
+              change: rate.change,
+              source: rate.source,
+              status: rate.sourceStatus,
+            }))}
+          />
+        </Panel>
+
+        <Panel title="Macro" action={<Activity size={18} className="text-[#1e40af]" />}>
+          <div className="grid gap-2 md:grid-cols-2">
+            {macro.length ? (
+              macro.map((item) => (
+                <div key={item.key} className="rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-[#64748b]">{item.label}</p>
+                      <p className="tabular-data mt-1 text-lg font-semibold text-[#0f172a]">{item.value}</p>
+                    </div>
+                    {typeof item.change === "number" ? <ChangeBadge value={item.change} /> : null}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {item.unit ? <span className="rounded-lg border border-[#dbe4ef] bg-white px-2 py-1 text-[11px] font-semibold text-[#475569]">{item.unit}</span> : null}
+                    <SourceStatusBadge source={item.source} status={item.sourceStatus} />
+                  </div>
+                  {item.asOf ? <p className="mt-2 text-[11px] text-[#64748b]">обновлено {formatTime(item.asOf)}</p> : null}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-[#64748b]">Macro-метрики появятся, когда backend начнет отдавать блок `macro`.</p>
+            )}
+          </div>
+        </Panel>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -46,34 +116,25 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel title="Топ акций">
-          <div className="grid gap-6 md:grid-cols-2">
-            <StockList title="Растут" stocks={gainers} />
-            <StockList title="Падают" stocks={losers} />
+      <Panel title="AI идеи дня" action={<Bot size={18} className="text-[#1e40af]" />} className="mt-4">
+        <div className="space-y-3">
+          <p className="text-sm leading-6 text-[#334155]">
+            AI видит устойчивый интерес к полупроводникам и облачной инфраструктуре, но оценки лидеров остаются высокими.
+          </p>
+          <div className="rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] p-3 text-sm leading-6 text-[#1e40af]">
+            Фокус: сравнить рост выручки Nvidia и Microsoft с текущими P/E, не забывая про риск коррекции AI-сектора.
           </div>
-        </Panel>
-
-        <Panel title="AI идеи дня" action={<Bot size={18} className="text-[#1e40af]" />}>
-          <div className="space-y-3">
-            <p className="text-sm leading-6 text-[#334155]">
-              AI видит устойчивый интерес к полупроводникам и облачной инфраструктуре, но оценки лидеров остаются высокими.
-            </p>
-            <div className="rounded-md border border-[#bfdbfe] bg-[#eff6ff] p-3 text-sm leading-6 text-[#1e40af]">
-              Фокус: сравнить рост выручки Nvidia и Microsoft с текущими P/E, не забывая про риск коррекции AI-сектора.
-            </div>
-            <div className="flex items-center gap-2 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-xs font-medium text-[#166534]">
-              <ShieldCheck size={15} />
-              Сценарий предназначен для обучения и виртуального портфеля.
-            </div>
+          <div className="flex items-center gap-2 rounded-2xl border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-xs font-medium text-[#166534]">
+            <ShieldCheck size={15} />
+            Сценарий предназначен для обучения и виртуального портфеля.
           </div>
-        </Panel>
-      </div>
+        </div>
+      </Panel>
 
       <Panel title="Новости" action={<Newspaper size={18} className="text-[#667085]" />} className="mt-4">
         <div className="grid gap-3 md:grid-cols-2">
           {news.map((item) => (
-            <article key={item.id} className="rounded-md border border-[#dbe4ef] bg-[#f8fafc] p-3">
+            <article key={item.id} className="rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
               <div className="flex items-center gap-2 text-xs font-medium text-[#64748b]">
                 <span>{item.category}</span>
                 <span>{item.source}</span>
@@ -88,40 +149,368 @@ export default async function DashboardPage() {
   );
 }
 
-function StockList({ title, stocks }: { title: string; stocks: Stock[] }) {
+function MarketToolbar({ query, sort, total, visible }: { query: string; sort: MarketSortKey; total: number; visible: number }) {
   return (
-    <div>
-      <h3 className="mb-2 text-xs font-semibold uppercase text-[#667085]">{title}</h3>
-      <div className="space-y-2">
-        {stocks.map((stock) => (
-          <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="flex cursor-pointer items-center justify-between rounded-md border border-[#dbe4ef] bg-[#f8fafc] p-3 hover:border-[#bfdbfe] hover:bg-white hover:shadow-sm">
-            <div>
-              <p className="tabular-data text-sm font-semibold text-[#0f172a]">{stock.ticker}</p>
-              <p className="text-xs text-[#64748b]">{stock.name}</p>
-            </div>
-            <div className="text-right">
-              <p className="tabular-data text-sm font-semibold text-[#0f172a]">${stock.price.toFixed(2)}</p>
-              <div className="mt-1 flex flex-col items-end gap-1">
-                <ChangeBadge value={stock.change} />
-                <SourceStatusBadge source={stock.source} status={stock.sourceStatus} />
-              </div>
-            </div>
-          </Link>
-        ))}
+    <div className="mb-4 flex flex-col gap-3 border-b border-[#e2e8f0] pb-4 lg:flex-row lg:items-end lg:justify-between">
+      <form className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_180px_auto] lg:items-end" method="get">
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Поиск</span>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" size={16} />
+            <input
+              name="q"
+              defaultValue={query}
+              placeholder="AAPL, Nvidia, Tesla..."
+              className="h-10 w-full rounded-xl border border-[#dbe4ef] bg-white pl-9 pr-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#bfdbfe]"
+            />
+          </div>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Сортировка</span>
+          <div className="relative">
+            <select
+              name="sort"
+              defaultValue={sort}
+              className="h-10 w-full appearance-none rounded-xl border border-[#dbe4ef] bg-white px-3 pr-9 text-sm text-[#0f172a] outline-none transition focus:border-[#bfdbfe]"
+            >
+              {sortOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <SlidersHorizontal className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" size={15} />
+          </div>
+        </label>
+
+        <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#3861fb] px-4 text-sm font-semibold text-white transition hover:bg-[#2f54df]">
+          <Search size={16} />
+          Применить
+        </button>
+      </form>
+
+      <div className="flex items-center gap-2 text-xs font-medium text-[#64748b]">
+        <span className="rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1">{visible.toLocaleString("ru-RU")} / {total.toLocaleString("ru-RU")}</span>
+        <Link
+          href="/dashboard"
+          className="inline-flex h-10 items-center rounded-xl border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-[#f8fafc]"
+        >
+          Сбросить
+        </Link>
       </div>
     </div>
   );
 }
 
-function StatusMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
+function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
   return (
-    <div className="rounded-lg border border-[#dbe4ef] bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase text-[#64748b]">
-        <Gauge size={15} className="text-[#f59e0b]" />
-        {label}
+    <div className="hidden md:block">
+      <div className="overflow-x-auto rounded-2xl border border-[#dbe4ef] bg-white">
+        <table className="min-w-full border-separate border-spacing-0">
+          <thead className="bg-[#f8fafc]">
+            <tr className="text-[11px] uppercase tracking-normal text-[#64748b]">
+              <th className="w-12 border-b border-[#e2e8f0] px-3 py-3 text-left">#</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-left">Logo</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-left">Name / Ticker</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Price</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">1h %</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">24h %</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">7d %</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Market Cap</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Volume (24h)</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Circulating Supply</th>
+              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">7d Price%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => (
+              <tr key={row.ticker} className="group border-b border-[#e2e8f0] last:border-b-0 hover:bg-[#f8fafc]">
+                <td className="px-3 py-3 text-sm text-[#64748b]">{index + 1}</td>
+                <td className="px-3 py-3">
+                  <LogoMark ticker={row.ticker} name={row.name} />
+                </td>
+                <td className="px-3 py-3">
+                  <Link href={`/stocks/${encodeURIComponent(row.ticker)}`} className="block max-w-[260px]">
+                    <p className="truncate text-sm font-semibold text-[#0f172a]">{row.name}</p>
+                    <p className="tabular-data mt-1 text-xs font-semibold text-[#1e40af]">{row.ticker}</p>
+                    <div className="mt-1">
+                      <SourceStatusBadge source={row.source} status={row.sourceStatus} />
+                    </div>
+                  </Link>
+                </td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatPrice(row.price)}</td>
+                <td className="px-3 py-3 text-right">
+                  <ChangeBadge value={row.change1h} />
+                </td>
+                <td className="px-3 py-3 text-right">
+                  <ChangeBadge value={row.change24h} />
+                </td>
+                <td className="px-3 py-3 text-right">
+                  <ChangeBadge value={row.change7d} />
+                </td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{row.marketCap}</td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{row.volume24h}</td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{row.circulatingSupply}</td>
+                <td className="px-3 py-3 text-right">
+                  <Sparkline values={row.sparkline7d} positive={row.change7d >= 0} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <p className="tabular-data mt-2 text-xl font-semibold text-[#0f172a]">{value}</p>
-      <p className="mt-1 text-xs text-[#64748b]">{detail}</p>
     </div>
   );
+}
+
+function MarketMobileCards({ rows }: { rows: MarketTableRow[] }) {
+  return (
+    <div className="grid gap-2 md:hidden">
+      {rows.map((row, index) => (
+        <article key={row.ticker} className="rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-[#64748b]">#{index + 1}</p>
+              <div className="mt-2 flex items-start gap-3">
+                <LogoMark ticker={row.ticker} name={row.name} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#0f172a]">{row.name}</p>
+                  <p className="tabular-data mt-1 text-xs font-semibold text-[#1e40af]">{row.ticker}</p>
+                  <div className="mt-1">
+                    <SourceStatusBadge source={row.source} status={row.sourceStatus} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="tabular-data text-sm font-semibold text-[#0f172a]">{formatPrice(row.price)}</p>
+              <div className="mt-2 flex justify-end">
+                <Sparkline values={row.sparkline7d} positive={row.change7d >= 0} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <MetricChip label="1h %" value={row.change1h} />
+            <MetricChip label="24h %" value={row.change24h} />
+            <MetricChip label="7d %" value={row.change7d} />
+            <MetricChip label="Market Cap" value={row.marketCap} />
+            <MetricChip label="Volume (24h)" value={row.volume24h} />
+            <MetricChip label="Circulating Supply" value={row.circulatingSupply} />
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function MetricChip({ label, value }: { label: string; value: number | string }) {
+  const isNumber = typeof value === "number";
+  return (
+    <div className="rounded-xl border border-[#dbe4ef] bg-white px-3 py-2">
+      <p className="text-[10px] uppercase tracking-normal text-[#64748b]">{label}</p>
+      {isNumber ? (
+        <p className={`tabular-data mt-1 text-sm font-semibold ${value >= 0 ? "text-[#15803d]" : "text-[#b91c1c]"}`}>{formatPercent(value)}</p>
+      ) : (
+        <p className="tabular-data mt-1 truncate text-sm font-semibold text-[#0f172a]">{value}</p>
+      )}
+    </div>
+  );
+}
+
+function EmptyMarketState({ query }: { query: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-[#dbe4ef] bg-[#f8fafc] px-4 py-8 text-sm text-[#64748b]">
+      {query ? `Ничего не найдено по запросу "${query}".` : "Таблица пока пуста."}
+    </div>
+  );
+}
+
+function CompactMarketList({
+  items,
+  emptyLabel,
+}: {
+  items: Array<{
+    key: string;
+    title: string;
+    value: string;
+    detail?: string;
+    change?: number;
+    source?: string;
+    status?: "live" | "delayed" | "stale" | "offline" | "fallback" | "needs_license";
+  }>;
+  emptyLabel: string;
+}) {
+  if (!items.length) {
+    return <p className="text-sm text-[#64748b]">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <div key={item.key} className="rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-[#64748b]">{item.title}</p>
+              <p className="tabular-data mt-1 text-lg font-semibold text-[#0f172a]">{item.value}</p>
+            </div>
+            {typeof item.change === "number" ? <ChangeBadge value={item.change} /> : null}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {item.detail ? <span className="text-[11px] text-[#64748b]">{item.detail}</span> : null}
+            <SourceStatusBadge source={item.source} status={item.status} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LogoMark({ ticker, name }: { ticker: string; name: string }) {
+  const label = logoLabel(ticker, name);
+  const palette = logoPalette(ticker);
+
+  return (
+    <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl border text-xs font-bold ${palette}`}>
+      {label}
+    </div>
+  );
+}
+
+function Sparkline({ values, positive }: { values: number[]; positive: boolean }) {
+  const path = sparklinePath(values);
+  if (!path) {
+    return <span className="text-xs text-[#94a3b8]">—</span>;
+  }
+
+  return (
+    <svg viewBox="0 0 100 28" className="h-7 w-24" role="img" aria-label={positive ? "Positive seven day trend" : "Negative seven day trend"}>
+      <path d={`${path.line} L 100 26 L 0 26 Z`} fill={positive ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)"} />
+      <path d={path.line} fill="none" stroke={positive ? "#16a34a" : "#dc2626"} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function sparklinePath(values: number[]) {
+  if (values.length < 2) return null;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = max - min || 1;
+  const step = 100 / (values.length - 1);
+  const points = values.map((value, index) => {
+    const x = index * step;
+    const y = 24 - ((value - min) / spread) * 18;
+    return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+  });
+
+  return { line: points.join(" ") };
+}
+
+function logoLabel(ticker: string, name: string) {
+  const compact = ticker.replace(/[^A-Za-z0-9]/g, "");
+  if (compact.length >= 2) return compact.slice(0, 2).toUpperCase();
+  if (name.trim()) return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+  return ticker.slice(0, 2).toUpperCase();
+}
+
+function logoPalette(ticker: string) {
+  const palette = [
+    "bg-[#eff6ff] border-[#bfdbfe] text-[#1d4ed8]",
+    "bg-[#f0fdf4] border-[#bbf7d0] text-[#166534]",
+    "bg-[#fff7ed] border-[#fed7aa] text-[#9a3412]",
+    "bg-[#f5f3ff] border-[#ddd6fe] text-[#6d28d9]",
+    "bg-[#fef2f2] border-[#fecaca] text-[#b91c1c]",
+  ];
+
+  const index = ticker.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % palette.length;
+  return palette[index];
+}
+
+function applyMarketFilters(rows: MarketTableRow[], query: string) {
+  if (!query) return rows;
+  const needle = query.toLowerCase();
+  return rows.filter((row) => [row.ticker, row.name, row.source].some((value) => typeof value === "string" && value.toLowerCase().includes(needle)));
+}
+
+function sortMarketRows(rows: MarketTableRow[], sort: MarketSortKey) {
+  const sorted = [...rows];
+  sorted.sort((a, b) => {
+    if (sort === "name") return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+
+    const aValue = marketSortValue(a, sort);
+    const bValue = marketSortValue(b, sort);
+    if (bValue !== aValue) return bValue - aValue;
+    return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+  });
+  return sorted;
+}
+
+function marketSortValue(row: MarketTableRow, sort: MarketSortKey) {
+  switch (sort) {
+    case "marketCap":
+      return finiteNumber(row.marketCapValue ?? parseCompactNumber(row.marketCap));
+    case "volume24h":
+      return finiteNumber(row.volume24hValue ?? parseCompactNumber(row.volume24h));
+    case "price":
+      return finiteNumber(row.price);
+    case "change1h":
+      return finiteNumber(row.change1h);
+    case "change24h":
+      return finiteNumber(row.change24h);
+    case "change7d":
+      return finiteNumber(row.change7d);
+    default:
+      return finiteNumber(row.price);
+  }
+}
+
+function parseCompactNumber(value: string) {
+  const cleaned = value.replace(/,/g, "").trim();
+  const match = cleaned.match(/^\$?(-?\d+(?:\.\d+)?)([KMBTQ])?$/i);
+  if (!match) return finiteNumber(Number(cleaned.replace(/[^\d.-]/g, "")));
+
+  const amount = Number(match[1]);
+  const suffix = match[2]?.toUpperCase();
+  const multiplierMap: Record<string, number> = {
+    K: 1e3,
+    M: 1e6,
+    B: 1e9,
+    T: 1e12,
+    Q: 1e15,
+  };
+  return finiteNumber(amount * (suffix ? multiplierMap[suffix] ?? 1 : 1));
+}
+
+function normalizeSort(value?: string): MarketSortKey {
+  if (!value) return "marketCap";
+  return sortOptions.some((option) => option.key === value) ? (value as MarketSortKey) : "marketCap";
+}
+
+function firstQueryValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function formatPrice(value: number) {
+  return value >= 1 ? `$${value.toFixed(2)}` : `$${value.toFixed(4)}`;
+}
+
+function formatPercent(value: number) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+function finiteNumber(value: number | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function formatTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("ru-RU", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
 }
