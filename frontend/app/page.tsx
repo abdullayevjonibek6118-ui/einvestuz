@@ -17,7 +17,6 @@ import {
   TrendingUp,
   WalletCards,
 } from "lucide-react";
-import { NewsletterForm } from "@/components/newsletter-form";
 
 const marketBar = [
   { name: "S&P 500", value: "6,112.34", change: 0.42 },
@@ -91,22 +90,32 @@ export default function Home() {
       </a>
 
       <header className="sticky top-0 z-50 border-b border-[#2A3441] bg-[#0B1426]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3 text-base font-semibold">
-            <span className="grid size-9 place-items-center rounded-lg border border-[#2A3441] bg-[#171F2F] text-[#3861FB]">
-              <Sparkles size={18} />
-            </span>
-            Einvestuz
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-[#A0AEC0] md:flex" aria-label="Навигация лендинга">
-            <a href="#stocks" className="hover:text-white">Популярные акции</a>
-            <a href="#uzbekistan" className="hover:text-white">Узбекистан</a>
-            <a href="#academy" className="hover:text-white">Академия</a>
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/" className="flex items-center gap-3 text-base font-semibold">
+              <span className="grid size-9 place-items-center rounded-lg border border-[#2A3441] bg-[#171F2F] text-[#3861FB]">
+                <Sparkles size={18} />
+              </span>
+              Einvestuz
+            </Link>
+            <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#3861FB] px-4 py-2 text-sm font-semibold transition hover:bg-[#2f54df]">
+              Открыть
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+          <nav className="flex items-center gap-2 overflow-x-auto pb-1 text-sm font-semibold text-[#A0AEC0]" aria-label="Навигация продукта">
+            {[
+              ["Дашборд", "/dashboard"],
+              ["Акции", "/stocks/NVDA"],
+              ["AI-чат", "/ai"],
+              ["Портфель", "/portfolio"],
+              ["Академия", "/academy"],
+            ].map(([label, href]) => (
+              <Link key={href} href={href} className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-[#2A3441] bg-[#171F2F] px-3 transition hover:border-[#3861FB] hover:text-white">
+                {label}
+              </Link>
+            ))}
           </nav>
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#3861FB] px-4 py-2 text-sm font-semibold transition hover:bg-[#2f54df]">
-            Открыть Einvestuz
-            <ArrowRight size={16} />
-          </Link>
         </div>
       </header>
 
@@ -328,21 +337,14 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-[#2A3441] bg-[#0B1426] px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
           <div>
             <p className="text-xl font-bold">Einvestuz</p>
             <p className="mt-3 text-sm leading-6 text-[#A0AEC0]">AI-инвесткопилот для Узбекистана.</p>
             <p className="mt-5 text-xs leading-5 text-[#A0AEC0]">Информация носит образовательный характер и не является индивидуальной инвестиционной рекомендацией.</p>
           </div>
           <FooterLinks title="Продукт" links={["Возможности", "AI-аналитик", "Портфель", "Академия"]} />
-          <FooterLinks title="Компания" links={["Политика конфиденциальности", "Условия", "Контакты"]} />
-          <div>
-            <h3 className="text-sm font-semibold">Подписка на новости</h3>
-            <p className="mt-3 text-sm leading-6 text-[#A0AEC0]">Получайте AI-заметки о рынке и обновления продукта.</p>
-            <div className="mt-4">
-              <NewsletterForm />
-            </div>
-          </div>
+          <FooterLinks title="Документы" links={["Политика конфиденциальности", "Условия"]} />
         </div>
       </footer>
     </main>
