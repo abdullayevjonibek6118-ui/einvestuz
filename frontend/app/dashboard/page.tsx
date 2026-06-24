@@ -40,7 +40,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <Metric label="Источники данных" value={`${activeSourceCount}/${sources.length} активны`} detail="REST-котировки и live polling" />
       </div>
 
-      <Panel title="Рынок" action={<span className="tabular-data text-xs font-semibold text-[#475569]">{sortedRows.length.toLocaleString("ru-RU")} строк</span>}>
+      <Panel title="Рынок" action={<span className="tabular-data rounded-xl border border-[#dbe4ef] bg-white px-2.5 py-1 text-xs font-semibold text-[#475569]">{sortedRows.length.toLocaleString("ru-RU")} строк</span>}>
         <MarketToolbar query={query} sort={sort} total={marketTable.length} visible={sortedRows.length} />
         {sortedRows.length ? (
           <>
@@ -160,8 +160,8 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
             <input
               name="q"
               defaultValue={query}
-              placeholder="AAPL, Nvidia, Tesla..."
-              className="h-10 w-full rounded-xl border border-[#dbe4ef] bg-white pl-9 pr-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#bfdbfe]"
+              placeholder="UZSE, HMKB, AAPL, Nvidia..."
+              className="h-11 w-full rounded-2xl border border-[#dbe4ef] bg-white pl-9 pr-3 text-sm text-[#0f172a] shadow-inner outline-none transition placeholder:text-[#94a3b8] focus:border-[#3861fb] focus:ring-4 focus:ring-[#dbe4ff]"
             />
           </div>
         </label>
@@ -172,7 +172,7 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
             <select
               name="sort"
               defaultValue={sort}
-              className="h-10 w-full appearance-none rounded-xl border border-[#dbe4ef] bg-white px-3 pr-9 text-sm text-[#0f172a] outline-none transition focus:border-[#bfdbfe]"
+              className="h-11 w-full appearance-none rounded-2xl border border-[#dbe4ef] bg-white px-3 pr-9 text-sm text-[#0f172a] shadow-inner outline-none transition focus:border-[#3861fb] focus:ring-4 focus:ring-[#dbe4ff]"
             >
               {sortOptions.map((option) => (
                 <option key={option.key} value={option.key}>
@@ -184,7 +184,7 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
           </div>
         </label>
 
-        <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#3861fb] px-4 text-sm font-semibold text-white transition hover:bg-[#2f54df]">
+        <button type="submit" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#3861fb] px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(56,97,251,0.22)] transition hover:bg-[#2f54df]">
           <Search size={16} />
           Применить
         </button>
@@ -194,7 +194,7 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
         <span className="rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1">{visible.toLocaleString("ru-RU")} / {total.toLocaleString("ru-RU")}</span>
         <Link
           href="/dashboard"
-          className="inline-flex h-10 items-center rounded-xl border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-[#f8fafc]"
+          className="inline-flex h-10 items-center rounded-2xl border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-[#f8fafc]"
         >
           Сбросить
         </Link>
@@ -206,9 +206,9 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
 function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
   return (
     <div className="hidden md:block">
-      <div className="overflow-x-auto rounded-2xl border border-[#dbe4ef] bg-white">
+      <div className="max-h-[720px] overflow-auto rounded-3xl border border-[#dbe4ef] bg-white shadow-inner">
         <table className="min-w-full border-separate border-spacing-0">
-          <thead className="bg-[#f8fafc]">
+          <thead className="sticky top-0 z-10 bg-[#f8fafc]/95 backdrop-blur">
             <tr className="text-[11px] uppercase tracking-normal text-[#64748b]">
               <th className="w-12 border-b border-[#e2e8f0] px-3 py-3 text-left">#</th>
               <th className="border-b border-[#e2e8f0] px-3 py-3 text-left">Logo</th>
@@ -225,7 +225,7 @@ function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={row.ticker} className="group border-b border-[#e2e8f0] last:border-b-0 hover:bg-[#f8fafc]">
+              <tr key={row.ticker} className="group border-b border-[#e2e8f0] transition last:border-b-0 hover:bg-[#f8fafc] hover:shadow-[inset_3px_0_0_#3861fb]">
                 <td className="px-3 py-3 text-sm text-[#64748b]">{index + 1}</td>
                 <td className="px-3 py-3">
                   <LogoMark ticker={row.ticker} name={row.name} />
@@ -239,7 +239,7 @@ function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
                     </div>
                   </Link>
                 </td>
-                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatPrice(row.price)}</td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatPrice(row)}</td>
                 <td className="px-3 py-3 text-right">
                   <ChangeBadge value={row.change1h} />
                 </td>
@@ -284,7 +284,7 @@ function MarketMobileCards({ rows }: { rows: MarketTableRow[] }) {
               </div>
             </div>
             <div className="text-right">
-              <p className="tabular-data text-sm font-semibold text-[#0f172a]">{formatPrice(row.price)}</p>
+              <p className="tabular-data text-sm font-semibold text-[#0f172a]">{formatPrice(row)}</p>
               <div className="mt-2 flex justify-end">
                 <Sparkline values={row.sparkline7d} positive={row.change7d >= 0} />
               </div>
@@ -311,7 +311,7 @@ function MetricChip({ label, value }: { label: string; value: number | string })
     <div className="rounded-xl border border-[#dbe4ef] bg-white px-3 py-2">
       <p className="text-[10px] uppercase tracking-normal text-[#64748b]">{label}</p>
       {isNumber ? (
-        <p className={`tabular-data mt-1 text-sm font-semibold ${value >= 0 ? "text-[#15803d]" : "text-[#b91c1c]"}`}>{formatPercent(value)}</p>
+        <p className={`tabular-data mt-1 text-sm font-semibold ${Math.abs(value) < 0.005 ? "text-[#475569]" : value > 0 ? "text-[#15803d]" : "text-[#b91c1c]"}`}>{formatPercent(value)}</p>
       ) : (
         <p className="tabular-data mt-1 truncate text-sm font-semibold text-[#0f172a]">{value}</p>
       )}
@@ -321,7 +321,7 @@ function MetricChip({ label, value }: { label: string; value: number | string })
 
 function EmptyMarketState({ query }: { query: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[#dbe4ef] bg-[#f8fafc] px-4 py-8 text-sm text-[#64748b]">
+    <div className="rounded-3xl border border-dashed border-[#dbe4ef] bg-[#f8fafc] px-4 py-10 text-center text-sm text-[#64748b]">
       {query ? `Ничего не найдено по запросу "${query}".` : "Таблица пока пуста."}
     </div>
   );
@@ -384,10 +384,14 @@ function Sparkline({ values, positive }: { values: number[]; positive: boolean }
     return <span className="text-xs text-[#94a3b8]">—</span>;
   }
 
+  const flat = values.every((value) => Math.abs(value - values[0]) < 0.0001);
+  const stroke = flat ? "#64748b" : positive ? "#16a34a" : "#dc2626";
+  const fill = flat ? "rgba(100,116,139,0.10)" : positive ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)";
+
   return (
     <svg viewBox="0 0 100 28" className="h-7 w-24" role="img" aria-label={positive ? "Positive seven day trend" : "Negative seven day trend"}>
-      <path d={`${path.line} L 100 26 L 0 26 Z`} fill={positive ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)"} />
-      <path d={path.line} fill="none" stroke={positive ? "#16a34a" : "#dc2626"} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={`${path.line} L 100 26 L 0 26 Z`} fill={fill} />
+      <path d={path.line} fill="none" stroke={stroke} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -497,12 +501,17 @@ function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
-function formatPrice(value: number) {
+function formatPrice(row: MarketTableRow) {
+  const value = row.price;
+  const source = row.source?.toLowerCase() ?? "";
+  if (source.includes("uzse")) {
+    return `UZS ${value >= 1 ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value.toFixed(4)}`;
+  }
   return value >= 1 ? `$${value.toFixed(2)}` : `$${value.toFixed(4)}`;
 }
 
 function formatPercent(value: number) {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 function finiteNumber(value: number | undefined) {
