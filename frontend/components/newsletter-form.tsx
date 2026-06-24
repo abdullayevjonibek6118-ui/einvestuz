@@ -38,15 +38,15 @@ export function NewsletterForm() {
         <input
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="h-11 w-full rounded border border-transparent bg-[#EDEEEF] px-4 text-sm text-[#191C1D] outline-none focus:border-[#0A1F44] focus:ring-1 focus:ring-[#0A1F44]"
-          placeholder="Email"
+          className="h-11 w-full rounded border border-[#2A3441] bg-[#11182A] px-4 text-sm text-[#FFFFFF] outline-none placeholder:text-[#A0AEC0] focus:border-[#3861FB] focus:ring-1 focus:ring-[#3861FB]"
+          placeholder="Эл. почта"
           type="email"
         />
-        <button className="grid h-11 w-12 shrink-0 place-items-center rounded bg-[#071A38] text-[#FFFFFF] shadow-sm hover:bg-[#0A1F44] disabled:bg-[#A9ACB5] disabled:text-[#2F3137]" disabled={loading || !email.trim()} aria-label="Подписаться">
+        <button className="grid h-11 w-12 shrink-0 place-items-center rounded bg-[#3861FB] text-[#FFFFFF] shadow-sm hover:bg-[#2f54df] disabled:bg-[#2A3441] disabled:text-[#A0AEC0]" disabled={loading || !email.trim()} aria-label="Подписаться">
           <Send size={18} />
         </button>
       </div>
-      {message ? <p className="text-xs text-[#006C47]">{message}</p> : null}
+      {message ? <p className="text-xs text-[#16C784]">{message}</p> : null}
     </form>
   );
 }
