@@ -542,6 +542,15 @@ def _to_float(value: Any) -> float | None:
         return None
 
 
+def _parse_signed_change(value: Any) -> float | None:
+    text = _clean_text(value)
+    if not text:
+        return None
+    sign = -1.0 if any(marker in text for marker in ("▼", "−", "-")) else 1.0
+    number = _to_float(text)
+    return round(sign * abs(number), 2) if number is not None else None
+
+
 def _date_only(value: Any) -> str | None:
     text = _clean_text(value)
     if not text:

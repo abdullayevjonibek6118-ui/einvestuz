@@ -442,7 +442,7 @@ def uzse_companies() -> list[dict[str, Any]]:
 
 
 @app.get("/api/uzse/indices")
-def uzse_indices() -> dict[str, dict[str, Any]]:
+def uzse_indices() -> list[dict[str, Any]]:
     return UZSE_PROVIDER.get_market_indices()
 
 
