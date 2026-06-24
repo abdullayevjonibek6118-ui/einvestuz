@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { Bodoni_Moda, Fira_Code, Inter } from "next/font/google";
+import { Fira_Code, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 
-const inter = Inter({
+const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin", "cyrillic"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sans",
-});
-const bodoni = Bodoni_Moda({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-display",
 });
 const firaCode = Fira_Code({
   subsets: ["latin", "cyrillic"],
@@ -19,8 +15,8 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: "Einvestuz",
-  description: "Market analytics, virtual portfolios, and AI education for Uzbekistan investors.",
+  title: "Einvestuz - AI Investment Copilot for Uzbekistan",
+  description: "AI stock analysis, virtual portfolios, and investing education for beginner investors in Uzbekistan.",
 };
 
 export default function RootLayout({
@@ -30,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${inter.variable} ${bodoni.variable} ${firaCode.variable}`}>
+      <body className={`${ibmPlexSans.variable} ${firaCode.variable}`}>
         <AppShell>{children}</AppShell>
       </body>
     </html>
