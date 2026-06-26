@@ -66,38 +66,40 @@ export default async function Home() {
   const usdUzs = resolveUsdUzsRate(fxRates);
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
+    <main className="min-h-screen bg-[#f4f1e8] text-[#101820]">
       <a href="#main-content" className="skip-link">
         Перейти к содержанию
       </a>
 
-      <header className="sticky top-0 z-50 border-b border-[#dbe4ef] bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-[#d8d1c1] bg-[#fbfaf5]/95 backdrop-blur">
+        <div className="h-1 bg-[linear-gradient(90deg,#0099b5_0_34%,#ffffff_34%_42%,#ce1126_42%_47%,#1eb53a_47%_100%)]" />
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex min-h-11 items-center gap-3 font-bold">
-            <span className="grid size-9 place-items-center rounded-lg bg-[#1e40af] text-white">
+            <span className="grid size-9 place-items-center rounded-md bg-[#101820] text-[#f59e0b]">
               <Sparkles size={18} />
             </span>
             Einvestuz
           </Link>
           <nav className="hidden items-center gap-2 text-sm font-semibold text-[#475569] md:flex">
-            <a href="#market" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">Рынок</a>
-            <a href="#ai" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">AI</a>
-            <a href="#news" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">Новости</a>
-            <a href="#economy" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">Экономика</a>
+            <a href="#market" className="rounded-md px-3 py-2 transition hover:bg-[#ece6d8] hover:text-[#101820]">Рынок</a>
+            <a href="#ai" className="rounded-md px-3 py-2 transition hover:bg-[#ece6d8] hover:text-[#101820]">AI</a>
+            <a href="#news" className="rounded-md px-3 py-2 transition hover:bg-[#ece6d8] hover:text-[#101820]">Новости</a>
+            <a href="#economy" className="rounded-md px-3 py-2 transition hover:bg-[#ece6d8] hover:text-[#101820]">Экономика</a>
           </nav>
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#1e40af] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1d4ed8]">
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#101820] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#263241]">
             Открыть рынок
             <ArrowRight size={16} />
           </Link>
         </div>
       </header>
 
-      <section id="main-content" className="relative overflow-hidden border-b border-[#dbe4ef] bg-[#08111f] text-white">
-        <Image src="/images/einvestuz-hero.png" alt="Einvestuz Uzbekistan investment analytics app" fill priority className="object-cover opacity-40" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,17,31,0.98)_0%,rgba(8,17,31,0.86)_46%,rgba(8,17,31,0.40)_100%)]" />
+      <section id="main-content" className="relative overflow-hidden border-b border-[#d8d1c1] bg-[#111812] text-white">
+        <Image src="/images/einvestuz-hero.png" alt="Einvestuz Uzbekistan investment analytics app" fill priority className="object-cover opacity-55 saturate-[0.85]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,24,18,0.98)_0%,rgba(17,24,18,0.88)_42%,rgba(17,24,18,0.52)_100%)]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#0099b5_0_34%,#ffffff_34%_42%,#ce1126_42%_47%,#1eb53a_47%_100%)]" />
         <div className="relative mx-auto grid min-h-[760px] max-w-7xl content-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div>
-            <p className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-bold uppercase tracking-normal text-[#cbd5e1]">
+            <p className="inline-flex min-h-9 items-center gap-2 rounded-md border border-white/15 bg-[#101820]/70 px-3 text-xs font-bold uppercase tracking-normal text-[#cbd5e1]">
               <Globe2 size={15} />
               Инвестиционная аналитика рынка Узбекистана
             </p>
@@ -107,7 +109,7 @@ export default async function Home() {
             <p className="mt-6 max-w-2xl text-base leading-7 text-[#cbd5e1] sm:text-xl">
               Найдите UzAuto, Agrobank, Kapitalbank или Apple и получите короткий ответ: что происходит с компанией, какие риски есть и где смотреть факты.
             </p>
-            <form action="/dashboard" className="mt-8 max-w-2xl rounded-xl border border-white/15 bg-white p-2 shadow-2xl">
+            <form action="/dashboard" className="mt-8 max-w-2xl rounded-md border border-white/20 bg-[#fbfaf5] p-2 shadow-2xl">
               <label className="sr-only" htmlFor="hero-search">Поиск компании</label>
               <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                 <div className="relative">
@@ -116,10 +118,10 @@ export default async function Home() {
                     id="hero-search"
                     name="q"
                     placeholder="Apple, Tesla, UzAuto, Kapitalbank, Hamkorbank, Agrobank"
-                    className="h-12 w-full rounded-lg border border-transparent bg-white pl-12 pr-3 text-sm font-semibold text-[#0f172a] outline-none focus:border-[#1e40af]"
+                    className="h-12 w-full rounded-md border border-transparent bg-[#fbfaf5] pl-12 pr-3 text-sm font-semibold text-[#101820] outline-none focus:border-[#0099b5]"
                   />
                 </div>
-                <button type="submit" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#f59e0b] px-5 text-sm font-bold text-[#111827] transition hover:bg-[#fbbf24]">
+                <button type="submit" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#f59e0b] px-5 text-sm font-bold text-[#111827] transition hover:bg-[#fbbf24]">
                   Найти
                   <ArrowRight size={16} />
                 </button>
@@ -127,7 +129,7 @@ export default async function Home() {
             </form>
             <div className="mt-4 flex flex-wrap gap-2">
               {popularSearches.map((item) => (
-                <Link key={item} href={`/dashboard?q=${encodeURIComponent(item)}`} className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-[#dbeafe] transition hover:bg-white/15">
+                <Link key={item} href={`/dashboard?q=${encodeURIComponent(item)}`} className="rounded-md border border-white/15 bg-[#101820]/70 px-3 py-2 text-xs font-semibold text-[#dbeafe] transition hover:bg-white/15">
                   {item}
                 </Link>
               ))}
@@ -140,7 +142,7 @@ export default async function Home() {
               <HeroMetric label="Глобальные активы" value={globalRows.length.toString()} />
               <HeroMetric label="USD/UZS" value={usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 })} />
             </div>
-            <div className="mt-4 overflow-hidden rounded-xl border border-white/15 bg-white/10 backdrop-blur">
+            <div className="mt-4 overflow-hidden rounded-md border border-white/15 bg-[#101820]/75 backdrop-blur">
               <div className="grid grid-cols-3 border-b border-white/15 px-4 py-3 text-xs font-bold uppercase tracking-normal text-[#cbd5e1]">
                 <span>Ticker</span>
                 <span className="text-right">Цена</span>
@@ -161,7 +163,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="border-b border-[#dbe4ef] bg-white">
+      <section className="border-b border-[#d8d1c1] bg-[#fbfaf5]">
         <div className="mx-auto flex max-w-7xl gap-3 overflow-x-auto px-4 py-4 sm:px-6 lg:px-8">
           <MarketChip label="USD/UZS" value={usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 })} change={fxRates.find((rate) => rate.pair === "USD/UZS")?.change} />
           {indexes.slice(0, 7).map((item) => (
@@ -180,18 +182,18 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="market" className="border-y border-[#dbe4ef] bg-white">
+      <section id="market" className="border-y border-[#d8d1c1] bg-[#fbfaf5]">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <SectionHeader
             eyebrow="Market Overview"
             title="Рынок сразу на главной"
             text="Пользователь не должен искать, где начинается продукт. Главная таблица сразу показывает тикеры, цены, объемы, капитализацию и AI-контекст."
-            action={<Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#1e40af] px-4 text-sm font-bold text-white transition hover:bg-[#1d4ed8]">Открыть всю таблицу<ArrowRight size={16} /></Link>}
+            action={<Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#101820] px-4 text-sm font-bold text-white transition hover:bg-[#263241]">Открыть всю таблицу<ArrowRight size={16} /></Link>}
           />
-          <div className="overflow-hidden rounded-xl border border-[#dbe4ef]">
+          <div className="overflow-hidden rounded-md border border-[#d8d1c1]">
             <div className="overflow-x-auto">
-              <table className="min-w-[1100px] w-full border-separate border-spacing-0 bg-white">
-                <thead className="bg-[#f8fafc] text-left text-xs font-bold uppercase tracking-normal text-[#64748b]">
+              <table className="min-w-[1100px] w-full border-separate border-spacing-0 bg-[#fbfaf5]">
+                <thead className="bg-[#ece6d8] text-left text-xs font-bold uppercase tracking-normal text-[#64748b]">
                   <tr>
                     <th className="px-4 py-3">Ticker</th>
                     <th className="px-4 py-3">Название</th>
@@ -206,17 +208,17 @@ export default async function Home() {
                 </thead>
                 <tbody>
                   {marketRows.map((row) => (
-                    <tr key={`${row.source}-${row.ticker}`} className="transition hover:bg-[#f8fafc]">
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 font-bold text-[#1e40af]">{row.ticker}</td>
-                      <td className="max-w-72 truncate border-t border-[#e2e8f0] px-4 py-3 font-semibold">{row.name}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right font-semibold">{formatRowPrice(row)}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right"><Change value={row.change24h} /></td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{row.volume24h}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{row.marketCap}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{estimatePe(row)}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{estimateDividend(row)}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3">
-                        <Link href={`/dashboard?q=${encodeURIComponent(row.ticker)}`} className="inline-flex min-h-9 items-center rounded-lg border border-[#dbe4ef] px-3 text-xs font-bold text-[#1e40af] transition hover:bg-[#eef4ff]">
+                    <tr key={`${row.source}-${row.ticker}`} className="transition hover:bg-[#f4f1e8]">
+                      <td className="border-t border-[#d8d1c1] px-4 py-3 font-bold text-[#006b7f]">{row.ticker}</td>
+                      <td className="max-w-72 truncate border-t border-[#d8d1c1] px-4 py-3 font-semibold">{row.name}</td>
+                      <td className="border-t border-[#d8d1c1] px-4 py-3 text-right font-semibold">{formatRowPrice(row)}</td>
+                      <td className="border-t border-[#d8d1c1] px-4 py-3 text-right"><Change value={row.change24h} /></td>
+                      <td className="border-t border-[#d8d1c1] px-4 py-3 text-right">{row.volume24h}</td>
+                      <td className="border-t border-[#d8d1c1] px-4 py-3 text-right">{row.marketCap}</td>
+                      <td className="border-t border-[#d8d1c1] px-4 py-3 text-right">{estimatePe(row)}</td>
+                      <td className="border-t border-[#d8d1c1] px-4 py-3 text-right">{estimateDividend(row)}</td>
+                      <td className="border-t border-[#d8d1c1] px-4 py-3">
+                        <Link href={`/dashboard?q=${encodeURIComponent(row.ticker)}`} className="inline-flex min-h-9 items-center rounded-md border border-[#d8d1c1] px-3 text-xs font-bold text-[#006b7f] transition hover:bg-[#e4f7f5]">
                           Объяснить
                         </Link>
                       </td>
@@ -238,16 +240,16 @@ export default async function Home() {
           />
           <div className="space-y-3">
             {aiQuestions.map((question) => (
-              <Link key={question} href={`/ai?question=${encodeURIComponent(question)}`} className="flex min-h-12 items-center justify-between rounded-xl border border-[#dbe4ef] bg-white px-4 text-sm font-bold transition hover:border-[#93c5fd] hover:bg-[#eef4ff]">
+              <Link key={question} href={`/ai?question=${encodeURIComponent(question)}`} className="flex min-h-12 items-center justify-between rounded-md border border-[#d8d1c1] bg-[#fbfaf5] px-4 text-sm font-bold transition hover:border-[#0099b5] hover:bg-[#e4f7f5]">
                 {question}
                 <ArrowRight size={16} />
               </Link>
             ))}
           </div>
         </div>
-        <div className="rounded-xl border border-[#dbe4ef] bg-white p-5">
-          <div className="flex items-center gap-3 border-b border-[#e2e8f0] pb-4">
-            <span className="grid size-10 place-items-center rounded-lg bg-[#1e40af] text-white"><Bot size={20} /></span>
+        <div className="rounded-md border border-[#d8d1c1] bg-[#fbfaf5] p-5 shadow-sm">
+          <div className="flex items-center gap-3 border-b border-[#d8d1c1] pb-4">
+            <span className="grid size-10 place-items-center rounded-md bg-[#101820] text-[#f59e0b]"><Bot size={20} /></span>
             <div>
               <p className="text-xs font-bold uppercase text-[#64748b]">AI Summary</p>
               <h3 className="font-bold">Agrobank: что важно перед покупкой?</h3>
@@ -261,22 +263,22 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="news" className="border-y border-[#dbe4ef] bg-white">
+      <section id="news" className="border-y border-[#d8d1c1] bg-[#fbfaf5]">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <SectionHeader eyebrow="News → AI Summary → Impact" title="Новости должны отвечать: как это влияет на акции?" text="Не просто список заголовков, а короткое объяснение влияния на компанию и рынок." />
           <div className="grid gap-4 lg:grid-cols-3">
             {normalizeNews(news).map((item) => (
-              <article key={item.title} className="rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-5">
+              <article key={item.title} className="rounded-md border border-[#d8d1c1] bg-[#f4f1e8] p-5">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase text-[#64748b]">
                   <Newspaper size={15} />
                   {item.source}
                 </div>
                 <h3 className="mt-3 min-h-14 font-bold">{item.title}</h3>
-                <div className="mt-4 border-t border-[#e2e8f0] pt-4">
-                  <p className="text-xs font-bold uppercase text-[#1e40af]">AI Summary</p>
+                <div className="mt-4 border-t border-[#d8d1c1] pt-4">
+                  <p className="text-xs font-bold uppercase text-[#006b7f]">AI Summary</p>
                   <p className="mt-2 text-sm leading-6 text-[#475569]">{item.summary}</p>
                 </div>
-                <div className="mt-4 rounded-lg border border-[#fde68a] bg-[#fffbeb] p-3 text-sm font-semibold text-[#92400e]">{item.impact}</div>
+                <div className="mt-4 rounded-md border border-[#f59e0b]/35 bg-[#fff7ed] p-3 text-sm font-semibold text-[#92400e]">{item.impact}</div>
               </article>
             ))}
           </div>
@@ -297,7 +299,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="border-y border-[#dbe4ef] bg-white">
+      <section className="border-y border-[#d8d1c1] bg-[#fbfaf5]">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div>
             <SectionHeader eyebrow="IPO Calendar" title="Будущие IPO и корпоративные события" text="Следующий важный слой: UZSE, NAPP, Spot и OpenInfo в одном календаре." />
@@ -318,13 +320,13 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="bg-[#08111f] px-4 py-12 text-white sm:px-6 lg:px-8">
+      <footer className="bg-[#101820] px-4 py-12 text-white sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xl font-bold">Einvestuz</p>
             <p className="mt-2 max-w-xl text-sm leading-6 text-[#cbd5e1]">Инвесторы покупают понимание. Einvestuz помогает быстро понять рынок Узбекистана, компании и риски до покупки.</p>
           </div>
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#f59e0b] px-5 text-sm font-bold text-[#111827] transition hover:bg-[#fbbf24]">
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#f59e0b] px-5 text-sm font-bold text-[#111827] transition hover:bg-[#fbbf24]">
             Начать анализ
             <ArrowRight size={16} />
           </Link>
@@ -336,7 +338,7 @@ export default async function Home() {
 
 function HeroMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+    <div className="rounded-md border border-white/15 bg-[#101820]/70 p-4 backdrop-blur">
       <p className="text-xs font-semibold text-[#cbd5e1]">{label}</p>
       <p className="tabular-data mt-2 text-2xl font-bold">{value}</p>
     </div>
@@ -347,7 +349,7 @@ function SectionHeader({ eyebrow, title, text, action }: { eyebrow: string; titl
   return (
     <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="max-w-3xl">
-        <p className="text-xs font-bold uppercase tracking-normal text-[#1e40af]">{eyebrow}</p>
+        <p className="text-xs font-bold uppercase tracking-normal text-[#006b7f]">{eyebrow}</p>
         <h2 className="mt-2 text-3xl font-bold leading-tight sm:text-4xl">{title}</h2>
         <p className="mt-3 text-sm leading-7 text-[#475569] sm:text-base">{text}</p>
       </div>
@@ -358,8 +360,8 @@ function SectionHeader({ eyebrow, title, text, action }: { eyebrow: string; titl
 
 function OutcomeCard({ title, text, icon: Icon }: { title: string; text: string; icon: LucideIcon }) {
   return (
-    <article className="rounded-xl border border-[#dbe4ef] bg-white p-5 transition hover:border-[#93c5fd] hover:shadow-sm">
-      <span className="grid size-11 place-items-center rounded-lg bg-[#eef4ff] text-[#1e40af]"><Icon size={22} /></span>
+    <article className="rounded-md border border-[#d8d1c1] bg-[#fbfaf5] p-5 transition hover:border-[#0099b5] hover:shadow-sm">
+      <span className="grid size-11 place-items-center rounded-md bg-[#e4f7f5] text-[#006b7f]"><Icon size={22} /></span>
       <h3 className="mt-4 text-lg font-bold">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-[#475569]">{text}</p>
     </article>
@@ -368,7 +370,7 @@ function OutcomeCard({ title, text, icon: Icon }: { title: string; text: string;
 
 function MarketChip({ label, value, change }: { label: string; value: string; change?: number }) {
   return (
-    <div className="min-w-44 shrink-0 rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-4 py-3">
+    <div className="min-w-44 shrink-0 rounded-md border border-[#d8d1c1] bg-[#f4f1e8] px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-bold uppercase text-[#64748b]">{label}</p>
         {typeof change === "number" ? <Change value={change} /> : null}
@@ -391,8 +393,8 @@ function Change({ value }: { value: number }) {
 
 function InsightLine({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
   return (
-    <div className="flex gap-3 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-4">
-      <Icon className="mt-0.5 shrink-0 text-[#1e40af]" size={19} />
+    <div className="flex gap-3 rounded-md border border-[#d8d1c1] bg-[#f4f1e8] p-4">
+      <Icon className="mt-0.5 shrink-0 text-[#006b7f]" size={19} />
       <div>
         <p className="font-bold">{title}</p>
         <p className="mt-1 text-sm leading-6 text-[#475569]">{text}</p>
@@ -403,22 +405,22 @@ function InsightLine({ icon: Icon, title, text }: { icon: LucideIcon; title: str
 
 function EconomyCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-xl border border-[#dbe4ef] bg-white p-5">
+    <div className="rounded-md border border-[#d8d1c1] bg-[#fbfaf5] p-5">
       <p className="text-xs font-bold uppercase text-[#64748b]">{label}</p>
       <p className="tabular-data mt-3 text-2xl font-bold">{value}</p>
-      <p className="mt-2 text-xs font-semibold text-[#1e40af]">{detail}</p>
+      <p className="mt-2 text-xs font-semibold text-[#006b7f]">{detail}</p>
     </div>
   );
 }
 
 function InfoRow({ icon: Icon, title, value, detail }: { icon: LucideIcon; title: string; value: string; detail: string }) {
   return (
-    <div className="flex gap-4 rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-4">
-      <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-white text-[#1e40af]"><Icon size={21} /></span>
+    <div className="flex gap-4 rounded-md border border-[#d8d1c1] bg-[#f4f1e8] p-4">
+      <span className="grid size-11 shrink-0 place-items-center rounded-md bg-[#fbfaf5] text-[#006b7f]"><Icon size={21} /></span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-3">
           <p className="font-bold">{title}</p>
-          <span className="rounded-lg border border-[#dbe4ef] bg-white px-2 py-1 text-xs font-bold text-[#475569]">{value}</span>
+          <span className="rounded-md border border-[#d8d1c1] bg-[#fbfaf5] px-2 py-1 text-xs font-bold text-[#475569]">{value}</span>
         </div>
         <p className="mt-1 text-sm leading-6 text-[#475569]">{detail}</p>
       </div>
