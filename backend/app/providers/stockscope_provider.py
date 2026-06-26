@@ -5,6 +5,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
@@ -12,6 +13,7 @@ from urllib.request import Request, urlopen
 
 STOCKSCOPE_BASE_URL = "https://stockscope.uz"
 STOCKSCOPE_SCREENER_PATH = "/ru/screener"
+STOCKSCOPE_SNAPSHOT_PATH = Path(__file__).resolve().parents[1] / "data" / "stockscope_screener.json"
 
 EARNINGS_LABELS = {
     "010": "Revenue",
@@ -139,14 +141,99 @@ class StockScopeProvider:
         }
 
     def get_listing_details_coverage(self) -> dict[str, Any]:
+        return self._cached("details_coverage", 3600, self._load_coverage_snapshot)
+
+    def screen_listings(
+        self,
+        *,
+        q: str | None = None,
+        offset: int = 0,
+        limit: int = 50,
+        min_roe: float | None = None,
+        min_roa: float | None = None,
+        max_pe: float | None = None,
+        max_pb: float | None = None,
+        min_reports: int | None = None,
+        min_indicators: int | None = None,
+        sort_by: str = "reports_count",
+        sort_dir: str = "desc",
+    ) -> dict[str, Any]:
+        coverage = self.get_listing_details_coverage()
+        rows = list(coverage.get("items") if isinstance(coverage, dict) else [])
+        needle = str(q or "").strip().lower()
+
+        if needle:
+            rows = [
+                row
+                for row in rows
+                if needle in str(row.get("ticker") or "").lower()
+                or needle in str(row.get("name") or "").lower()
+                or needle in str(row.get("isin") or "").lower()
+            ]
+        rows = [row for row in rows if self._passes_min(row.get("roe"), min_roe)]
+        rows = [row for row in rows if self._passes_min(row.get("roa"), min_roa)]
+        rows = [row for row in rows if self._passes_max(row.get("pe"), max_pe)]
+        rows = [row for row in rows if self._passes_max(row.get("pb"), max_pb)]
+        rows = [row for row in rows if self._passes_min(row.get("reports_count"), min_reports)]
+        rows = [row for row in rows if self._passes_min(row.get("indicators_count"), min_indicators)]
+
+        allowed_sort_keys = {
+            "ticker",
+            "name",
+            "reports_count",
+            "indicators_count",
+            "dividends_count",
+            "price_points_count",
+            "roe",
+            "roa",
+            "pe",
+            "pb",
+            "dividend_yield",
+            "latest_period",
+        }
+        sort_key = sort_by if sort_by in allowed_sort_keys else "reports_count"
+        reverse = str(sort_dir).lower() != "asc"
+        rows = sorted(rows, key=lambda row: self._sort_value(row.get(sort_key)), reverse=reverse)
+
+        start = max(offset, 0)
+        page_size = max(1, min(limit, 200))
+        selected = rows[start : start + page_size]
+        return {
+            "total": len(rows),
+            "offset": start,
+            "limit": page_size,
+            "count": len(selected),
+            "has_more": start + page_size < len(rows),
+            "sort_by": sort_key,
+            "sort_dir": "desc" if reverse else "asc",
+            "items": selected,
+            "coverage": {
+                "total": coverage.get("total") if isinstance(coverage, dict) else len(rows),
+                "with_reports": coverage.get("with_reports") if isinstance(coverage, dict) else None,
+                "with_indicators": coverage.get("with_indicators") if isinstance(coverage, dict) else None,
+                "with_dividends": coverage.get("with_dividends") if isinstance(coverage, dict) else None,
+                "with_price_history": coverage.get("with_price_history") if isinstance(coverage, dict) else None,
+            },
+        }
+
+    def _fetch_listing_details_coverage(self) -> dict[str, Any]:
         listings = self.get_listings()
-        rows = []
-        for item in listings:
-            ticker = str(item.get("ticker") or "").upper()
-            if not ticker:
-                continue
-            detail = self.get_listing_details(ticker)
-            rows.append(self._coverage_row(ticker, item, detail))
+        catalog = {
+            str(item.get("ticker") or "").upper(): item
+            for item in listings
+            if str(item.get("ticker") or "").strip()
+        }
+        rows_by_ticker: dict[str, dict[str, Any]] = {}
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(self.get_listing_details, ticker): ticker for ticker in catalog}
+            for future in as_completed(futures):
+                ticker = futures[future]
+                try:
+                    detail = future.result()
+                except Exception:
+                    detail = {}
+                rows_by_ticker[ticker] = self._coverage_row(ticker, catalog[ticker], detail)
+        rows = [rows_by_ticker[ticker] for ticker in catalog]
         return {
             "total": len(rows),
             "with_reports": sum(1 for row in rows if row["reports_count"] > 0),
@@ -155,6 +242,15 @@ class StockScopeProvider:
             "with_price_history": sum(1 for row in rows if row["price_points_count"] > 0),
             "items": rows,
         }
+
+    def _load_coverage_snapshot(self) -> dict[str, Any]:
+        try:
+            snapshot = json.loads(STOCKSCOPE_SNAPSHOT_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return self._fetch_listing_details_coverage()
+        if isinstance(snapshot, dict) and isinstance(snapshot.get("items"), list):
+            return snapshot
+        return self._fetch_listing_details_coverage()
 
     def get_sectors(self) -> dict[str, str]:
         return self._cached("sectors", 86400, self._fetch_sectors)
@@ -275,11 +371,20 @@ class StockScopeProvider:
         reports = detail.get("reports") if isinstance(detail.get("reports"), list) else []
         dividends = detail.get("dividends") if isinstance(detail.get("dividends"), list) else []
         price_points = ((detail.get("price_history") or {}).get("points") if isinstance(detail.get("price_history"), dict) else []) or []
+        current_price = self._number(listing.get("currentPrice"))
+        shares = self._number(listing.get("noOfShares"))
+        market_cap = (current_price * shares) if current_price is not None and shares is not None else None
+        latest_dividend = dividends[0] if dividends and isinstance(dividends[0], dict) else {}
+        common_dividend = self._number(latest_dividend.get("common_dividend"))
+        earnings_uzs = self._scaled_financial_value(latest_indicators.get("Earnings"))
+        equity_uzs = self._scaled_financial_value(latest_indicators.get("Equity"))
         return {
             "ticker": ticker,
             "name": listing.get("name") or listing.get("uzseName") or ticker,
             "isin": listing.get("isin"),
             "openinfo_id": listing.get("openinfoId"),
+            "current_price": current_price,
+            "market_cap": market_cap,
             "price_points_count": len(price_points),
             "reports_count": len(reports),
             "indicators_count": len(indicators),
@@ -287,9 +392,9 @@ class StockScopeProvider:
             "latest_period": indicators[0].get("period") if indicators and isinstance(indicators[0], dict) else None,
             "roe": latest_indicators.get("ROE"),
             "roa": latest_indicators.get("ROA"),
-            "pe": self._ratio(self._number(listing.get("marketCap")), latest_indicators.get("Earnings")),
-            "pb": self._ratio(self._number(listing.get("marketCap")), latest_indicators.get("Equity")),
-            "dividend_yield": dividends[0].get("common_yield") if dividends and isinstance(dividends[0], dict) else None,
+            "pe": self._ratio(market_cap, earnings_uzs),
+            "pb": self._ratio(market_cap, equity_uzs),
+            "dividend_yield": self._ratio(common_dividend, current_price, 100),
         }
 
     def _extract_nuxt_payload(self, html: str) -> list[Any]:
@@ -557,6 +662,30 @@ class StockScopeProvider:
         if numerator is None or denominator in (None, 0):
             return None
         return round((numerator / denominator) * multiplier, 4)
+
+    def _passes_min(self, value: Any, minimum: float | int | None) -> bool:
+        if minimum is None:
+            return True
+        numeric = self._number(value)
+        return numeric is not None and numeric >= minimum
+
+    def _passes_max(self, value: Any, maximum: float | int | None) -> bool:
+        if maximum is None:
+            return True
+        numeric = self._number(value)
+        return numeric is not None and numeric <= maximum
+
+    def _sort_value(self, value: Any) -> tuple[int, Any]:
+        numeric = self._number(value)
+        if numeric is not None:
+            return (1, numeric)
+        if value is None:
+            return (0, "")
+        return (1, str(value))
+
+    def _scaled_financial_value(self, value: Any) -> float | None:
+        numeric = self._number(value)
+        return numeric * 1000 if numeric is not None else None
 
     def _fetch_sectors(self) -> dict[str, str]:
         html = self._request_text(STOCKSCOPE_SCREENER_PATH)

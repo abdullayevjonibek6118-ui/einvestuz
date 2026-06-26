@@ -542,6 +542,35 @@ def stockscope_coverage() -> dict[str, Any]:
     return STOCKSCOPE_PROVIDER.get_listing_details_coverage()
 
 
+@app.get("/api/stockscope/screener")
+def stockscope_screener(
+    q: str | None = Query(default=None, description="Search by ticker, company name, or ISIN."),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+    min_roe: float | None = Query(default=None),
+    min_roa: float | None = Query(default=None),
+    max_pe: float | None = Query(default=None),
+    max_pb: float | None = Query(default=None),
+    min_reports: int | None = Query(default=None, ge=0),
+    min_indicators: int | None = Query(default=None, ge=0),
+    sort_by: str = Query(default="reports_count"),
+    sort_dir: Literal["asc", "desc"] = Query(default="desc"),
+) -> dict[str, Any]:
+    return STOCKSCOPE_PROVIDER.screen_listings(
+        q=q,
+        offset=offset,
+        limit=limit,
+        min_roe=min_roe,
+        min_roa=min_roa,
+        max_pe=max_pe,
+        max_pb=max_pb,
+        min_reports=min_reports,
+        min_indicators=min_indicators,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+    )
+
+
 @app.get("/quotes/live", response_model=list[LiveQuote])
 def live_quotes(
     symbols: str = Query(default="AAPL,NVDA,MSFT,SBER", description="Comma-separated tickers, e.g. AAPL,NVDA,SBER"),

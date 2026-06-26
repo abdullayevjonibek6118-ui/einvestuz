@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { BarChart3, BookOpen, Bot, BriefcaseBusiness, ChevronRight, LayoutDashboard, Search, Settings, Sparkles } from "lucide-react";
+import { BarChart3, BookOpen, Bot, BriefcaseBusiness, ChevronRight, GitCompareArrows, LayoutDashboard, Search, Settings, SlidersHorizontal, Sparkles } from "lucide-react";
 
 const nav = [
   { href: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
-  { href: "/stocks/NVDA", label: "Акции", icon: BarChart3 },
+  { href: "/screener", label: "Скринер", icon: SlidersHorizontal },
+  { href: "/compare", label: "Сравнение", icon: GitCompareArrows },
+  { href: "/stocks/A011030", label: "Акции", icon: BarChart3 },
   { href: "/ai", label: "AI-чат", icon: Bot },
   { href: "/portfolio", label: "Портфель", icon: BriefcaseBusiness },
   { href: "/academy", label: "Академия", icon: BookOpen },
@@ -104,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <nav className="fixed inset-x-3 bottom-3 z-40 rounded-3xl border border-white/10 bg-[#08111f]/96 p-2 text-white shadow-[0_18px_55px_rgba(8,17,31,0.26)] backdrop-blur-xl md:hidden" aria-label="Быстрая навигация">
-        <div className="grid grid-cols-5 gap-1">
+        <div className="flex gap-1 overflow-x-auto">
           {nav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || (item.href.startsWith("/stocks") && pathname.startsWith("/stocks"));
@@ -113,7 +115,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-semibold transition ${active ? "bg-[#11213d] text-white" : "text-[#93a4ba] hover:bg-white/[0.08] hover:text-white"}`}
+                className={`flex min-h-12 min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-semibold transition ${active ? "bg-[#11213d] text-white" : "text-[#93a4ba] hover:bg-white/[0.08] hover:text-white"}`}
               >
                 <Icon size={17} />
                 <span className="max-w-full truncate">{item.label}</span>

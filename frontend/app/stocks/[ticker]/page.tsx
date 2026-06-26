@@ -53,8 +53,8 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link href={`/dashboard?q=${encodeURIComponent(stock.ticker)}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
-                  Compare in desk
+                <Link href={`/compare?tickers=${encodeURIComponent([stock.ticker, ...peerRows.slice(0, 2).map((peer) => peer.ticker)].join(","))}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
+                  Compare company
                   <ChartNoAxesCombined size={16} />
                 </Link>
                 <Link href={`/ai?question=Give%20me%20a%20quick%20thesis%20on%20${encodeURIComponent(stock.ticker)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
@@ -164,8 +164,8 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
             </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
-              <Link href={`/dashboard?q=${encodeURIComponent(stock.ticker)}&sort=marketCap`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
-                Compare in table
+              <Link href={`/compare?tickers=${encodeURIComponent([stock.ticker, ...peerRows.slice(0, 2).map((peer) => peer.ticker)].join(","))}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
+                Compare metrics
                 <ArrowRight size={16} />
               </Link>
               <Link href={`/ai?question=Stress%20test%20${encodeURIComponent(stock.ticker)}%20for%20risk%20and%20sources`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">

@@ -16,7 +16,10 @@ import {
   type StockFundamentals,
   type StockInsight,
   type StockRiskFactor,
+  type StockScopeBatchDetails,
   type StockScopeDetails,
+  type StockScopeScreenerResponse,
+  type StockScopeScreenerRow,
   type StockScopeTradingRow,
   type StockSourceMeta,
   type Stock,
@@ -100,6 +103,54 @@ type BackendStockScopeTradingRow = {
   volumeUzs?: number | null;
   volume_pcs?: number | null;
   volumePcs?: number | null;
+};
+
+type BackendStockScopeScreenerRow = {
+  ticker?: string;
+  name?: string;
+  isin?: string;
+  openinfo_id?: number | string;
+  openinfoId?: number | string;
+  current_price?: number | null;
+  market_cap?: number | null;
+  price_points_count?: number;
+  reports_count?: number;
+  indicators_count?: number;
+  dividends_count?: number;
+  latest_period?: string;
+  roe?: number | null;
+  roa?: number | null;
+  pe?: number | null;
+  pb?: number | null;
+  dividend_yield?: number | null;
+};
+
+type BackendStockScopeScreenerResponse = {
+  total?: number;
+  offset?: number;
+  limit?: number;
+  count?: number;
+  has_more?: boolean;
+  sort_by?: string;
+  sort_dir?: string;
+  coverage?: {
+    total?: number | null;
+    with_reports?: number | null;
+    with_indicators?: number | null;
+    with_dividends?: number | null;
+    with_price_history?: number | null;
+  };
+  items?: BackendStockScopeScreenerRow[];
+};
+
+type BackendStockScopeBatchDetails = {
+  total?: number;
+  offset?: number;
+  limit?: number;
+  count?: number;
+  has_more?: boolean;
+  tickers?: string[];
+  items?: BackendStockScopeDetails[];
 };
 
 type BackendStockInsight = {
@@ -1156,6 +1207,78 @@ export async function getStock(ticker: string): Promise<Stock | undefined> {
     });
   }
   return getFallbackStock(ticker);
+}
+
+export async function getStockScopeScreener(params: Record<string, string | number | undefined> = {}): Promise<StockScopeScreenerResponse> {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && String(value).trim()) query.set(key, String(value));
+  });
+  const suffix = query.size ? `?${query.toString()}` : "";
+  const data = await fetchJson<BackendStockScopeScreenerResponse>(`/api/stockscope/screener${suffix}`);
+  const items = (data?.items ?? []).map(normalizeStockScopeScreenerRow);
+
+  return {
+    total: data?.total ?? items.length,
+    offset: data?.offset ?? 0,
+    limit: data?.limit ?? items.length,
+    count: data?.count ?? items.length,
+    hasMore: Boolean(data?.has_more),
+    sortBy: data?.sort_by ?? "reports_count",
+    sortDir: data?.sort_dir ?? "desc",
+    coverage: data?.coverage
+      ? {
+          total: data.coverage.total,
+          withReports: data.coverage.with_reports,
+          withIndicators: data.coverage.with_indicators,
+          withDividends: data.coverage.with_dividends,
+          withPriceHistory: data.coverage.with_price_history,
+        }
+      : undefined,
+    items,
+  };
+}
+
+export async function getStockScopeBatchDetails(tickers: string[]): Promise<StockScopeBatchDetails> {
+  const normalized = [...new Set(tickers.map((ticker) => ticker.trim().toUpperCase()).filter(Boolean))].slice(0, 6);
+  if (!normalized.length) {
+    return { total: 0, offset: 0, limit: 0, count: 0, hasMore: false, tickers: [], items: [] };
+  }
+
+  const data = await fetchJson<BackendStockScopeBatchDetails>(
+    `/api/stockscope/details?tickers=${encodeURIComponent(normalized.join(","))}&limit=${normalized.length}`,
+  );
+  const items = (data?.items ?? []).map((item) => normalizeStockScopeDetails(item)).filter(Boolean) as StockScopeDetails[];
+  return {
+    total: data?.total ?? normalized.length,
+    offset: data?.offset ?? 0,
+    limit: data?.limit ?? normalized.length,
+    count: data?.count ?? items.length,
+    hasMore: Boolean(data?.has_more),
+    tickers: data?.tickers ?? normalized,
+    items,
+  };
+}
+
+function normalizeStockScopeScreenerRow(row: BackendStockScopeScreenerRow): StockScopeScreenerRow {
+  return {
+    ticker: row.ticker ?? "UNKNOWN",
+    name: row.name ?? row.ticker ?? "Unknown company",
+    isin: row.isin,
+    openinfoId: row.openinfoId ?? row.openinfo_id,
+    currentPrice: row.current_price,
+    marketCap: row.market_cap,
+    pricePointsCount: row.price_points_count ?? 0,
+    reportsCount: row.reports_count ?? 0,
+    indicatorsCount: row.indicators_count ?? 0,
+    dividendsCount: row.dividends_count ?? 0,
+    latestPeriod: row.latest_period,
+    roe: row.roe,
+    roa: row.roa,
+    pe: row.pe,
+    pb: row.pb,
+    dividendYield: row.dividend_yield,
+  };
 }
 
 export async function getNews(): Promise<NewsItem[]> {

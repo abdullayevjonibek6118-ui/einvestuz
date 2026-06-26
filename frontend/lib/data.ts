@@ -126,6 +126,53 @@ export type StockScopeDividend = {
   preferredYield?: number | null;
 };
 
+export type StockScopeScreenerRow = {
+  ticker: string;
+  name: string;
+  isin?: string;
+  openinfoId?: number | string;
+  currentPrice?: number | null;
+  marketCap?: number | null;
+  pricePointsCount: number;
+  reportsCount: number;
+  indicatorsCount: number;
+  dividendsCount: number;
+  latestPeriod?: string;
+  roe?: number | null;
+  roa?: number | null;
+  pe?: number | null;
+  pb?: number | null;
+  dividendYield?: number | null;
+};
+
+export type StockScopeScreenerResponse = {
+  total: number;
+  offset: number;
+  limit: number;
+  count: number;
+  hasMore: boolean;
+  sortBy: string;
+  sortDir: "asc" | "desc" | string;
+  coverage?: {
+    total?: number | null;
+    withReports?: number | null;
+    withIndicators?: number | null;
+    withDividends?: number | null;
+    withPriceHistory?: number | null;
+  };
+  items: StockScopeScreenerRow[];
+};
+
+export type StockScopeBatchDetails = {
+  total: number;
+  offset: number;
+  limit: number;
+  count: number;
+  hasMore: boolean;
+  tickers: string[];
+  items: StockScopeDetails[];
+};
+
 export type StockInsight = {
   headline?: string;
   summary?: string;
