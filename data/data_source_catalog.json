@@ -101,18 +101,34 @@
       "group": "uzbekistan_companies",
       "name": "StockScope Uzbekistan",
       "base_url": "https://stockscope.uz",
-      "status": "research_needed",
+      "status": "verified_ssr_payload",
       "priority": 4,
-      "access": "website_or_private_api",
-      "refresh": "daily",
+      "access": "public_nuxt_ssr_payload",
+      "refresh": "hourly_or_daily",
       "fields": [
-        "company_profile",
+        "ticker",
+        "isin",
+        "company_name",
+        "current_price",
+        "shares_outstanding",
+        "market_cap",
+        "volume_last_week_uzs",
+        "past_prices",
+        "sector",
+        "openinfo_id",
         "charts",
         "market_ratios",
         "descriptive_metrics"
       ],
+      "verified_result": "https://stockscope.uz/ru/screener SSR payload returned 166 listings and the screener bundle returned 122 sector mappings on 2026-06-26",
+      "firestore": {
+        "projectId": "uz-finance",
+        "direct_rest_read": "403 Missing or insufficient permissions for collection reads"
+      },
       "normalize_to": [
         "company_profiles",
+        "quotes_latest",
+        "market_table",
         "market_ratios"
       ]
     },

@@ -25,6 +25,7 @@ from .market_data import get_source_catalog as fetch_source_catalog
 from .market_data import get_sources as fetch_sources
 from .market_data import get_stock as fetch_stock
 from .market_data import get_stocks as fetch_stocks
+from .providers.stockscope_provider import StockScopeProvider
 from .providers.uzse_provider import UzseProvider
 
 load_dotenv()
@@ -299,6 +300,7 @@ ACADEMY = [
 
 NEWSLETTER_SUBSCRIBERS: list[str] = []
 UZSE_PROVIDER = UzseProvider()
+STOCKSCOPE_PROVIDER = StockScopeProvider()
 
 SECTOR_BY_TICKER = {
     "AAPL": "Технологии",
@@ -476,6 +478,11 @@ def uzse_listings() -> list[dict[str, Any]]:
 @app.get("/api/uzse/trades")
 def uzse_trades() -> list[dict[str, Any]]:
     return UZSE_PROVIDER.get_trade_results()
+
+
+@app.get("/api/stockscope/listings")
+def stockscope_listings() -> list[dict[str, Any]]:
+    return STOCKSCOPE_PROVIDER.get_listings()
 
 
 @app.get("/quotes/live", response_model=list[LiveQuote])
@@ -868,6 +875,8 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
     companies = UZSE_PROVIDER.get_companies()
     listings = UZSE_PROVIDER.get_listings()
     trades = UZSE_PROVIDER.get_trade_results()
+    stockscope_listings = STOCKSCOPE_PROVIDER.get_listings()
+    stockscope_by_ticker = {str(item.get("ticker") or "").upper(): item for item in stockscope_listings if item.get("ticker")}
     listings_by_key = {_instrument_key(item): item for item in listings if _instrument_key(item)}
     latest_trade_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
     volume_by_key: dict[tuple[str, str, str], float] = {}
@@ -890,15 +899,19 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
     }
 
     rows: list[dict[str, Any]] = []
+    seen_tickers: set[str] = set()
     for key in all_keys:
         trade = latest_trade_by_key.get(key, {})
         listing = listings_by_key.get(key, {})
         company = next((item for item in companies if _instrument_key(item) == key), {})
         ticker = str(trade.get("ticker") or listing.get("ticker") or company.get("ticker") or "")
-        price = _coerce_numeric(trade.get("price"))
-        shares = _coerce_numeric(listing.get("shares_outstanding"))
+        stockscope = stockscope_by_ticker.get(ticker.upper(), {})
+        price = _coerce_numeric(trade.get("price")) or _coerce_numeric(stockscope.get("currentPrice"))
+        shares = _coerce_numeric(listing.get("shares_outstanding")) or _coerce_numeric(stockscope.get("noOfShares"))
         market_cap_value = price * shares if price and shares else 0.0
-        issuer = str(listing.get("issuer") or trade.get("issuer") or company.get("name") or ticker)
+        volume_value = volume_by_key.get(key, 0.0) or _stockscope_volume(stockscope)
+        issuer = str(listing.get("issuer") or trade.get("issuer") or company.get("name") or stockscope.get("name") or ticker)
+        seen_tickers.add(ticker.upper())
         rows.append(
             {
                 "rank": 0,
@@ -911,18 +924,74 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
                 "ticker": ticker,
                 "price": price,
                 "change_1h": 0.0,
-                "change_24h": 0.0,
-                "change_7d": 0.0,
+                "change_24h": _stockscope_change(stockscope, "yesterday"),
+                "change_7d": _stockscope_change(stockscope, "lastWeek"),
                 "market_cap": _format_uzs_value(market_cap_value) if market_cap_value else "N/A",
-                "volume_24h": _format_uzs_value(volume_by_key.get(key, 0.0)) if volume_by_key.get(key) else "N/A",
+                "volume_24h": _format_uzs_value(volume_value) if volume_value else "N/A",
                 "circulating_supply": _format_units(shares, ticker) if shares else "N/A",
-                "sparkline_7d": [price for _ in range(7)] if price else [],
-                "source": "uzse.uz",
+                "sparkline_7d": _stockscope_sparkline(stockscope) or ([price for _ in range(7)] if price else []),
+                "source": "uzse.uz + stockscope.uz" if stockscope else "uzse.uz",
+                "status": "delayed",
+                "as_of": datetime.now(timezone.utc),
+            }
+        )
+    for stockscope in stockscope_listings:
+        ticker = str(stockscope.get("ticker") or "").upper()
+        if not ticker or ticker in seen_tickers:
+            continue
+        price = _coerce_numeric(stockscope.get("currentPrice"))
+        shares = _coerce_numeric(stockscope.get("noOfShares"))
+        market_cap_value = price * shares if price and shares else 0.0
+        name = str(stockscope.get("name") or stockscope.get("uzseName") or ticker)
+        rows.append(
+            {
+                "rank": 0,
+                "branding": {
+                    "logo_url": None,
+                    "monogram": _monogram_for_label(ticker, name),
+                    "monogram_color": "#0f766e",
+                },
+                "name": name,
+                "ticker": ticker,
+                "price": price,
+                "change_1h": 0.0,
+                "change_24h": _stockscope_change(stockscope, "yesterday"),
+                "change_7d": _stockscope_change(stockscope, "lastWeek"),
+                "market_cap": _format_uzs_value(market_cap_value) if market_cap_value else "N/A",
+                "volume_24h": _format_uzs_value(_stockscope_volume(stockscope)) if _stockscope_volume(stockscope) else "N/A",
+                "circulating_supply": _format_units(shares, ticker) if shares else "N/A",
+                "sparkline_7d": _stockscope_sparkline(stockscope),
+                "source": "stockscope.uz",
                 "status": "delayed",
                 "as_of": datetime.now(timezone.utc),
             }
         )
     return rows
+
+
+def _stockscope_volume(item: dict[str, Any]) -> float:
+    volumes = item.get("volumes") if isinstance(item.get("volumes"), dict) else {}
+    return _coerce_numeric(volumes.get("lastWeekUzs")) or _coerce_numeric(volumes.get("lastMonthUzs"))
+
+
+def _stockscope_change(item: dict[str, Any], field: str) -> float:
+    price = _coerce_numeric(item.get("currentPrice"))
+    past_prices = item.get("pastPrices") if isinstance(item.get("pastPrices"), dict) else {}
+    past = _coerce_numeric(past_prices.get(field))
+    if not price or not past:
+        return 0.0
+    return ((price - past) / past) * 100
+
+
+def _stockscope_sparkline(item: dict[str, Any]) -> list[float]:
+    price = _coerce_numeric(item.get("currentPrice"))
+    past_prices = item.get("pastPrices") if isinstance(item.get("pastPrices"), dict) else {}
+    values = [
+        _coerce_numeric(past_prices.get("lastWeek")),
+        _coerce_numeric(past_prices.get("yesterday")),
+        price,
+    ]
+    return [value for value in values if value]
 
 
 def _instrument_key(item: dict[str, Any]) -> tuple[str, str, str] | None:
@@ -935,7 +1004,12 @@ def _instrument_key(item: dict[str, Any]) -> tuple[str, str, str] | None:
 
 
 def _market_table_source_priority(row: dict[str, Any]) -> int:
-    return 0 if str(row.get("source") or "").lower() == "uzse.uz" else 1
+    source = str(row.get("source") or "").lower()
+    if source.startswith("uzse.uz"):
+        return 0
+    if source == "stockscope.uz":
+        return 1
+    return 2
 
 
 def _coerce_numeric(value: Any) -> float:
