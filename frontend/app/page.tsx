@@ -1,331 +1,245 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
   Bot,
-  Building2,
-  CalendarDays,
   CheckCircle2,
   FileText,
-  Globe2,
-  Landmark,
   Newspaper,
-  Search,
   ShieldAlert,
   Sparkles,
   TrendingDown,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
+import { TickerSearch } from "@/components/ticker-search";
 import { getDashboardData } from "@/lib/api";
 import { type FxRate, type MarketTableRow, type NewsItem } from "@/lib/data";
 
-const popularSearches = ["Apple", "Tesla", "UzAuto", "Kapitalbank", "Hamkorbank", "Agrobank"];
-
+const quickSearches = ["UZMT", "AGBA", "RBQB", "HMKB", "NVDA", "AAPL"];
 const aiQuestions = [
-  "Что происходит с UzAuto?",
-  "Почему акции Agrobank выросли?",
-  "Стоит ли покупать Kapitalbank?",
-];
-
-const outcomes = [
-  {
-    title: "Понять акцию до покупки",
-    text: "AI объяснит любую акцию простым языком и покажет риски, которые легко пропустить в таблицах.",
-    icon: Bot,
-  },
-  {
-    title: "Разобраться в рынке Узбекистана",
-    text: "Смотрите тикеры UZSE, курс USD/UZS, макроэкономику, новости и документы в одном рабочем экране.",
-    icon: Landmark,
-  },
-  {
-    title: "Проверить идею без риска",
-    text: "Сравните компании, спросите AI и протестируйте инвестиционную гипотезу до реальных денег.",
-    icon: ShieldAlert,
-  },
-];
-
-const ipoItems = [
-  { company: "UzAuto Motors", status: "ожидается", detail: "следить за объявлениями UZSE и OpenInfo" },
-  { company: "Крупные банки", status: "pipeline", detail: "банковский сектор остается главным источником интереса" },
-  { company: "Госактивы", status: "мониторинг", detail: "приватизация и SPO могут стать драйвером рынка" },
-];
-
-const startupItems = [
-  { name: "Fintech", detail: "платежи, скоринг, SMB finance" },
-  { name: "AgriTech", detail: "экспорт, урожайность, supply chain" },
-  { name: "Logistics", detail: "Центральная Азия, e-commerce, B2B" },
+  "Что происходит с этим тикером?",
+  "Какой здесь главный риск?",
+  "Стоит ли сравнить с peer names?",
 ];
 
 export default async function Home() {
   const { indexes, marketTable, news, fxRates, macro } = await getDashboardData();
-  const marketRows = marketTable.slice(0, 12);
-  const uzseRows = marketTable.filter(isUzseRow);
-  const globalRows = marketTable.filter((row) => !isUzseRow(row));
   const usdUzs = resolveUsdUzsRate(fxRates);
+  const marketRows = marketTable.length ? marketTable : [];
+  const focusRow = pickFocusRow(marketRows);
+  const previewRows = pickPreviewRows(marketRows);
+  const snapshotItems = buildSnapshotItems(indexes, fxRates, marketRows, usdUzs);
+  const topNews = normalizeNews(news);
+  const macroItems = macro.length ? macro.slice(0, 4) : fallbackMacro();
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
+    <main className="min-h-screen bg-[#f5f7fb] text-[#0f172a]">
       <a href="#main-content" className="skip-link">
         Перейти к содержанию
       </a>
 
-      <header className="sticky top-0 z-50 border-b border-[#dbe4ef] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <Link href="/" className="flex min-h-11 items-center gap-3 font-bold">
-            <span className="grid size-9 place-items-center rounded-lg bg-[#1e40af] text-white">
+      <header className="surface-dark border-b border-[#182233] text-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <Link href="/" className="flex min-h-11 items-center gap-3 font-semibold">
+            <span className="grid size-10 place-items-center rounded-2xl bg-[#6ea8fe] text-[#08111f]">
               <Sparkles size={18} />
             </span>
-            Einvestuz
+            <span>
+              Einvestuz
+              <span className="block text-xs font-medium text-[#93a4ba]">market entry</span>
+            </span>
           </Link>
-          <nav className="hidden items-center gap-2 text-sm font-semibold text-[#475569] md:flex">
-            <a href="#market" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">Рынок</a>
-            <a href="#ai" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">AI</a>
-            <a href="#news" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">Новости</a>
-            <a href="#economy" className="rounded-lg px-3 py-2 transition hover:bg-[#eef4ff] hover:text-[#1e40af]">Экономика</a>
-          </nav>
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#1e40af] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1d4ed8]">
-            Открыть рынок
-            <ArrowRight size={16} />
-          </Link>
+
+          <div className="hidden items-center gap-2 text-xs font-semibold text-[#c7d2e0] sm:flex">
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Search → insight → risk → sources</span>
+            <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 transition hover:bg-white/10">
+              Market desk
+              <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
       </header>
 
-      <section id="main-content" className="relative overflow-hidden border-b border-[#dbe4ef] bg-[#08111f] text-white">
-        <Image src="/images/einvestuz-hero.png" alt="Einvestuz Uzbekistan investment analytics app" fill priority className="object-cover opacity-40" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,17,31,0.98)_0%,rgba(8,17,31,0.86)_46%,rgba(8,17,31,0.40)_100%)]" />
-        <div className="relative mx-auto grid min-h-[760px] max-w-7xl content-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-          <div>
-            <p className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-bold uppercase tracking-normal text-[#cbd5e1]">
-              <Globe2 size={15} />
-              Инвестиционная аналитика рынка Узбекистана
-            </p>
-            <h1 className="mt-6 max-w-4xl text-4xl font-bold leading-[1.04] sm:text-6xl lg:text-[72px]">
-              Поймите, стоит ли инвестировать в Узбекистан
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-[#cbd5e1] sm:text-xl">
-              Найдите UzAuto, Agrobank, Kapitalbank или Apple и получите короткий ответ: что происходит с компанией, какие риски есть и где смотреть факты.
-            </p>
-            <form action="/dashboard" className="mt-8 max-w-2xl rounded-xl border border-white/15 bg-white p-2 shadow-2xl">
-              <label className="sr-only" htmlFor="hero-search">Поиск компании</label>
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#64748b]" size={20} />
-                  <input
-                    id="hero-search"
-                    name="q"
-                    placeholder="Apple, Tesla, UzAuto, Kapitalbank, Hamkorbank, Agrobank"
-                    className="h-12 w-full rounded-lg border border-transparent bg-white pl-12 pr-3 text-sm font-semibold text-[#0f172a] outline-none focus:border-[#1e40af]"
-                  />
-                </div>
-                <button type="submit" className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#f59e0b] px-5 text-sm font-bold text-[#111827] transition hover:bg-[#fbbf24]">
-                  Найти
-                  <ArrowRight size={16} />
-                </button>
+      <section id="main-content" className="border-b border-[#dbe4ef] bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="surface-band reveal rounded-[18px] border border-[#dbe4ef] p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] sm:p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#1e40af]">Market entry</p>
+              <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight text-[#0f172a] sm:text-5xl">
+                Быстрый вход в рынок Узбекистана, а потом сразу в решение по акции.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#475569] sm:text-base">
+                Наберите тикер, откройте карточку компании, проверьте риск и источники, затем сравните с соседями или задайте AI вопрос без длинного лендинга.
+              </p>
+
+              <div className="mt-5 max-w-2xl">
+                <TickerSearch className="reveal-delay-1" />
               </div>
-            </form>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {popularSearches.map((item) => (
-                <Link key={item} href={`/dashboard?q=${encodeURIComponent(item)}`} className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-[#dbeafe] transition hover:bg-white/15">
-                  {item}
-                </Link>
-              ))}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {quickSearches.map((item) => (
+                  <Link
+                    key={item}
+                    href={`/stocks/${encodeURIComponent(item)}`}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#dbe4ef] bg-[#f8fafc] px-3 py-2 text-xs font-semibold text-[#334155] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]"
+                  >
+                    <SearchHint>{item}</SearchHint>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <StatBlock label="Market table" value={`${marketRows.length.toLocaleString("ru-RU")} rows`} detail="quotes, volume, sources" />
+                <StatBlock label="USD/UZS" value={usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 })} detail="FX / conversion anchor" />
+                <StatBlock label="Live view" value={indexes.length ? "on desk" : "fallback"} detail="indexes and macro ready" />
+              </div>
+            </div>
+
+            <div className="reveal reveal-delay-2 rounded-[18px] border border-[#dbe4ef] bg-[#08111f] p-5 text-white shadow-[0_18px_55px_rgba(8,17,31,0.18)] sm:p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#93a4ba]">AI verdict</p>
+              <div className="mt-3 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#93a4ba]">Focus stock</p>
+                  <h2 className="mt-1 text-2xl font-semibold">{focusRow?.name ?? "Select a ticker"}</h2>
+                  <p className="mt-1 text-sm text-[#c7d2e0]">{focusRow ? `${focusRow.ticker} · ${formatMarketLabel(focusRow)}` : "Search a ticker to open the decision room."}</p>
+                </div>
+                {focusRow ? <ChangePill value={focusRow.change24h} /> : null}
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#93a4ba]">Price block</p>
+                  <p className="mt-2 text-3xl font-semibold">{focusRow ? formatRowPrice(focusRow) : "—"}</p>
+                  <p className="mt-1 text-sm text-[#c7d2e0]">{focusRow ? `24h ${formatPercent(focusRow.change24h)} · 7d ${formatPercent(focusRow.change7d)}` : "Waiting for market data."}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#93a4ba]">Risk fingerprint</p>
+                  <p className="mt-2 text-sm leading-6 text-[#e2e8f0]">
+                    {focusRow ? buildRiskSummary(focusRow) : "Open a stock to see the risk and evidence chain."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#1f2a40] bg-[#0f172a] p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#93a4ba]">Research receipt</p>
+                <p className="mt-2 text-sm leading-6 text-[#e2e8f0]">
+                  Identity, price, risk and sources stay on one screen. Compare only after the facts are in.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link href={focusRow ? `/stocks/${encodeURIComponent(focusRow.ticker)}` : "/dashboard"} className="inline-flex items-center gap-2 rounded-full bg-[#6ea8fe] px-3 py-2 text-xs font-semibold text-[#08111f] transition hover:bg-[#8db8ff]">
+                    Open stock page
+                    <ArrowRight size={14} />
+                  </Link>
+                  <Link href={focusRow ? `/ai?question=Give%20me%20a%20quick%20thesis%20on%20${encodeURIComponent(focusRow.ticker)}` : "/ai"} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
+                    Ask AI
+                    <Bot size={14} />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="self-end lg:pl-10">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <HeroMetric label="UZSE инструментов" value={uzseRows.length.toString()} />
-              <HeroMetric label="Глобальные активы" value={globalRows.length.toString()} />
-              <HeroMetric label="USD/UZS" value={usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 })} />
-            </div>
-            <div className="mt-4 overflow-hidden rounded-xl border border-white/15 bg-white/10 backdrop-blur">
-              <div className="grid grid-cols-3 border-b border-white/15 px-4 py-3 text-xs font-bold uppercase tracking-normal text-[#cbd5e1]">
-                <span>Ticker</span>
-                <span className="text-right">Цена</span>
-                <span className="text-right">24h</span>
-              </div>
-              {marketRows.slice(0, 6).map((row) => (
-                <Link key={`${row.source}-${row.ticker}`} href={`/dashboard?q=${encodeURIComponent(row.ticker)}`} className="grid grid-cols-3 border-b border-white/10 px-4 py-3 text-sm last:border-b-0 hover:bg-white/10">
-                  <span className="min-w-0">
-                    <span className="block truncate font-bold">{row.ticker}</span>
-                    <span className="block truncate text-xs text-[#cbd5e1]">{row.name}</span>
-                  </span>
-                  <span className="text-right font-semibold">{formatRowPrice(row)}</span>
-                  <span className={`text-right font-bold ${row.change24h >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{formatPercent(row.change24h)}</span>
-                </Link>
+          <div className="ticker-tape reveal reveal-delay-3 mt-4 rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] px-4 py-3">
+            <div className="ticker-track gap-3">
+              {[...snapshotItems, ...snapshotItems].map((item, index) => (
+                <SnapshotChip key={`${item.label}-${index}`} {...item} />
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-[#dbe4ef]">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <SectionHeader
+            eyebrow="Top stocks preview"
+            title="Короткий просмотр рынка, без лишнего слоя"
+            text="Пара кликов ведут к полной карточке актива и потом к сравнению или AI-разбору."
+          />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {previewRows.map((row, index) => (
+              <PreviewCard key={`${row.ticker}-${index}`} row={row} />
+            ))}
           </div>
         </div>
       </section>
 
       <section className="border-b border-[#dbe4ef] bg-white">
-        <div className="mx-auto flex max-w-7xl gap-3 overflow-x-auto px-4 py-4 sm:px-6 lg:px-8">
-          <MarketChip label="USD/UZS" value={usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 })} change={fxRates.find((rate) => rate.pair === "USD/UZS")?.change} />
-          {indexes.slice(0, 7).map((item) => (
-            <MarketChip key={item.ticker} label={item.ticker} value={item.value} change={item.change} />
-          ))}
-          <MarketChip label="UZSE" value={`${uzseRows.length} тикеров`} />
-          <MarketChip label="Toshkent Index" value="мониторинг" />
-        </div>
-      </section>
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+          <div>
+            <SectionHeader eyebrow="AI question module" title="Спросите как инвестор, не как маркетинг-лента" text="Короткие вопросы должны вести в решение: buy / hold / watch / risk." />
+            <div className="space-y-2">
+              {aiQuestions.map((question) => (
+                <Link
+                  key={question}
+                  href={`/ai?question=${encodeURIComponent(question)}`}
+                  className="flex min-h-12 items-center justify-between rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]"
+                >
+                  <span>{question}</span>
+                  <ArrowRight size={16} />
+                </Link>
+              ))}
+            </div>
+          </div>
 
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="grid gap-4 md:grid-cols-3">
-          {outcomes.map((item) => (
-            <OutcomeCard key={item.title} {...item} />
-          ))}
-        </div>
-      </section>
-
-      <section id="market" className="border-y border-[#dbe4ef] bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="Market Overview"
-            title="Рынок сразу на главной"
-            text="Пользователь не должен искать, где начинается продукт. Главная таблица сразу показывает тикеры, цены, объемы, капитализацию и AI-контекст."
-            action={<Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#1e40af] px-4 text-sm font-bold text-white transition hover:bg-[#1d4ed8]">Открыть всю таблицу<ArrowRight size={16} /></Link>}
-          />
-          <div className="overflow-hidden rounded-xl border border-[#dbe4ef]">
-            <div className="overflow-x-auto">
-              <table className="min-w-[1100px] w-full border-separate border-spacing-0 bg-white">
-                <thead className="bg-[#f8fafc] text-left text-xs font-bold uppercase tracking-normal text-[#64748b]">
-                  <tr>
-                    <th className="px-4 py-3">Ticker</th>
-                    <th className="px-4 py-3">Название</th>
-                    <th className="px-4 py-3 text-right">Цена</th>
-                    <th className="px-4 py-3 text-right">24h</th>
-                    <th className="px-4 py-3 text-right">Объем</th>
-                    <th className="px-4 py-3 text-right">Market Cap</th>
-                    <th className="px-4 py-3 text-right">P/E</th>
-                    <th className="px-4 py-3 text-right">Dividend</th>
-                    <th className="px-4 py-3">AI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {marketRows.map((row) => (
-                    <tr key={`${row.source}-${row.ticker}`} className="transition hover:bg-[#f8fafc]">
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 font-bold text-[#1e40af]">{row.ticker}</td>
-                      <td className="max-w-72 truncate border-t border-[#e2e8f0] px-4 py-3 font-semibold">{row.name}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right font-semibold">{formatRowPrice(row)}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right"><Change value={row.change24h} /></td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{row.volume24h}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{row.marketCap}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{estimatePe(row)}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3 text-right">{estimateDividend(row)}</td>
-                      <td className="border-t border-[#e2e8f0] px-4 py-3">
-                        <Link href={`/dashboard?q=${encodeURIComponent(row.ticker)}`} className="inline-flex min-h-9 items-center rounded-lg border border-[#dbe4ef] px-3 text-xs font-bold text-[#1e40af] transition hover:bg-[#eef4ff]">
-                          Объяснить
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="rounded-[18px] border border-[#dbe4ef] bg-[#08111f] p-5 text-white shadow-[0_18px_55px_rgba(8,17,31,0.16)]">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <span className="grid size-10 place-items-center rounded-2xl bg-[#6ea8fe] text-[#08111f]">
+                <Bot size={20} />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#93a4ba]">Insight Card</p>
+                <h3 className="text-lg font-semibold">{focusRow ? `${focusRow.ticker}: short thesis` : "Quick thesis"}</h3>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3">
+              <InsightLine icon={CheckCircle2} title="What matters" text={focusRow ? `${focusRow.name} is a ${formatMarketLabel(focusRow)} asset with ${formatPercent(focusRow.change24h)} in 24h move.` : "Open a stock to see the fastest useful answer."} />
+              <InsightLine icon={ShieldAlert} title="Main risk" text={focusRow ? buildRiskSummary(focusRow) : "Risk is hidden until we anchor it to price, sources and sector."} />
+              <InsightLine icon={FileText} title="Next step" text={focusRow ? "Open sources, compare peers, then ask AI for a tighter verdict." : "Search a ticker, then move to the decision room."} />
             </div>
           </div>
         </div>
       </section>
 
-      <section id="ai" className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-        <div>
-          <SectionHeader
-            eyebrow="AI Assistant"
-            title="Спросите так, как думает инвестор"
-            text="AI-блок не рассказывает, что у нас есть AI. Он показывает, какие вопросы пользователь сможет закрыть за несколько минут."
-          />
-          <div className="space-y-3">
-            {aiQuestions.map((question) => (
-              <Link key={question} href={`/ai?question=${encodeURIComponent(question)}`} className="flex min-h-12 items-center justify-between rounded-xl border border-[#dbe4ef] bg-white px-4 text-sm font-bold transition hover:border-[#93c5fd] hover:bg-[#eef4ff]">
-                {question}
-                <ArrowRight size={16} />
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-xl border border-[#dbe4ef] bg-white p-5">
-          <div className="flex items-center gap-3 border-b border-[#e2e8f0] pb-4">
-            <span className="grid size-10 place-items-center rounded-lg bg-[#1e40af] text-white"><Bot size={20} /></span>
-            <div>
-              <p className="text-xs font-bold uppercase text-[#64748b]">AI Summary</p>
-              <h3 className="font-bold">Agrobank: что важно перед покупкой?</h3>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-3">
-            <InsightLine icon={CheckCircle2} title="Что хорошо" text="Высокий интерес к банковскому сектору и ликвидность делают бумагу заметной для локальных инвесторов." />
-            <InsightLine icon={ShieldAlert} title="Главный риск" text="Нужно проверить отчетность, качество кредитного портфеля и корпоративные события OpenInfo." />
-            <InsightLine icon={FileText} title="Что открыть дальше" text="Финансовая отчетность, новости, дивиденды, акционеры и документы эмитента." />
-          </div>
-        </div>
-      </section>
-
-      <section id="news" className="border-y border-[#dbe4ef] bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-          <SectionHeader eyebrow="News → AI Summary → Impact" title="Новости должны отвечать: как это влияет на акции?" text="Не просто список заголовков, а короткое объяснение влияния на компанию и рынок." />
-          <div className="grid gap-4 lg:grid-cols-3">
-            {normalizeNews(news).map((item) => (
-              <article key={item.title} className="rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-5">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase text-[#64748b]">
-                  <Newspaper size={15} />
+      <section className="border-b border-[#dbe4ef]">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <SectionHeader eyebrow="News impact" title="Заголовки превращаем в влияние на акции" text="Сначала факт, потом короткий вывод, потом переход в карточку компании." />
+          <div className="grid gap-3 lg:grid-cols-3">
+            {topNews.map((item) => (
+              <article key={item.title} className="rounded-[18px] border border-[#dbe4ef] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+                  <Newspaper size={14} />
                   {item.source}
                 </div>
-                <h3 className="mt-3 min-h-14 font-bold">{item.title}</h3>
-                <div className="mt-4 border-t border-[#e2e8f0] pt-4">
-                  <p className="text-xs font-bold uppercase text-[#1e40af]">AI Summary</p>
-                  <p className="mt-2 text-sm leading-6 text-[#475569]">{item.summary}</p>
-                </div>
-                <div className="mt-4 rounded-lg border border-[#fde68a] bg-[#fffbeb] p-3 text-sm font-semibold text-[#92400e]">{item.impact}</div>
+                <h3 className="mt-3 min-h-14 text-base font-semibold leading-6 text-[#0f172a]">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-[#475569]">{item.summary}</p>
+                <div className="mt-4 rounded-2xl border border-[#fde68a] bg-[#fffbeb] p-3 text-sm font-semibold text-[#92400e]">{item.impact}</div>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="economy" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeader eyebrow="Economy" title="Карточка страны: экономика до выбора акции" text="Инвестор должен видеть фон: курс валют, инфляцию, ставку ЦБ, резервы и торговлю." />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <EconomyCard label="USD/UZS" value={usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 })} detail="CBU FX" />
-          {macro.slice(0, 3).map((item) => (
-            <EconomyCard key={item.key} label={item.label} value={item.value} detail={item.source ?? "macro"} />
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <SectionHeader eyebrow="Macro overview" title="Фон рынка до выбора акции" text="Курс, индикаторы и макро-факторы должны быть видны рядом с тикером, а не где-то в отдельной глубине." />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <MacroCard label="USD/UZS" value={usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 })} detail="conversion anchor" />
+          {macroItems.map((item) => (
+            <MacroCard key={item.key} label={item.label} value={item.value} detail={item.source ?? "macro"} />
           ))}
-          <EconomyCard label="Reserves" value="monitoring" detail="следующий коннектор" />
-          <EconomyCard label="Trade" value="export/import" detail="следующий коннектор" />
-          <EconomyCard label="Central Bank Rate" value="ожидает API" detail="CBU" />
-          <EconomyCard label="Inflation" value="dataset search" detail="stat.uz" />
         </div>
       </section>
 
-      <section className="border-y border-[#dbe4ef] bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <footer className="surface-dark border-t border-[#182233] px-4 py-10 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <SectionHeader eyebrow="IPO Calendar" title="Будущие IPO и корпоративные события" text="Следующий важный слой: UZSE, NAPP, Spot и OpenInfo в одном календаре." />
-            <div className="space-y-3">
-              {ipoItems.map((item) => (
-                <InfoRow key={item.company} icon={CalendarDays} title={item.company} value={item.status} detail={item.detail} />
-              ))}
-            </div>
+            <p className="text-xl font-semibold">Einvestuz</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#c7d2e0]">
+              Search first, then decide. The whole product is built to move from ticker to thesis without wasting the user’s attention.
+            </p>
           </div>
-          <div>
-            <SectionHeader eyebrow="Startup Hub" title="Где смотреть новые компании Узбекистана" text="Отдельная зона для отраслей, стартапов, инвесторов и будущих публичных историй." />
-            <div className="space-y-3">
-              {startupItems.map((item) => (
-                <InfoRow key={item.name} icon={Building2} title={item.name} value="research" detail={item.detail} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-[#08111f] px-4 py-12 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xl font-bold">Einvestuz</p>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[#cbd5e1]">Инвесторы покупают понимание. Einvestuz помогает быстро понять рынок Узбекистана, компании и риски до покупки.</p>
-          </div>
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#f59e0b] px-5 text-sm font-bold text-[#111827] transition hover:bg-[#fbbf24]">
-            Начать анализ
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#6ea8fe] px-5 text-sm font-semibold text-[#08111f] transition hover:bg-[#8db8ff]">
+            Open market desk
             <ArrowRight size={16} />
           </Link>
         </div>
@@ -334,105 +248,171 @@ export default async function Home() {
   );
 }
 
-function HeroMetric({ label, value }: { label: string; value: string }) {
+function SectionHeader({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
   return (
-    <div className="rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-      <p className="text-xs font-semibold text-[#cbd5e1]">{label}</p>
-      <p className="tabular-data mt-2 text-2xl font-bold">{value}</p>
+    <div className="mb-4 max-w-3xl">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1e40af]">{eyebrow}</p>
+      <h2 className="mt-2 text-2xl font-semibold leading-tight text-[#0f172a] sm:text-3xl">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-[#475569] sm:text-base">{text}</p>
     </div>
   );
 }
 
-function SectionHeader({ eyebrow, title, text, action }: { eyebrow: string; title: string; text: string; action?: React.ReactNode }) {
+function PreviewCard({ row }: { row: MarketTableRow }) {
   return (
-    <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-      <div className="max-w-3xl">
-        <p className="text-xs font-bold uppercase tracking-normal text-[#1e40af]">{eyebrow}</p>
-        <h2 className="mt-2 text-3xl font-bold leading-tight sm:text-4xl">{title}</h2>
-        <p className="mt-3 text-sm leading-7 text-[#475569] sm:text-base">{text}</p>
+    <Link href={`/stocks/${encodeURIComponent(row.ticker)}`} className="group rounded-[18px] border border-[#dbe4ef] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-[#c7d2fe] hover:shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">{formatMarketLabel(row)}</p>
+          <h3 className="mt-1 truncate text-lg font-semibold text-[#0f172a]">{row.name}</h3>
+          <p className="tabular-data mt-1 text-xs font-semibold text-[#1e40af]">{row.ticker}</p>
+        </div>
+        <ChangePill value={row.change24h} />
       </div>
-      {action}
-    </div>
-  );
-}
-
-function OutcomeCard({ title, text, icon: Icon }: { title: string; text: string; icon: LucideIcon }) {
-  return (
-    <article className="rounded-xl border border-[#dbe4ef] bg-white p-5 transition hover:border-[#93c5fd] hover:shadow-sm">
-      <span className="grid size-11 place-items-center rounded-lg bg-[#eef4ff] text-[#1e40af]"><Icon size={22} /></span>
-      <h3 className="mt-4 text-lg font-bold">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-[#475569]">{text}</p>
-    </article>
-  );
-}
-
-function MarketChip({ label, value, change }: { label: string; value: string; change?: number }) {
-  return (
-    <div className="min-w-44 shrink-0 rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-bold uppercase text-[#64748b]">{label}</p>
-        {typeof change === "number" ? <Change value={change} /> : null}
+      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <PreviewMetric label="Price" value={formatRowPrice(row)} />
+        <PreviewMetric label="Market cap" value={row.marketCap} />
+        <PreviewMetric label="Volume" value={row.volume24h} />
+        <PreviewMetric label="7d move" value={formatPercent(row.change7d)} />
       </div>
-      <p className="tabular-data mt-2 font-bold">{value}</p>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <span className="text-xs text-[#64748b]">{row.sector ?? "sector"} · {row.listingCategory ?? "listing"}</span>
+        <ArrowRight size={16} className="text-[#94a3b8] transition group-hover:translate-x-0.5 group-hover:text-[#1e40af]" />
+      </div>
+    </Link>
+  );
+}
+
+function PreviewMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">{label}</p>
+      <p className="tabular-data mt-1 truncate text-sm font-semibold text-[#0f172a]">{value}</p>
     </div>
   );
 }
 
-function Change({ value }: { value: number }) {
+function SnapshotChip({ label, value, change, tone = "neutral" }: { label: string; value: string; change?: number; tone?: "neutral" | "positive" | "negative" }) {
+  return (
+    <div className="flex shrink-0 items-center gap-3 rounded-full border border-[#dbe4ef] bg-white px-4 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">{label}</p>
+        <p className="tabular-data text-sm font-semibold text-[#0f172a]">{value}</p>
+      </div>
+      {typeof change === "number" ? <ChangePill value={change} /> : <ToneDot tone={tone} />}
+    </div>
+  );
+}
+
+function ToneDot({ tone }: { tone: "neutral" | "positive" | "negative" }) {
+  const styles = tone === "positive" ? "bg-[#16a34a]" : tone === "negative" ? "bg-[#dc2626]" : "bg-[#64748b]";
+  return <span className={`size-2 rounded-full ${styles}`} />;
+}
+
+function MacroCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[18px] border border-[#dbe4ef] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">{label}</p>
+      <p className="tabular-data mt-2 text-xl font-semibold text-[#0f172a]">{value}</p>
+      <p className="mt-1 text-xs text-[#64748b]">{detail}</p>
+    </div>
+  );
+}
+
+function StatBlock({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">{label}</p>
+      <p className="tabular-data mt-2 text-xl font-semibold text-[#0f172a]">{value}</p>
+      <p className="mt-1 text-xs text-[#64748b]">{detail}</p>
+    </div>
+  );
+}
+
+function ChangePill({ value }: { value: number }) {
   const positive = value >= 0;
-  const Icon = positive ? TrendingUp : TrendingDown;
   return (
-    <span className={`inline-flex items-center justify-end gap-1 text-xs font-bold ${positive ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
-      <Icon size={14} />
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${positive ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#fee2e2] text-[#b91c1c]"}`}>
+      {positive ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
       {formatPercent(value)}
     </span>
   );
 }
 
+function SearchHint({ children }: { children: string }) {
+  return <span className="tabular-data text-xs font-semibold">{children}</span>;
+}
+
 function InsightLine({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
   return (
-    <div className="flex gap-3 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-4">
-      <Icon className="mt-0.5 shrink-0 text-[#1e40af]" size={19} />
+    <div className="flex gap-3 rounded-[16px] border border-white/10 bg-white/5 p-4">
+      <Icon className="mt-0.5 shrink-0 text-[#6ea8fe]" size={18} />
       <div>
-        <p className="font-bold">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-[#475569]">{text}</p>
+        <p className="font-semibold text-white">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-[#c7d2e0]">{text}</p>
       </div>
     </div>
   );
 }
 
-function EconomyCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-xl border border-[#dbe4ef] bg-white p-5">
-      <p className="text-xs font-bold uppercase text-[#64748b]">{label}</p>
-      <p className="tabular-data mt-3 text-2xl font-bold">{value}</p>
-      <p className="mt-2 text-xs font-semibold text-[#1e40af]">{detail}</p>
-    </div>
-  );
+function normalizeNews(news: NewsItem[]) {
+  const fallback = [
+    { title: "UZSE market data updates are visible on the dashboard", source: "Einvestuz", summary: "The first screen already points to the market desk and stock pages.", impact: "Impact: easier entry into local market analysis." },
+    { title: "USD/UZS is wired into the market snapshot strip", source: "CBU", summary: "FX now anchors the cross-asset view for price comparison.", impact: "Impact: local and global assets become easier to read." },
+    { title: "OpenInfo-style receipts can sit next to company cards", source: "OpenInfo", summary: "Company pages should link facts, filings and the immediate thesis.", impact: "Impact: the source chain becomes part of the decision path." },
+  ];
+
+  if (!news.length) return fallback;
+  return news.slice(0, 3).map((item) => ({
+    title: item.title,
+    source: item.source,
+    summary: `AI pulls the key takeaway from ${item.category.toLowerCase()} news and links it back to stocks.`,
+    impact: `Impact: check the relevant ${item.category.toLowerCase()} names and sector exposure.`,
+  }));
 }
 
-function InfoRow({ icon: Icon, title, value, detail }: { icon: LucideIcon; title: string; value: string; detail: string }) {
-  return (
-    <div className="flex gap-4 rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-4">
-      <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-white text-[#1e40af]"><Icon size={21} /></span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <p className="font-bold">{title}</p>
-          <span className="rounded-lg border border-[#dbe4ef] bg-white px-2 py-1 text-xs font-bold text-[#475569]">{value}</span>
-        </div>
-        <p className="mt-1 text-sm leading-6 text-[#475569]">{detail}</p>
-      </div>
-    </div>
-  );
+function pickFocusRow(rows: MarketTableRow[]) {
+  if (!rows.length) return undefined;
+  return [...rows].sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h) || compareMarketCap(b, a))[0];
+}
+
+function pickPreviewRows(rows: MarketTableRow[]) {
+  return [...rows].sort((a, b) => compareMarketCap(b, a)).slice(0, 4);
+}
+
+function buildSnapshotItems(indexes: Array<{ ticker: string; value: string; change: number }>, fxRates: FxRate[], rows: MarketTableRow[], usdUzs: number) {
+  const fx = fxRates.find((rate) => rate.pair === "USD/UZS" || rate.base === "USD");
+  const liveCount = rows.filter((row) => row.sourceStatus === "live" || row.sourceStatus === "delayed").length;
+  return [
+    ...indexes.slice(0, 4).map((item) => ({
+      label: item.ticker,
+      value: item.value,
+      change: item.change,
+    })),
+    {
+      label: "USD/UZS",
+      value: usdUzs.toLocaleString("en-US", { maximumFractionDigits: 2 }),
+      change: fx?.change,
+    },
+    {
+      label: "Live rows",
+      value: `${liveCount.toLocaleString("ru-RU")} / ${rows.length.toLocaleString("ru-RU")}`,
+      tone: liveCount > 0 ? ("positive" as const) : ("neutral" as const),
+    },
+  ];
+}
+
+function compareMarketCap(a: MarketTableRow, b: MarketTableRow) {
+  return resolveComparableMoney(a.marketCapValue ?? parseCompactNumber(a.marketCap)) - resolveComparableMoney(b.marketCapValue ?? parseCompactNumber(b.marketCap));
+}
+
+function resolveComparableMoney(value?: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 function resolveUsdUzsRate(fxRates: FxRate[]) {
   const usd = fxRates.find((rate) => rate.pair === "USD/UZS" || rate.base === "USD");
   return usd?.rate && Number.isFinite(usd.rate) ? usd.rate : 12000;
-}
-
-function isUzseRow(row: MarketTableRow) {
-  return (row.source ?? "").toLowerCase().includes("uzse");
 }
 
 function formatRowPrice(row: MarketTableRow) {
@@ -444,29 +424,38 @@ function formatPercent(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
-function estimatePe(row: MarketTableRow) {
-  if (isUzseRow(row)) return row.price > 0 ? "research" : "N/A";
-  const seed = row.ticker.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return (18 + (seed % 36)).toFixed(1);
+function buildRiskSummary(row: MarketTableRow) {
+  const direction = row.change24h >= 0 ? "momentum" : "pressure";
+  const market = formatMarketLabel(row);
+  const sector = row.sector ?? "sector";
+  return `${row.name} shows ${direction} in ${market}. Check ${sector.toLowerCase()}, liquidity and the source chain before acting.`;
 }
 
-function estimateDividend(row: MarketTableRow) {
-  if (isUzseRow(row)) return "OpenInfo";
-  const seed = row.ticker.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return `${((seed % 28) / 10).toFixed(1)}%`;
+function formatMarketLabel(row: MarketTableRow) {
+  return isUzseRow(row) ? "Uzbekistan" : "Global";
 }
 
-function normalizeNews(news: NewsItem[]) {
-  const fallback = [
-    { title: "UZSE market data обновляется на дашборде", source: "Einvestuz", summary: "Появился полный список тикеров и инструментов UZSE.", impact: "Влияние: пользователю проще начать анализ локального рынка." },
-    { title: "CBU FX доступен как machine-readable источник", source: "CBU", summary: "Курс USD/UZS можно использовать для пересчета валют в таблице.", impact: "Влияние: сравнение локальных и глобальных активов стало понятнее." },
-    { title: "OpenInfo остается главным источником отчетности", source: "OpenInfo", summary: "Следующий слой продукта должен связать отчетность с карточками компаний.", impact: "Влияние: финансовые метрики станут проверяемыми по документам." },
+function isUzseRow(row: MarketTableRow) {
+  return (row.source ?? "").toLowerCase().includes("uzse") || row.currency === "UZS" || row.market === "uzbekistan";
+}
+
+function parseCompactNumber(value?: string) {
+  if (!value) return undefined;
+  const cleaned = value.replace(/,/g, "").trim();
+  const match = cleaned.match(/(-?\d+(?:\.\d+)?)\s*([KMBTQ])?/i);
+  if (!match) return Number(cleaned.replace(/[^\d.-]/g, ""));
+
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount)) return undefined;
+  const suffix = match[2]?.toUpperCase();
+  const multiplierMap: Record<string, number> = { K: 1e3, M: 1e6, B: 1e9, T: 1e12, Q: 1e15 };
+  return amount * (suffix ? multiplierMap[suffix] ?? 1 : 1);
+}
+
+function fallbackMacro() {
+  return [
+    { key: "inflation", label: "Inflation", value: "monitoring", source: "macro" },
+    { key: "rates", label: "Central bank", value: "watchlist", source: "macro" },
+    { key: "trade", label: "Trade", value: "export/import", source: "macro" },
   ];
-  if (!news.length) return fallback;
-  return news.slice(0, 3).map((item) => ({
-    title: item.title,
-    source: item.source,
-    summary: "AI выделит суть новости, свяжет ее с компаниями и отделит факт от шума.",
-    impact: `Влияние: проверить ${item.category.toLowerCase()} сектор и связанные тикеры.`,
-  }));
 }

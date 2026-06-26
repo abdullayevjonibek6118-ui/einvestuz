@@ -68,6 +68,10 @@ class Stock(BaseModel):
     stock_type: str | None = None
     openinfo_id: int | str | None = None
     website: str | None = None
+    insight: dict[str, Any] | None = None
+    risk_factors: list[dict[str, Any]] = Field(default_factory=list)
+    decision_summary: dict[str, Any] | None = None
+    source_meta: dict[str, Any] | None = None
 
 
 class MarketAsset(BaseModel):
@@ -609,6 +613,23 @@ def academy() -> list[dict[str, str | int]]:
 
 
 def _stock_response(stock) -> Stock:
+    as_of = stock.as_of or datetime.now(timezone.utc)
+    decision_room = _build_stock_decision_room(
+        ticker=stock.ticker,
+        name=stock.name,
+        price=stock.price,
+        change=stock.change,
+        currency="USD",
+        market="global",
+        sector=_sector_for_ticker(stock.ticker),
+        listing_category=None,
+        stock_type=None,
+        source=stock.source,
+        source_status=stock.status,
+        as_of=as_of,
+        description=stock.description,
+        change_is_percent=False,
+    )
     return Stock(
         ticker=stock.ticker,
         name=stock.name,
@@ -621,9 +642,13 @@ def _stock_response(stock) -> Stock:
         description=stock.description,
         source=stock.source,
         source_status=stock.status,
-        as_of=stock.as_of or datetime.now(timezone.utc),
+        as_of=as_of,
         currency="USD",
         market="global",
+        insight=decision_room["insight"],
+        risk_factors=decision_room["risk_factors"],
+        decision_summary=decision_room["decision_summary"],
+        source_meta=decision_room["source_meta"],
     )
 
 
@@ -631,6 +656,36 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
     ticker = str(item.get("ticker") or "").upper()
     price = _coerce_numeric(item.get("currentPrice"))
     market_cap_value = _stockscope_market_cap(item)
+    as_of = _stockscope_as_of(item)
+    decision_room = _build_stock_decision_room(
+        ticker=ticker,
+        name=str(item.get("name") or item.get("uzseName") or ticker),
+        price=price,
+        change=_stockscope_change(item, "yesterday"),
+        currency="UZS",
+        market="uzbekistan",
+        sector=str(item.get("sector") or "Рынок Узбекистана"),
+        listing_category=str(item.get("listingCategory") or "") or None,
+        stock_type=str(item.get("stockType") or "") or None,
+        source="stockscope.uz",
+        source_status="delayed",
+        as_of=as_of,
+        description=" ".join(
+            [
+                str(item.get("uzseName") or item.get("name") or ticker),
+                "локальная акция Узбекистана из StockScope screener.",
+                *(
+                    [f"Категория листинга: {item.get('listingCategory')}."]
+                    if item.get("listingCategory")
+                    else []
+                ),
+                *([f"ISIN: {item.get('isin')}." ] if item.get("isin") else []),
+            ]
+        ),
+        market_cap=_format_uzs_value(market_cap_value) if market_cap_value else "N/A",
+        volume_proxy=_stockscope_volume(item),
+        change_is_percent=True,
+    )
     description_parts = [
         str(item.get("uzseName") or item.get("name") or ticker),
         "локальная акция Узбекистана из StockScope screener.",
@@ -651,7 +706,7 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         description=" ".join(description_parts),
         source="stockscope.uz",
         source_status="delayed",
-        as_of=_stockscope_as_of(item),
+        as_of=as_of,
         currency="UZS",
         market="uzbekistan",
         isin=str(item.get("isin") or "") or None,
@@ -659,6 +714,10 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         stock_type=str(item.get("stockType") or "") or None,
         openinfo_id=item.get("openinfoId"),
         website=str(item.get("website") or "") or None,
+        insight=decision_room["insight"],
+        risk_factors=decision_room["risk_factors"],
+        decision_summary=decision_room["decision_summary"],
+        source_meta=decision_room["source_meta"],
     )
 
 
@@ -883,6 +942,193 @@ def _format_market_value(price: float, category: str) -> str:
 
 def _sector_for_ticker(ticker: str) -> str:
     return SECTOR_BY_TICKER.get(ticker.upper(), "Рынок")
+
+
+def _build_stock_decision_room(
+    *,
+    ticker: str,
+    name: str,
+    price: float,
+    change: float,
+    currency: str,
+    market: str,
+    sector: str | None,
+    listing_category: str | None,
+    stock_type: str | None,
+    source: str,
+    source_status: str,
+    as_of: datetime,
+    description: str = "",
+    market_cap: str | None = None,
+    volume_proxy: float | None = None,
+    change_is_percent: bool = True,
+) -> dict[str, Any]:
+    now = datetime.now(timezone.utc)
+    freshness_minutes = _minutes_since(as_of, now)
+    freshness_band = _freshness_band(freshness_minutes)
+    price_display = _format_price_display(price, currency)
+    change_display = f"{change:+.2f}%" if change_is_percent else f"{change:+.2f} {currency}"
+    sector_label = sector or "Сектор не указан"
+    listing_label = listing_category or "Категория листинга не указана"
+    type_label = stock_type or "Тип бумаги не указан"
+    movement = "позитивное" if change > 0 else "негативное" if change < 0 else "нейтральное"
+    freshness_note = "свежие" if freshness_band == "fresh" else "задержанные" if freshness_band == "delayed" else "устаревшие"
+    freshness_risk = "low" if freshness_band == "fresh" and source_status == "live" else "medium" if freshness_band == "delayed" else "high"
+    volume_note = _format_volume_proxy(volume_proxy, currency)
+
+    insight = {
+        "headline": f"{name}: {price_display} ({change_display})",
+        "summary": (
+            f"{sector_label}. Движение сейчас {movement}; для образовательного обзора это удобно "
+            f"сверять с ликвидностью, свежестью данных и типом листинга."
+        ),
+        "signals": [
+            f"Цена: {price_display}",
+            f"Дневное изменение: {change_display}",
+            f"Сектор: {sector_label}",
+            f"Листинг: {listing_label}",
+            f"Тип бумаги: {type_label}",
+            f"Источник: {source} ({source_status})",
+        ],
+        "freshness": {
+            "label": freshness_note,
+            "minutes": round(freshness_minutes, 1),
+        },
+        "liquidity_proxy": volume_note,
+        "orientation": "watch" if abs(change) >= 3 else "neutral",
+    }
+
+    risk_factors = [
+        {
+            "code": "data_freshness",
+            "label": "Data freshness risk",
+            "severity": freshness_risk,
+            "detail": (
+                f"Source is {freshness_note}; as_of={as_of.isoformat()}."
+                if freshness_minutes is not None
+                else f"Source freshness is not explicit for {source}."
+            ),
+        }
+    ]
+    if volume_proxy in (None, 0):
+        risk_factors.append(
+            {
+                "code": "liquidity_proxy",
+                "label": "Liquidity proxy risk",
+                "severity": "medium" if market == "uzbekistan" else "low",
+                "detail": "Volume proxy is unavailable, so liquidity needs extra caution.",
+            }
+        )
+    elif volume_proxy < 100_000:
+        risk_factors.append(
+            {
+                "code": "liquidity_proxy",
+                "label": "Liquidity proxy risk",
+                "severity": "medium",
+                "detail": f"Estimated volume proxy is low: {volume_note}.",
+            }
+        )
+    if abs(change) >= 5:
+        risk_factors.append(
+            {
+                "code": "volatility",
+                "label": "Volatility risk",
+                "severity": "medium",
+                "detail": f"Price moved {change_display} versus the previous session.",
+            }
+        )
+    if market == "uzbekistan" and not listing_category:
+        risk_factors.append(
+            {
+                "code": "coverage_gap",
+                "label": "Coverage gap",
+                "severity": "low",
+                "detail": "Listing category is missing, so classification confidence is lower.",
+            }
+        )
+    if source_status in {"fallback", "offline"}:
+        risk_factors.append(
+            {
+                "code": "source_quality",
+                "label": "Source quality risk",
+                "severity": "high",
+                "detail": f"Data comes from {source_status} mode; treat it as educational rather than actionable.",
+            }
+        )
+
+    decision_summary = {
+        "bottom_line": (
+            f"{name} looks {movement} on the latest available data and is best treated as an educational watchlist item."
+        ),
+        "who_it_might_fit": [
+            "Users comparing sector context and source freshness",
+            "Longer-horizon learners who want a quick screen before deeper research",
+        ],
+        "who_it_might_not_fit": [
+            "Intraday traders who need a real-time tape",
+            "Users who need a fully verified, license-grade market feed",
+        ],
+        "next_step": "Open fundamentals, compare peers, and check source freshness before drawing conclusions.",
+        "time_horizon": "educational / pre-research",
+    }
+
+    source_meta = {
+        "source": source,
+        "status": source_status,
+        "market": market,
+        "currency": currency,
+        "change_basis": "percent" if change_is_percent else "absolute",
+        "as_of": as_of.isoformat(),
+        "freshness_minutes": round(freshness_minutes, 1),
+        "freshness_band": freshness_band,
+        "freshness_risk": freshness_risk,
+        "market_cap": market_cap,
+        "volume_proxy": volume_proxy,
+        "ticker": ticker,
+        "name": name,
+        "description": description,
+    }
+    return {
+        "insight": insight,
+        "risk_factors": risk_factors,
+        "decision_summary": decision_summary,
+        "source_meta": source_meta,
+    }
+
+
+def _minutes_since(as_of: datetime, now: datetime) -> float:
+    try:
+        delta = now - as_of.astimezone(timezone.utc)
+        return max(delta.total_seconds() / 60.0, 0.0)
+    except Exception:
+        return 0.0
+
+
+def _freshness_band(minutes: float) -> str:
+    if minutes <= 30:
+        return "fresh"
+    if minutes <= 24 * 60:
+        return "delayed"
+    return "stale"
+
+
+def _format_price_display(price: float, currency: str) -> str:
+    if currency == "USD":
+        return f"${price:,.2f}"
+    return f"{currency} {price:,.2f}"
+
+
+def _format_volume_proxy(volume: float | None, currency: str) -> str:
+    if volume in (None, 0):
+        return "N/A"
+    prefix = currency if currency != "USD" else "$"
+    if volume >= 1_000_000_000:
+        return f"{prefix} {volume / 1_000_000_000:.2f}B"
+    if volume >= 1_000_000:
+        return f"{prefix} {volume / 1_000_000:.2f}M"
+    if volume >= 1_000:
+        return f"{prefix} {volume / 1_000:.2f}K"
+    return f"{prefix} {volume:.0f}"
 
 
 def _market_status() -> dict[str, str | bool]:

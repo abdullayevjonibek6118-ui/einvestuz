@@ -3,15 +3,16 @@ import type { LiveSourceStatus } from "@/lib/data";
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="mb-5 overflow-hidden rounded-3xl border border-[#dbe4ef] bg-white/88 p-4 shadow-[0_18px_55px_rgba(15,23,42,0.07)] backdrop-blur sm:p-5">
+    <div className="mb-5 overflow-hidden rounded-[18px] border border-[#dbe4ef] bg-white/[0.86] p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)] backdrop-blur sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1e40af]">Market desk</p>
           <h1 className="text-2xl font-semibold tracking-normal text-[#0f172a]">{title}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-[#475569]">{subtitle}</p>
         </div>
-        <div className="inline-flex max-w-full items-center gap-2 rounded-xl border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium leading-5 text-[#9a3412]">
-          <span className="size-2 shrink-0 rounded-full bg-[#f59e0b]" />
-          <span className="min-w-0 break-words">Образовательная аналитика, не инвестрекомендация</span>
+        <div className="inline-flex max-w-full items-center gap-2 rounded-xl border border-[#c7d2fe] bg-[#eef2ff] px-3 py-2 text-xs font-medium leading-5 text-[#3730a3]">
+          <span className="size-2 shrink-0 rounded-full bg-[#4f46e5]" />
+          <span className="min-w-0 break-words">Research receipt ready, not financial advice</span>
         </div>
       </div>
     </div>
@@ -30,10 +31,10 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`overflow-hidden rounded-3xl border border-[#dbe4ef] bg-white/92 shadow-[0_14px_45px_rgba(15,23,42,0.06)] backdrop-blur ${className}`}>
+    <section className={`overflow-hidden rounded-[18px] border border-[#dbe4ef] bg-white/[0.92] shadow-[0_14px_45px_rgba(15,23,42,0.05)] backdrop-blur ${className}`}>
       {(title || action) && (
-        <div className="flex min-h-14 items-center justify-between border-b border-[#e2e8f0] bg-[#f8fafc]/75 px-4">
-          {title ? <h2 className="text-sm font-semibold text-[#0f172a]">{title}</h2> : <span />}
+        <div className="flex min-h-14 items-center justify-between border-b border-[#e2e8f0] bg-[#f8fafc]/80 px-4">
+          {title ? <h2 className="text-sm font-semibold tracking-normal text-[#0f172a]">{title}</h2> : <span />}
           {action}
         </div>
       )}
@@ -78,7 +79,7 @@ export function SourceStatusBadge({ status, source }: { status?: LiveSourceStatu
 
   return (
     <span className={`inline-flex h-6 max-w-full items-center gap-1.5 rounded-lg border px-2 text-[11px] font-semibold ${sourceStatusStyles[resolved]}`} title={source ? `${source} · ${sourceStatusLabels[resolved]}` : sourceStatusLabels[resolved]}>
-      <span className={`size-1.5 rounded-full ${resolved === "live" ? "bg-[#16a34a]" : resolved === "offline" ? "bg-[#dc2626]" : resolved === "needs_license" ? "bg-[#7c3aed]" : "bg-current"}`} />
+      <span className={`size-1.5 rounded-full ${resolved === "live" ? "bg-[#16a34a] live-pulse" : resolved === "offline" ? "bg-[#dc2626]" : resolved === "needs_license" ? "bg-[#7c3aed]" : "bg-current"}`} />
       <span className="min-w-0 truncate">{source ? `${source} · ${sourceStatusLabels[resolved]}` : sourceStatusLabels[resolved]}</span>
     </span>
   );
@@ -86,8 +87,8 @@ export function SourceStatusBadge({ status, source }: { status?: LiveSourceStatu
 
 export function Metric({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="rounded-2xl border border-[#dbe4ef] bg-[linear-gradient(180deg,#ffffff,#f8fafc)] p-3 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
-      <p className="text-xs font-medium text-[#475569]">{label}</p>
+    <div className="rounded-[16px] border border-[#dbe4ef] bg-[linear-gradient(180deg,#ffffff,#f8fafc)] p-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">{label}</p>
       <p className="tabular-data mt-1 text-base font-semibold text-[#0f172a]">{value}</p>
       {detail ? <p className="mt-1 text-[11px] leading-4 text-[#64748b]">{detail}</p> : null}
     </div>

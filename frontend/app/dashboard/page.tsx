@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { Activity, Bot, Globe2, Newspaper, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
-import { LiveMarketStatus } from "@/components/live-market-status";
+import { Activity, Bot, Globe2, Newspaper, Search, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
 import { getDashboardData } from "@/lib/api";
 import { type MarketTableRow } from "@/lib/data";
@@ -48,124 +47,159 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const sortedRows = sortMarketRows(filteredRows, sort, currencyContext);
   const activeSourceCount = sources.filter((source) => source.status === "live" || source.status === "delayed").length;
   const dashboardSymbols = [...indexes.map((index) => index.ticker), ...stocks.map((stock) => stock.ticker)];
+  const localRows = marketTable.filter(isUzbekistanRow).length;
 
   return (
     <>
-      <PageHeader title="Главная" subtitle="Мировые рынки, новости и AI-идеи дня для инвесторов из Узбекистана." />
+      <PageHeader title="Market desk" subtitle="Рабочий экран рынка: источники, таблица, FX, macro и AI-идеи в одной последовательности." />
 
-      <LiveMarketStatus sources={sources} symbols={dashboardSymbols} />
-
-      <div className="mb-4 grid gap-3 md:grid-cols-3">
-        <Metric label="Охват рынка" value={`${marketTable.length} инструментов`} detail="UZSE, StockScope и глобальные активы" />
-        <Metric label="Узбекистан" value={`${marketTable.filter(isUzbekistanRow).length} строк`} detail="Акции, OTC и локальные инструменты" />
-        <Metric label="Источники данных" value={`${activeSourceCount}/${sources.length} активны`} detail="UZSE, StockScope, CBU и market APIs" />
-      </div>
-
-      <Panel title="Рынок" action={<span className="tabular-data rounded-xl border border-[#dbe4ef] bg-white px-2.5 py-1 text-xs font-semibold text-[#475569]">{sortedRows.length.toLocaleString("ru-RU")} строк</span>}>
-        <MarketToolbar query={query} sort={sort} market={market} currency={currency} total={marketTable.length} visible={sortedRows.length} usdUzsRate={currencyContext.usdUzsRate} />
-        {sortedRows.length ? (
-          <>
-            <MarketDesktopTable rows={sortedRows} currencyContext={currencyContext} />
-            <MarketMobileCards rows={sortedRows} currencyContext={currencyContext} />
-          </>
-        ) : (
-          <EmptyMarketState query={query} />
-        )}
-      </Panel>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <Panel title="FX" action={<Globe2 size={18} className="text-[#1e40af]" />}>
-          <CompactMarketList
-            emptyLabel="FX-данные пока не пришли из backend."
-            items={fxRates.map((rate) => ({
-              key: rate.pair,
-              title: rate.pair,
-              value: rate.rate.toLocaleString("en-US", { maximumFractionDigits: 4 }),
-              detail: rate.asOf ? `обновлено ${formatTime(rate.asOf)}` : rate.base && rate.quote ? `${rate.base} / ${rate.quote}` : undefined,
-              change: rate.change,
-              source: rate.source,
-              status: rate.sourceStatus,
-            }))}
-          />
-        </Panel>
-
-        <Panel title="Macro" action={<Activity size={18} className="text-[#1e40af]" />}>
-          <div className="grid gap-2 md:grid-cols-2">
-            {macro.length ? (
-              macro.map((item) => (
-                <div key={item.key} className="rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-[#64748b]">{item.label}</p>
-                      <p className="tabular-data mt-1 text-lg font-semibold text-[#0f172a]">{item.value}</p>
-                    </div>
-                    {typeof item.change === "number" ? <ChangeBadge value={item.change} /> : null}
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {item.unit ? <span className="rounded-lg border border-[#dbe4ef] bg-white px-2 py-1 text-[11px] font-semibold text-[#475569]">{item.unit}</span> : null}
-                    <SourceStatusBadge source={item.source} status={item.sourceStatus} />
-                  </div>
-                  {item.asOf ? <p className="mt-2 text-[11px] text-[#64748b]">обновлено {formatTime(item.asOf)}</p> : null}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-[#64748b]">Macro-метрики появятся, когда backend начнет отдавать блок `macro`.</p>
-            )}
+      <section className="mb-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <Panel title="Source status" action={<span className="inline-flex items-center gap-2 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-1 text-xs font-semibold text-[#166534]"><Activity size={14} />live</span>}>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {sources.slice(0, 6).map((source) => (
+                <SourceStatusBadge key={source.id} source={source.name} status={source.status} />
+              ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Metric label="Охват рынка" value={`${marketTable.length} инструментов`} detail="indexes, stocks, market table" />
+              <Metric label="Узбекистан" value={`${localRows} строк`} detail="local markets and OTC" />
+              <Metric label="Источники" value={`${activeSourceCount}/${sources.length}`} detail="live and delayed feeds" />
+            </div>
           </div>
         </Panel>
+
+        <Panel title="AI ideas" action={<Bot size={18} className="text-[#1e40af]" />}>
+          <div className="space-y-3">
+            <p className="text-sm leading-6 text-[#334155]">
+              AI видит интерес к крупным технологиям и локальным бумагам, но решение зависит от ликвидности, отчётности и источника данных.
+            </p>
+            <div className="rounded-[16px] border border-[#c7d2fe] bg-[#eef2ff] p-4 text-sm leading-6 text-[#1e40af]">
+              Research receipt: сначала проверить цену, потом риск-факторы, затем сравнение с ближайшими peer names.
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/ai?question=Give%20me%20three%20high%20conviction%20ideas%20from%20today%27s%20market" className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
+                Ask AI
+                <Sparkles size={15} />
+              </Link>
+              <Link href="/stocks/NVDA" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-3 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
+                Open stock room
+                <ArrowHint />
+              </Link>
+            </div>
+            <div className="flex items-center gap-2 rounded-[16px] border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-xs font-medium text-[#166534]">
+              <ShieldCheck size={15} />
+              Сценарий рассчитан на обучение и виртуальный портфель.
+            </div>
+          </div>
+        </Panel>
+      </section>
+
+      <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <Metric label="Visible rows" value={`${sortedRows.length} / ${marketTable.length}`} detail="filtered by search and market" />
+        <Metric label="USD/UZS" value={currencyContext.usdUzsRate.toLocaleString("en-US", { maximumFractionDigits: 2 })} detail="FX anchor for comparisons" />
+        <Metric label="Sort mode" value={sortOptions.find((option) => option.key === sort)?.label ?? "Market cap"} detail="one click table order" />
+        <Metric label="Live symbols" value={dashboardSymbols.length.toString()} detail="indexes and stocks" />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {indexes.map((index) => (
-          <Panel key={index.ticker}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="tabular-data text-xs font-semibold text-[#1e40af]">{index.ticker}</p>
-                <h2 className="mt-1 text-sm font-semibold text-[#0f172a]">{index.name}</h2>
-                <p className="tabular-data mt-3 text-2xl font-semibold text-[#0f172a]">{index.value}</p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <ChangeBadge value={index.change} />
-                <SourceStatusBadge source={index.source} status={index.sourceStatus} />
-              </div>
-            </div>
-            {index.asOf ? <p className="tabular-data mt-3 text-xs text-[#64748b]">обновлено {new Date(index.asOf).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</p> : null}
-            <div className="mt-4 h-1.5 rounded-full bg-[#e2e8f0]">
-              <div className={`h-1.5 rounded-full ${index.change >= 0 ? "bg-[#16a34a]" : "bg-[#dc2626]"}`} style={{ width: `${Math.min(92, Math.max(16, Math.abs(index.change) * 28))}%` }} />
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_420px]">
+        <Panel
+          title="Market table"
+          action={<span className="tabular-data rounded-full border border-[#dbe4ef] bg-white px-3 py-1 text-xs font-semibold text-[#475569]">{sortedRows.length.toLocaleString("ru-RU")} rows</span>}
+          className="xl:sticky xl:top-24"
+        >
+          <MarketToolbar query={query} sort={sort} market={market} currency={currency} total={marketTable.length} visible={sortedRows.length} usdUzsRate={currencyContext.usdUzsRate} />
+          {sortedRows.length ? (
+            <>
+              <MarketDesktopTable rows={sortedRows} currencyContext={currencyContext} />
+              <MarketMobileCards rows={sortedRows} currencyContext={currencyContext} />
+            </>
+          ) : (
+            <EmptyMarketState query={query} />
+          )}
+        </Panel>
+
+        <div className="grid gap-4">
+          <Panel title="FX">
+            <CompactMarketList
+              emptyLabel="FX-данные пока не пришли из backend."
+              items={fxRates.map((rate) => ({
+                key: rate.pair,
+                title: rate.pair,
+                value: rate.rate.toLocaleString("en-US", { maximumFractionDigits: 4 }),
+                detail: rate.asOf ? `обновлено ${formatTime(rate.asOf)}` : rate.base && rate.quote ? `${rate.base} / ${rate.quote}` : undefined,
+                change: rate.change,
+                source: rate.source,
+                status: rate.sourceStatus,
+              }))}
+            />
+          </Panel>
+
+          <Panel title="Macro" action={<Activity size={18} className="text-[#1e40af]" />}>
+            <div className="grid gap-2">
+              {macro.length ? (
+                macro.map((item) => (
+                  <div key={item.key} className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">{item.label}</p>
+                        <p className="tabular-data mt-1 text-lg font-semibold text-[#0f172a]">{item.value}</p>
+                      </div>
+                      {typeof item.change === "number" ? <ChangeBadge value={item.change} /> : null}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {item.unit ? <span className="rounded-full border border-[#dbe4ef] bg-white px-2 py-1 text-[11px] font-semibold text-[#475569]">{item.unit}</span> : null}
+                      <SourceStatusBadge source={item.source} status={item.sourceStatus} />
+                    </div>
+                    {item.asOf ? <p className="mt-2 text-[11px] text-[#64748b]">обновлено {formatTime(item.asOf)}</p> : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-[#64748b]">Macro-метрики появятся, когда backend начнет отдавать блок `macro`.</p>
+              )}
             </div>
           </Panel>
-        ))}
-      </div>
 
-      <Panel title="AI идеи дня" action={<Bot size={18} className="text-[#1e40af]" />} className="mt-4">
-        <div className="space-y-3">
-          <p className="text-sm leading-6 text-[#334155]">
-            AI видит устойчивый интерес к полупроводникам и облачной инфраструктуре, но оценки лидеров остаются высокими.
-          </p>
-          <div className="rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] p-3 text-sm leading-6 text-[#1e40af]">
-            Фокус: сравнить рост выручки Nvidia и Microsoft с текущими P/E, не забывая про риск коррекции AI-сектора.
-          </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-xs font-medium text-[#166534]">
-            <ShieldCheck size={15} />
-            Сценарий предназначен для обучения и виртуального портфеля.
-          </div>
-        </div>
-      </Panel>
+          <Panel title="Indexes" action={<Globe2 size={18} className="text-[#1e40af]" />}>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {indexes.map((index) => (
+                <div key={index.ticker} className="rounded-[16px] border border-[#dbe4ef] bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="tabular-data text-xs font-semibold text-[#1e40af]">{index.ticker}</p>
+                      <h2 className="mt-1 text-sm font-semibold text-[#0f172a]">{index.name}</h2>
+                      <p className="tabular-data mt-2 text-xl font-semibold text-[#0f172a]">{index.value}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <ChangeBadge value={index.change} />
+                      <SourceStatusBadge source={index.source} status={index.sourceStatus} />
+                    </div>
+                  </div>
+                  <div className="mt-3 h-1.5 rounded-full bg-[#e2e8f0]">
+                    <div className={`h-1.5 rounded-full ${index.change >= 0 ? "bg-[#16a34a]" : "bg-[#dc2626]"}`} style={{ width: `${Math.min(92, Math.max(16, Math.abs(index.change) * 28))}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Panel>
 
-      <Panel title="Новости" action={<Newspaper size={18} className="text-[#667085]" />} className="mt-4">
-        <div className="grid gap-3 md:grid-cols-2">
-          {news.map((item) => (
-            <article key={item.id} className="rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-[#64748b]">
-                <span>{item.category}</span>
-                <span>{item.source}</span>
-                <span>{item.time}</span>
-              </div>
-              <h3 className="mt-2 text-sm font-semibold">{item.title}</h3>
-            </article>
-          ))}
+          <Panel title="News">
+            <div className="grid gap-3">
+              {news.map((item) => (
+                <article key={item.id} className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-3 transition hover:border-[#c7d2fe] hover:bg-white">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+                    <Newspaper size={14} />
+                    <span>{item.category}</span>
+                    <span>{item.source}</span>
+                    <span>{item.time}</span>
+                  </div>
+                  <h3 className="mt-2 text-sm font-semibold leading-6 text-[#0f172a]">{item.title}</h3>
+                </article>
+              ))}
+            </div>
+          </Panel>
         </div>
-      </Panel>
+      </section>
     </>
   );
 }
@@ -191,7 +225,7 @@ function MarketToolbar({
     <div className="mb-4 flex flex-col gap-3 border-b border-[#e2e8f0] pb-4 lg:flex-row lg:items-end lg:justify-between">
       <form className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_150px_130px_150px_auto] lg:items-end" method="get">
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Поиск</span>
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#667085]">Поиск</span>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" size={16} />
             <input
@@ -204,7 +238,7 @@ function MarketToolbar({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Рынок</span>
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#667085]">Рынок</span>
           <div className="relative">
             <select
               name="market"
@@ -222,7 +256,7 @@ function MarketToolbar({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Валюта</span>
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#667085]">Валюта</span>
           <div className="relative">
             <select
               name="currency"
@@ -240,7 +274,7 @@ function MarketToolbar({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Сортировка</span>
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#667085]">Сортировка</span>
           <div className="relative">
             <select
               name="sort"
@@ -264,12 +298,11 @@ function MarketToolbar({
       </form>
 
       <div className="flex items-center gap-2 text-xs font-medium text-[#64748b]">
-        <span className="rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1">{visible.toLocaleString("ru-RU")} / {total.toLocaleString("ru-RU")}</span>
-        <span className="hidden rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1 md:inline">USD/UZS {usdUzsRate.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
-        <Link
-          href="/dashboard"
-          className="inline-flex h-10 items-center rounded-2xl border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-[#f8fafc]"
-        >
+        <span className="rounded-full border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1">
+          {visible.toLocaleString("ru-RU")} / {total.toLocaleString("ru-RU")}
+        </span>
+        <span className="hidden rounded-full border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1 md:inline">USD/UZS {usdUzsRate.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
+        <Link href="/dashboard" className="inline-flex h-10 items-center rounded-2xl border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-[#f8fafc]">
           Сбросить
         </Link>
       </div>
@@ -280,10 +313,10 @@ function MarketToolbar({
 function MarketDesktopTable({ rows, currencyContext }: { rows: MarketTableRow[]; currencyContext: CurrencyContext }) {
   return (
     <div className="hidden md:block">
-      <div className="max-h-[720px] overflow-auto rounded-3xl border border-[#dbe4ef] bg-white shadow-inner">
+      <div className="max-h-[760px] overflow-auto rounded-[20px] border border-[#dbe4ef] bg-white shadow-inner">
         <table className="min-w-[1180px] border-separate border-spacing-0">
           <thead className="sticky top-0 z-10 bg-[#f8fafc]/95 backdrop-blur">
-            <tr className="text-[11px] uppercase tracking-normal text-[#64748b]">
+            <tr className="text-[11px] uppercase tracking-[0.12em] text-[#64748b]">
               <th scope="col" className="w-12 whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">#</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Logo</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Name / Ticker</th>
@@ -346,7 +379,7 @@ function MarketMobileCards({ rows, currencyContext }: { rows: MarketTableRow[]; 
   return (
     <div className="grid gap-2 md:hidden">
       {rows.map((row, index) => (
-        <Link key={row.ticker} href={`/stocks/${encodeURIComponent(row.ticker)}`} className="block rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3 transition hover:border-[#bfdbfe] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3861fb]">
+        <Link key={row.ticker} href={`/stocks/${encodeURIComponent(row.ticker)}`} className="block rounded-[18px] border border-[#dbe4ef] bg-[#f8fafc] p-3 transition hover:border-[#bfdbfe] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3861fb]">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs text-[#64748b]">#{index + 1}</p>
@@ -389,8 +422,8 @@ function MarketMobileCards({ rows, currencyContext }: { rows: MarketTableRow[]; 
 function MetricChip({ label, value }: { label: string; value: number | string }) {
   const isNumber = typeof value === "number";
   return (
-    <div className="rounded-xl border border-[#dbe4ef] bg-white px-3 py-2">
-      <p className="text-[10px] uppercase tracking-normal text-[#64748b]">{label}</p>
+    <div className="rounded-2xl border border-[#dbe4ef] bg-white px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-[#64748b]">{label}</p>
       {isNumber ? (
         <p className={`tabular-data mt-1 text-sm font-semibold ${Math.abs(value) < 0.005 ? "text-[#475569]" : value > 0 ? "text-[#15803d]" : "text-[#b91c1c]"}`}>{formatPercent(value)}</p>
       ) : (
@@ -419,7 +452,7 @@ function MarketMeta({ row, compact = false }: { row: MarketTableRow; compact?: b
 
 function EmptyMarketState({ query }: { query: string }) {
   return (
-    <div className="rounded-3xl border border-dashed border-[#dbe4ef] bg-[#f8fafc] px-4 py-10 text-center text-sm text-[#64748b]">
+    <div className="rounded-[18px] border border-dashed border-[#dbe4ef] bg-[#f8fafc] px-4 py-10 text-center text-sm text-[#64748b]">
       {query ? `Ничего не найдено по запросу "${query}".` : "Таблица пока пуста."}
     </div>
   );
@@ -447,10 +480,10 @@ function CompactMarketList({
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <div key={item.key} className="rounded-xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
+        <div key={item.key} className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-medium text-[#64748b]">{item.title}</p>
+              <p className="text-[11px] font-medium text-[#64748b]">{item.title}</p>
               <p className="tabular-data mt-1 text-lg font-semibold text-[#0f172a]">{item.value}</p>
             </div>
             {typeof item.change === "number" ? <ChangeBadge value={item.change} /> : null}
@@ -513,12 +546,14 @@ function sparklinePath(values: number[]) {
 function logoLabel(ticker: string, name: string) {
   const compact = ticker.replace(/[^A-Za-z0-9]/g, "");
   if (compact.length >= 2) return compact.slice(0, 2).toUpperCase();
-  if (name.trim()) return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+  if (name.trim()) {
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("");
+  }
   return ticker.slice(0, 2).toUpperCase();
 }
 
@@ -689,4 +724,8 @@ function formatTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString("ru-RU", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+}
+
+function ArrowHint() {
+  return <span aria-hidden className="inline-block translate-y-px">→</span>;
 }

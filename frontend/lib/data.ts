@@ -28,10 +28,58 @@ export type Stock = {
   stockType?: string;
   openinfoId?: number | string;
   website?: string;
+  insight?: StockInsight;
+  riskFactors?: StockRiskFactor[];
+  decisionSummary?: StockDecisionSummary;
+  sourceMeta?: StockDecisionSourceMeta;
   fundamentals?: StockFundamentals;
   earnings?: StockEarningPoint[];
   news?: NewsItem[];
   sources?: StockSourceMeta[];
+};
+
+export type StockInsight = {
+  headline?: string;
+  summary?: string;
+  signals?: string[];
+  freshness?: {
+    label?: string;
+    minutes?: number;
+  };
+  liquidityProxy?: string;
+  orientation?: string;
+};
+
+export type StockRiskFactor = {
+  code?: string;
+  label: string;
+  severity?: "low" | "medium" | "high" | string;
+  detail?: string;
+};
+
+export type StockDecisionSummary = {
+  bottomLine?: string;
+  whoItMightFit?: string[];
+  whoItMightNotFit?: string[];
+  nextStep?: string;
+  timeHorizon?: string;
+};
+
+export type StockDecisionSourceMeta = {
+  source?: string;
+  status?: LiveSourceStatus | string;
+  market?: string;
+  currency?: string;
+  changeBasis?: string;
+  asOf?: string;
+  freshnessMinutes?: number;
+  freshnessBand?: string;
+  freshnessRisk?: string;
+  marketCap?: string;
+  volumeProxy?: number;
+  ticker?: string;
+  name?: string;
+  description?: string;
 };
 
 export type MarketTableRow = {

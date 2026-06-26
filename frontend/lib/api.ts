@@ -10,8 +10,12 @@ import {
   type MacroMetric,
   type NewsItem,
   type MarketTableRow,
+  type StockDecisionSourceMeta,
+  type StockDecisionSummary,
   type StockEarningPoint,
   type StockFundamentals,
+  type StockInsight,
+  type StockRiskFactor,
   type StockSourceMeta,
   type Stock,
 } from "@/lib/data";
@@ -52,14 +56,76 @@ type BackendStock = {
   openinfo_id?: number | string;
   openinfoId?: number | string;
   website?: string;
+  insight?: BackendStockInsight;
+  risk_factors?: BackendStockRiskFactor[];
+  riskFactors?: BackendStockRiskFactor[];
+  decision_summary?: BackendStockDecisionSummary;
+  decisionSummary?: BackendStockDecisionSummary;
+  source_meta?: BackendStockSourceMeta[] | BackendStockDecisionSourceMeta;
   fundamentals?: BackendStockFundamentals;
   fundamentals_data?: BackendStockFundamentals;
   earnings?: BackendEarningPoint[];
   earnings_data?: BackendEarningPoint[];
   news?: BackendNewsItem[];
   sources?: BackendStockSourceMeta[];
-  source_meta?: BackendStockSourceMeta[];
   sourceMeta?: BackendStockSourceMeta[];
+};
+
+type BackendStockInsight = {
+  headline?: string;
+  summary?: string;
+  signals?: string[];
+  freshness?: {
+    label?: string;
+    minutes?: number;
+  };
+  liquidity_proxy?: string;
+  liquidityProxy?: string;
+  orientation?: string;
+};
+
+type BackendStockRiskFactor = {
+  code?: string;
+  label?: string;
+  severity?: string;
+  detail?: string;
+};
+
+type BackendStockDecisionSummary = {
+  bottom_line?: string;
+  bottomLine?: string;
+  who_it_might_fit?: string[];
+  whoItMightFit?: string[];
+  who_it_might_not_fit?: string[];
+  whoItMightNotFit?: string[];
+  next_step?: string;
+  nextStep?: string;
+  time_horizon?: string;
+  timeHorizon?: string;
+};
+
+type BackendStockDecisionSourceMeta = {
+  source?: string;
+  status?: string;
+  market?: string;
+  currency?: string;
+  change_basis?: string;
+  changeBasis?: string;
+  as_of?: string;
+  asOf?: string;
+  freshness_minutes?: number;
+  freshnessMinutes?: number;
+  freshness_band?: string;
+  freshnessBand?: string;
+  freshness_risk?: string;
+  freshnessRisk?: string;
+  market_cap?: string;
+  marketCap?: string;
+  volume_proxy?: number;
+  volumeProxy?: number;
+  ticker?: string;
+  name?: string;
+  description?: string;
 };
 
 type BackendNewsItem = {
@@ -321,6 +387,10 @@ function normalizeStock(stock: BackendStock): Stock {
     stockType: stock.stockType ?? stock.stock_type ?? fallback?.stockType,
     openinfoId: stock.openinfoId ?? stock.openinfo_id ?? fallback?.openinfoId,
     website: stock.website ?? fallback?.website,
+    insight: normalizeStockInsight(stock.insight ?? fallback?.insight),
+    riskFactors: normalizeStockRiskFactors(stock.riskFactors ?? stock.risk_factors ?? fallback?.riskFactors),
+    decisionSummary: normalizeDecisionSummary(stock.decisionSummary ?? stock.decision_summary ?? fallback?.decisionSummary),
+    sourceMeta: normalizeDecisionSourceMeta(isDecisionSourceMeta(stock.source_meta) ? stock.source_meta : undefined) ?? fallback?.sourceMeta,
     fundamentals,
     earnings,
     news,
@@ -368,17 +438,106 @@ function normalizeEarnings(earnings?: BackendEarningPoint[]): StockEarningPoint[
 }
 
 function normalizeStockSources(stock: BackendStock): StockSourceMeta[] | undefined {
-  const sources = stock.sources ?? stock.source_meta ?? stock.sourceMeta;
-  if (!sources?.length) return undefined;
-
-  return sources.map((source) => ({
+  const decisionSource = isDecisionSourceMeta(stock.source_meta) ? normalizeDecisionSourceMeta(stock.source_meta) : undefined;
+  const sources = stock.sources ?? (Array.isArray(stock.source_meta) ? stock.source_meta : undefined) ?? stock.sourceMeta;
+  const normalizedSources = sources?.map((source) => ({
     source: source.source ?? "Источник",
     status: normalizeSourceStatus(source.status ?? stock.sourceStatus ?? stock.source_status),
     asOf: source.asOf ?? source.as_of ?? stock.asOf ?? stock.as_of,
     detail: source.detail,
     notes: source.notes,
     market: source.market,
-  }));
+  })) ?? [];
+
+  if (decisionSource?.source && !normalizedSources.some((source) => source.source === decisionSource.source)) {
+    normalizedSources.unshift({
+      source: decisionSource.source,
+      status: normalizeSourceStatus(decisionSource.status),
+      asOf: decisionSource.asOf,
+      detail: decisionSource.freshnessBand ? `Freshness: ${decisionSource.freshnessBand}` : decisionSource.description,
+      notes: decisionSource.changeBasis ? `Change basis: ${decisionSource.changeBasis}` : decisionSource.freshnessRisk,
+      market: decisionSource.market,
+    });
+  }
+
+  return normalizedSources.length ? normalizedSources : undefined;
+}
+
+function normalizeStockInsight(source?: BackendStockInsight | StockInsight): StockInsight | undefined {
+  if (!source) return undefined;
+  const backendSource = source as BackendStockInsight;
+  const frontendSource = source as StockInsight;
+
+  return {
+    headline: source.headline,
+    summary: source.summary,
+    signals: source.signals?.filter(Boolean),
+    freshness: source.freshness,
+    liquidityProxy: frontendSource.liquidityProxy ?? backendSource.liquidity_proxy,
+    orientation: source.orientation,
+  };
+}
+
+function normalizeStockRiskFactors(source?: BackendStockRiskFactor[] | StockRiskFactor[]): StockRiskFactor[] | undefined {
+  const risks = source
+    ?.map((risk) => ({
+      code: risk.code,
+      label: risk.label ?? "Risk factor",
+      severity: risk.severity,
+      detail: risk.detail,
+    }))
+    .filter((risk) => risk.label || risk.detail);
+
+  return risks?.length ? risks : undefined;
+}
+
+function normalizeDecisionSummary(source?: BackendStockDecisionSummary | StockDecisionSummary): StockDecisionSummary | undefined {
+  if (!source) return undefined;
+  const backendSource = source as BackendStockDecisionSummary;
+  const frontendSource = source as StockDecisionSummary;
+
+  const bottomLine = frontendSource.bottomLine ?? backendSource.bottom_line;
+  const whoItMightFit = frontendSource.whoItMightFit ?? backendSource.who_it_might_fit;
+  const whoItMightNotFit = frontendSource.whoItMightNotFit ?? backendSource.who_it_might_not_fit;
+  const nextStep = frontendSource.nextStep ?? backendSource.next_step;
+  const timeHorizon = frontendSource.timeHorizon ?? backendSource.time_horizon;
+
+  if (!bottomLine && !whoItMightFit?.length && !whoItMightNotFit?.length && !nextStep && !timeHorizon) return undefined;
+
+  return {
+    bottomLine,
+    whoItMightFit,
+    whoItMightNotFit,
+    nextStep,
+    timeHorizon,
+  };
+}
+
+function isDecisionSourceMeta(source: unknown): source is BackendStockDecisionSourceMeta {
+  return Boolean(source && !Array.isArray(source) && typeof source === "object");
+}
+
+function normalizeDecisionSourceMeta(source?: BackendStockDecisionSourceMeta | StockDecisionSourceMeta): StockDecisionSourceMeta | undefined {
+  if (!source) return undefined;
+  const backendSource = source as BackendStockDecisionSourceMeta;
+  const frontendSource = source as StockDecisionSourceMeta;
+
+  return {
+    source: source.source,
+    status: normalizeSourceStatus(source.status),
+    market: source.market,
+    currency: source.currency,
+    changeBasis: frontendSource.changeBasis ?? backendSource.change_basis,
+    asOf: frontendSource.asOf ?? backendSource.as_of,
+    freshnessMinutes: frontendSource.freshnessMinutes ?? backendSource.freshness_minutes,
+    freshnessBand: frontendSource.freshnessBand ?? backendSource.freshness_band,
+    freshnessRisk: frontendSource.freshnessRisk ?? backendSource.freshness_risk,
+    marketCap: frontendSource.marketCap ?? backendSource.market_cap,
+    volumeProxy: frontendSource.volumeProxy ?? backendSource.volume_proxy,
+    ticker: source.ticker,
+    name: source.name,
+    description: source.description,
+  };
 }
 
 function normalizeMarketAsset(asset: BackendMarketAsset): MarketIndex {
