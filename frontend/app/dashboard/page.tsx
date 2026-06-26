@@ -504,6 +504,7 @@ function firstQueryValue(value: string | string[] | undefined) {
 function formatPrice(row: MarketTableRow) {
   const value = row.price;
   const source = row.source?.toLowerCase() ?? "";
+  if (!Number.isFinite(value) || value <= 0) return "N/A";
   if (source.includes("uzse")) {
     return `UZS ${value >= 1 ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value.toFixed(4)}`;
   }

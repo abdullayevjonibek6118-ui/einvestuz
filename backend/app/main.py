@@ -865,6 +865,7 @@ def _dashboard_market_table_rows(base_rows: list[dict[str, Any]]) -> list[dict[s
 
 
 def _uzse_market_table_rows() -> list[dict[str, Any]]:
+    companies = UZSE_PROVIDER.get_companies()
     listings = UZSE_PROVIDER.get_listings()
     trades = UZSE_PROVIDER.get_trade_results()
     listings_by_key = {_instrument_key(item): item for item in listings if _instrument_key(item)}
@@ -878,14 +879,26 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
         latest_trade_by_key.setdefault(key, trade)
         volume_by_key[key] = volume_by_key.get(key, 0.0) + _coerce_numeric(trade.get("volume"))
 
+    all_keys = {
+        key
+        for key in [
+            *(_instrument_key(company) for company in companies),
+            *listings_by_key.keys(),
+            *latest_trade_by_key.keys(),
+        ]
+        if key
+    }
+
     rows: list[dict[str, Any]] = []
-    for key, trade in latest_trade_by_key.items():
+    for key in all_keys:
+        trade = latest_trade_by_key.get(key, {})
         listing = listings_by_key.get(key, {})
-        ticker = str(trade.get("ticker") or listing.get("ticker") or "")
+        company = next((item for item in companies if _instrument_key(item) == key), {})
+        ticker = str(trade.get("ticker") or listing.get("ticker") or company.get("ticker") or "")
         price = _coerce_numeric(trade.get("price"))
         shares = _coerce_numeric(listing.get("shares_outstanding"))
         market_cap_value = price * shares if price and shares else 0.0
-        issuer = str(listing.get("issuer") or trade.get("issuer") or ticker)
+        issuer = str(listing.get("issuer") or trade.get("issuer") or company.get("name") or ticker)
         rows.append(
             {
                 "rank": 0,
