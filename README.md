@@ -37,7 +37,7 @@ The backend loads `.env` via `python-dotenv`, so local variables can live in `ba
 
 ### Frontend: Vercel
 
-Deploy the `frontend` directory as the Vercel project root.
+Deploy from the repository root with the included `vercel.json`, or set the Vercel project root to `frontend`. The root config builds the workspace frontend and points Vercel at `frontend/.next`.
 
 Set this environment variable in Vercel:
 
@@ -48,7 +48,15 @@ NEXT_PUBLIC_WS_URL=wss://your-railway-backend-url
 
 `NEXT_PUBLIC_WS_URL` is optional when the WebSocket endpoint uses the same host as `NEXT_PUBLIC_API_URL`; set it explicitly when REST and WebSocket traffic use different hosts.
 
-Build settings:
+Build settings when using the repository root:
+
+```bash
+Install command: npm install
+Build command: npm run build
+Output: frontend/.next
+```
+
+Build settings when using `frontend` as the Vercel root:
 
 ```bash
 Install command: npm install
