@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
-          <div className="hidden items-center gap-2 overflow-x-auto pb-1 md:flex" aria-label="Основная навигация">
+          <nav className="hidden items-center gap-2 overflow-x-auto pb-1 md:flex" aria-label="Основная навигация">
             {nav.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href || (item.href.startsWith("/stocks") && pathname.startsWith("/stocks"));
@@ -71,6 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={`inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-2 rounded-2xl border px-3 text-sm font-semibold transition ${
                     active
                       ? "border-[#3861fb] bg-[#eff6ff] text-[#1e40af]"
@@ -82,7 +83,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
-          </div>
+          </nav>
 
           <form onSubmit={submitSearch} className="flex h-11 items-center gap-2 rounded-2xl border border-[#bfd0e3] bg-[#f8fafc] px-3 text-sm text-[#64748b] shadow-inner focus-within:border-[#3861fb] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#dbe4ff] md:hidden">
             <Search size={16} />
@@ -110,6 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-semibold transition ${active ? "bg-[#eff6ff] text-[#1e40af]" : "text-[#64748b] hover:bg-[#f8fafc] hover:text-[#0f172a]"}`}
               >
                 <Icon size={17} />

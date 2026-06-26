@@ -207,20 +207,20 @@ function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
   return (
     <div className="hidden md:block">
       <div className="max-h-[720px] overflow-auto rounded-3xl border border-[#dbe4ef] bg-white shadow-inner">
-        <table className="min-w-full border-separate border-spacing-0">
+        <table className="min-w-[1180px] border-separate border-spacing-0">
           <thead className="sticky top-0 z-10 bg-[#f8fafc]/95 backdrop-blur">
             <tr className="text-[11px] uppercase tracking-normal text-[#64748b]">
-              <th className="w-12 border-b border-[#e2e8f0] px-3 py-3 text-left">#</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-left">Logo</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-left">Name / Ticker</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Price</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">1h %</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">24h %</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">7d %</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Market Cap</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Volume (24h)</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">Circulating Supply</th>
-              <th className="border-b border-[#e2e8f0] px-3 py-3 text-right">7d Price%</th>
+              <th scope="col" className="w-12 whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">#</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Logo</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Name / Ticker</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Price</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">1h %</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">24h %</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">7d %</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Market Cap</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Volume (24h)</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Circulating Supply</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">7d Price%</th>
             </tr>
           </thead>
           <tbody>
@@ -268,7 +268,7 @@ function MarketMobileCards({ rows }: { rows: MarketTableRow[] }) {
   return (
     <div className="grid gap-2 md:hidden">
       {rows.map((row, index) => (
-        <article key={row.ticker} className="rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3">
+        <Link key={row.ticker} href={`/stocks/${encodeURIComponent(row.ticker)}`} className="block rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3 transition hover:border-[#bfdbfe] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3861fb]">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs text-[#64748b]">#{index + 1}</p>
@@ -299,7 +299,7 @@ function MarketMobileCards({ rows }: { rows: MarketTableRow[] }) {
             <MetricChip label="Volume (24h)" value={row.volume24h} />
             <MetricChip label="Circulating Supply" value={row.circulatingSupply} />
           </div>
-        </article>
+        </Link>
       ))}
     </div>
   );

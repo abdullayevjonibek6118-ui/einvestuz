@@ -6,6 +6,7 @@ dist/
 build/
 __pycache__/
 *.py[cod]
+*.tsbuildinfo
 .env
 .env.local
 .env.*.local

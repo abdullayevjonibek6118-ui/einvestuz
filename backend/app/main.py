@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -6,6 +7,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from .market_data import DataSource as MarketDataSource
@@ -25,16 +27,20 @@ from .market_data import get_stock as fetch_stock
 from .market_data import get_stocks as fetch_stocks
 from .providers.uzse_provider import UzseProvider
 
+load_dotenv()
+
 app = FastAPI(
     title="Einvestuz API",
     version="0.1.0",
     description="MVP API for market data, company analysis, virtual portfolios, chat, and academy lessons.",
 )
 
+DEFAULT_CORS_ORIGINS = "http://localhost:3000,https://einvestuz.com,https://www.einvestuz.com"
+CORS_ORIGINS = [origin.strip() for origin in os.getenv("CORS_ORIGINS", DEFAULT_CORS_ORIGINS).split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -250,9 +256,15 @@ class RemovePosition(BaseModel):
     ticker: str
 
 
+class ChatHistoryMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str = Field(min_length=1, max_length=2000)
+
+
 class ChatRequest(BaseModel):
     user_id: str = Field(default="demo-user")
     message: str = Field(min_length=2, max_length=2000)
+    history: list[ChatHistoryMessage] = Field(default_factory=list, max_length=12)
 
 
 class ChatResponse(BaseModel):
@@ -511,7 +523,17 @@ def macro_summary() -> MacroSummaryResponse:
 
 @app.post("/portfolio/add", response_model=Position)
 def add_position(payload: PositionCreate) -> Position:
-    position = Position(id=len(POSITIONS) + 1, **payload.model_dump())
+    for position in POSITIONS:
+        if position.user_id == payload.user_id and position.ticker.lower() == payload.ticker.lower():
+            total_quantity = position.quantity + payload.quantity
+            position.buy_price = (
+                (position.buy_price * position.quantity + payload.buy_price * payload.quantity) / total_quantity
+            )
+            position.quantity = total_quantity
+            position.ticker = payload.ticker.upper()
+            return position
+    next_id = max((position.id for position in POSITIONS), default=0) + 1
+    position = Position(id=next_id, **{**payload.model_dump(), "ticker": payload.ticker.upper()})
     POSITIONS.append(position)
     return position
 
@@ -539,7 +561,7 @@ def newsletter(payload: NewsletterRequest) -> dict[str, bool | str]:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
-    message = payload.message.lower()
+    message = " ".join([*(item.text for item in payload.history[-6:]), payload.message]).lower()
     company = next((stock for stock in STOCK_UNIVERSE.values() if stock.ticker.lower() in message or stock.name.lower() in message), None)
     if company is None:
         response = "Я могу объяснять инвестиционные термины, риск портфеля, ETF, дивиденды и компании из текущего MVP-списка."
@@ -845,20 +867,21 @@ def _dashboard_market_table_rows(base_rows: list[dict[str, Any]]) -> list[dict[s
 def _uzse_market_table_rows() -> list[dict[str, Any]]:
     listings = UZSE_PROVIDER.get_listings()
     trades = UZSE_PROVIDER.get_trade_results()
-    listings_by_ticker = {str(item.get("ticker") or ""): item for item in listings if item.get("ticker")}
-    latest_trade_by_ticker: dict[str, dict[str, Any]] = {}
-    volume_by_ticker: dict[str, float] = {}
+    listings_by_key = {_instrument_key(item): item for item in listings if _instrument_key(item)}
+    latest_trade_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
+    volume_by_key: dict[tuple[str, str, str], float] = {}
 
     for trade in trades:
-        ticker = str(trade.get("ticker") or "")
-        if not ticker:
+        key = _instrument_key(trade)
+        if not key:
             continue
-        latest_trade_by_ticker.setdefault(ticker, trade)
-        volume_by_ticker[ticker] = volume_by_ticker.get(ticker, 0.0) + _coerce_numeric(trade.get("volume"))
+        latest_trade_by_key.setdefault(key, trade)
+        volume_by_key[key] = volume_by_key.get(key, 0.0) + _coerce_numeric(trade.get("volume"))
 
     rows: list[dict[str, Any]] = []
-    for ticker, trade in latest_trade_by_ticker.items():
-        listing = listings_by_ticker.get(ticker, {})
+    for key, trade in latest_trade_by_key.items():
+        listing = listings_by_key.get(key, {})
+        ticker = str(trade.get("ticker") or listing.get("ticker") or "")
         price = _coerce_numeric(trade.get("price"))
         shares = _coerce_numeric(listing.get("shares_outstanding"))
         market_cap_value = price * shares if price and shares else 0.0
@@ -878,7 +901,7 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
                 "change_24h": 0.0,
                 "change_7d": 0.0,
                 "market_cap": _format_uzs_value(market_cap_value) if market_cap_value else "N/A",
-                "volume_24h": _format_uzs_value(volume_by_ticker.get(ticker, 0.0)) if volume_by_ticker.get(ticker) else "N/A",
+                "volume_24h": _format_uzs_value(volume_by_key.get(key, 0.0)) if volume_by_key.get(key) else "N/A",
                 "circulating_supply": _format_units(shares, ticker) if shares else "N/A",
                 "sparkline_7d": [price for _ in range(7)] if price else [],
                 "source": "uzse.uz",
@@ -887,6 +910,15 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def _instrument_key(item: dict[str, Any]) -> tuple[str, str, str] | None:
+    isin = str(item.get("isin") or "").strip().upper()
+    market_id = str(item.get("market_id") or "").strip().upper()
+    ticker = str(item.get("ticker") or "").strip().upper()
+    if isin or ticker:
+        return (isin, market_id, ticker)
+    return None
 
 
 def _market_table_source_priority(row: dict[str, Any]) -> int:

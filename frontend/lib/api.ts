@@ -18,7 +18,9 @@ import {
 import { normalizeSource, normalizeSourceStatus, type BackendSource } from "@/lib/live-market";
 
 function normalizeApiUrl(value?: string) {
-  return (value ?? "http://localhost:8000").replace(/^\uFEFF/, "").trim().replace(/\/$/, "");
+  const cleaned = value?.replace(/^\uFEFF/, "").trim().replace(/\/$/, "");
+  if (cleaned) return cleaned;
+  return process.env.NODE_ENV === "production" ? "" : "http://localhost:8000";
 }
 
 const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
@@ -37,6 +39,7 @@ type BackendStock = {
   source?: string;
   source_status?: string;
   sourceStatus?: LiveSourceStatus;
+  status?: string;
   as_of?: string;
   asOf?: string;
   fundamentals?: BackendStockFundamentals;
@@ -81,6 +84,7 @@ type BackendStockFundamentals = {
   source?: string;
   source_status?: string;
   sourceStatus?: LiveSourceStatus;
+  status?: string;
 };
 
 type BackendEarningPoint = {
@@ -103,6 +107,7 @@ type BackendEarningPoint = {
   source?: string;
   source_status?: string;
   sourceStatus?: LiveSourceStatus;
+  status?: string;
 };
 
 type BackendStockSourceMeta = {
@@ -125,6 +130,7 @@ type BackendMarketAsset = {
   source?: string;
   source_status?: string;
   sourceStatus?: LiveSourceStatus;
+  status?: string;
   as_of?: string;
   asOf?: string;
 };
@@ -144,6 +150,7 @@ type BackendFxRate = {
   source?: string;
   source_status?: string;
   sourceStatus?: LiveSourceStatus;
+  status?: string;
 };
 
 type BackendMacroMetric = {
@@ -159,6 +166,7 @@ type BackendMacroMetric = {
   source?: string;
   source_status?: string;
   sourceStatus?: LiveSourceStatus;
+  status?: string;
 };
 
 type BackendMacroSummary = {
@@ -233,6 +241,7 @@ type BackendMarketTableRow = Record<string, unknown> & {
   source?: string;
   source_status?: string;
   sourceStatus?: LiveSourceStatus;
+  status?: string;
   as_of?: string;
   asOf?: string;
 };
@@ -248,6 +257,7 @@ const categoryLabels: Record<string, NewsItem["category"]> = {
 };
 
 async function fetchJson<T>(path: string): Promise<T | null> {
+  if (!API_URL) return null;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -324,7 +334,7 @@ function normalizeEarnings(earnings?: BackendEarningPoint[]): StockEarningPoint[
     surprisePercent: point.surprisePercent ?? point.surprise_percent,
     asOf: point.asOf ?? point.as_of,
     source: point.source,
-    sourceStatus: normalizeSourceStatus(point.sourceStatus ?? point.source_status),
+    sourceStatus: normalizeSourceStatus(point.sourceStatus ?? point.source_status ?? point.status),
   }));
 }
 
@@ -349,7 +359,7 @@ function normalizeMarketAsset(asset: BackendMarketAsset): MarketIndex {
     value: asset.value ?? (asset.category === "index" ? asset.price.toLocaleString("en-US") : `$${asset.price.toLocaleString("en-US")}`),
     change: asset.change,
     source: asset.source,
-    sourceStatus: normalizeSourceStatus(asset.sourceStatus ?? asset.source_status),
+    sourceStatus: normalizeSourceStatus(asset.sourceStatus ?? asset.source_status ?? asset.status),
     asOf: asset.asOf ?? asset.as_of,
   };
 }
@@ -383,7 +393,7 @@ function normalizeMarketTableRow(row: BackendMarketTableRow): MarketTableRow {
     circulatingSupplyValue,
     sparkline7d,
     source: stringValue(row.source),
-    sourceStatus: normalizeSourceStatus(row.sourceStatus ?? row.source_status),
+    sourceStatus: normalizeSourceStatus(stringValue(row.sourceStatus ?? row.source_status ?? row.status)),
     asOf: stringValue(row.asOf ?? row.as_of),
   };
 }
@@ -458,7 +468,7 @@ function normalizeFxRate(rate: BackendFxRate): FxRate {
     change: rate.change ?? rate.diff,
     asOf: rate.asOf ?? rate.as_of ?? rate.date,
     source: rate.source,
-    sourceStatus: normalizeSourceStatus(rate.sourceStatus ?? rate.source_status),
+    sourceStatus: normalizeSourceStatus(rate.sourceStatus ?? rate.source_status ?? rate.status),
   };
 }
 
@@ -483,7 +493,7 @@ function normalizeMacroMetric(metric: BackendMacroMetric): MacroMetric {
     unit: metric.unit,
     asOf: metric.asOf ?? metric.as_of,
     source: metric.source,
-    sourceStatus: normalizeSourceStatus(metric.sourceStatus ?? metric.source_status),
+    sourceStatus: normalizeSourceStatus(metric.sourceStatus ?? metric.source_status ?? metric.status),
   };
 }
 
@@ -496,7 +506,7 @@ function normalizeMacroBlock(macro?: BackendMacroMetric[] | BackendMacroSummary)
     normalizeMacroMetric({
       ...indicator,
       asOf: indicator.asOf ?? indicator.as_of ?? inheritedAsOf,
-      sourceStatus: normalizeSourceStatus(indicator.sourceStatus ?? indicator.source_status ?? macro.status),
+      sourceStatus: normalizeSourceStatus(indicator.sourceStatus ?? indicator.source_status ?? indicator.status ?? macro.status),
     }),
   );
 }

@@ -9,9 +9,9 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle: strin
           <h1 className="text-2xl font-semibold tracking-normal text-[#0f172a]">{title}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-[#475569]">{subtitle}</p>
         </div>
-        <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium text-[#9a3412]">
-          <span className="size-2 rounded-full bg-[#f59e0b]" />
-          Образовательная аналитика, не инвестрекомендация
+        <div className="inline-flex max-w-full items-center gap-2 rounded-xl border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium leading-5 text-[#9a3412]">
+          <span className="size-2 shrink-0 rounded-full bg-[#f59e0b]" />
+          <span className="min-w-0 break-words">Образовательная аналитика, не инвестрекомендация</span>
         </div>
       </div>
     </div>
@@ -77,9 +77,9 @@ export function SourceStatusBadge({ status, source }: { status?: LiveSourceStatu
   const resolved = status ?? "fallback";
 
   return (
-    <span className={`inline-flex h-6 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-semibold ${sourceStatusStyles[resolved]}`}>
+    <span className={`inline-flex h-6 max-w-full items-center gap-1.5 rounded-lg border px-2 text-[11px] font-semibold ${sourceStatusStyles[resolved]}`} title={source ? `${source} · ${sourceStatusLabels[resolved]}` : sourceStatusLabels[resolved]}>
       <span className={`size-1.5 rounded-full ${resolved === "live" ? "bg-[#16a34a]" : resolved === "offline" ? "bg-[#dc2626]" : resolved === "needs_license" ? "bg-[#7c3aed]" : "bg-current"}`} />
-      {source ? `${source} · ${sourceStatusLabels[resolved]}` : sourceStatusLabels[resolved]}
+      <span className="min-w-0 truncate">{source ? `${source} · ${sourceStatusLabels[resolved]}` : sourceStatusLabels[resolved]}</span>
     </span>
   );
 }

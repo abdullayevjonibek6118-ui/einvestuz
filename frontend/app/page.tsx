@@ -181,15 +181,15 @@ export default function Home() {
               </thead>
               <tbody>
                 {popularStocks.map((stock) => (
-                  <tr key={stock.ticker} tabIndex={0} className="group cursor-pointer outline-none transition hover:bg-[#1C273A] focus-visible:bg-[#1C273A] focus-visible:shadow-[inset_0_0_0_2px_#3861FB]">
+                  <tr key={stock.ticker} className="group transition hover:bg-[#1C273A]">
                     <td className="border-t border-[#2A3441] px-4 py-4 sm:px-6">
-                      <div className="flex items-center gap-3">
+                      <Link href={`/stocks/${stock.ticker}`} className="flex items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#3861FB]">
                         <span className="grid size-10 place-items-center rounded-xl bg-[#11182A] text-sm font-bold">{stock.ticker.slice(0, 1)}</span>
                         <div>
                           <p className="font-semibold">{stock.company}</p>
                           <p className="text-xs text-[#A0AEC0]">{stock.ticker}</p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="border-t border-[#2A3441] px-4 py-4 font-semibold sm:px-6">{stock.price}</td>
                     <td className="border-t border-[#2A3441] px-4 py-4 sm:px-6"><Change value={stock.change} /></td>
@@ -343,8 +343,22 @@ export default function Home() {
             <p className="mt-3 text-sm leading-6 text-[#A0AEC0]">AI-инвесткопилот для Узбекистана.</p>
             <p className="mt-5 text-xs leading-5 text-[#A0AEC0]">Информация носит образовательный характер и не является индивидуальной инвестиционной рекомендацией.</p>
           </div>
-          <FooterLinks title="Продукт" links={["Возможности", "AI-аналитик", "Портфель", "Академия"]} />
-          <FooterLinks title="Документы" links={["Политика конфиденциальности", "Условия"]} />
+          <FooterLinks
+            title="Продукт"
+            links={[
+              { label: "Возможности", href: "#stocks" },
+              { label: "AI-аналитик", href: "/ai" },
+              { label: "Портфель", href: "/portfolio" },
+              { label: "Академия", href: "/academy" },
+            ]}
+          />
+          <FooterLinks
+            title="Документы"
+            links={[
+              { label: "Политика конфиденциальности", href: "/profile" },
+              { label: "Условия", href: "/academy" },
+            ]}
+          />
         </div>
       </footer>
     </main>
@@ -391,7 +405,7 @@ function AICopilotCard() {
       </div>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <Link href="/stocks/NVDA" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#3861FB] px-4 py-2 text-sm font-bold transition hover:bg-[#2f54df]">Открыть компанию</Link>
-        <Link href="/dashboard" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-[#2A3441] bg-[#11182A] px-4 py-2 text-sm font-bold transition hover:border-[#3861FB]">Добавить в список</Link>
+        <Link href="/profile" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-[#2A3441] bg-[#11182A] px-4 py-2 text-sm font-bold transition hover:border-[#3861FB]">Добавить в список</Link>
       </div>
     </div>
   );
@@ -454,14 +468,14 @@ function Metric({ label, value, positive = false }: { label: string; value: stri
   );
 }
 
-function FooterLinks({ title, links }: { title: string; links: string[] }) {
+function FooterLinks({ title, links }: { title: string; links: Array<{ label: string; href: string }> }) {
   return (
     <div>
       <h3 className="text-sm font-semibold">{title}</h3>
       <ul className="mt-4 space-y-3 text-sm text-[#A0AEC0]">
         {links.map((link) => (
-          <li key={link}>
-            <Link href="/dashboard" className="transition hover:text-white">{link}</Link>
+          <li key={link.label}>
+            <Link href={link.href} className="transition hover:text-white">{link.label}</Link>
           </li>
         ))}
       </ul>

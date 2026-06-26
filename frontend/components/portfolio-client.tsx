@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { ChangeBadge, Panel } from "@/components/ui";
 import { formatCurrency, type Stock } from "@/lib/data";
+import { getApiUrl } from "@/lib/live-market";
 
 type Position = {
   ticker: string;
@@ -17,17 +18,38 @@ const initialPositions: Position[] = [
   { ticker: "AAPL", quantity: 5, buyPrice: 203.7 },
 ];
 
-export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
+const STORAGE_KEY = "einvestuz-portfolio";
+
+export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; initialTicker?: string }) {
+  const fallbackTicker = resolveTicker(stocks, initialTicker) ?? stocks[0]?.ticker ?? "AAPL";
+  const fallbackStock = stocks.find((stock) => stock.ticker.toLowerCase() === fallbackTicker.toLowerCase());
   const [positions, setPositions] = useState<Position[]>(initialPositions);
-  const [ticker, setTicker] = useState(stocks[0]?.ticker ?? "AAPL");
+  const [loaded, setLoaded] = useState(false);
+  const [ticker, setTicker] = useState(fallbackTicker);
   const [quantity, setQuantity] = useState(1);
-  const [buyPrice, setBuyPrice] = useState(stocks[0]?.price ?? 100);
+  const [buyPrice, setBuyPrice] = useState(safePositive(fallbackStock?.price) ?? 100);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setPositions(loadPositions());
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (loaded) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
+  }, [loaded, positions]);
+
+  useEffect(() => {
+    const selectedStock = stocks.find((stock) => stock.ticker.toLowerCase() === ticker.toLowerCase());
+    const price = safePositive(selectedStock?.price);
+    if (price) setBuyPrice(price);
+  }, [stocks, ticker]);
 
   const rows = useMemo(
     () =>
       positions.map((position) => {
         const stock = stocks.find((item) => item.ticker.toLowerCase() === position.ticker.toLowerCase());
-        const currentPrice = stock?.price ?? position.buyPrice;
+        const currentPrice = safePositive(stock?.price) ?? safePositive(position.buyPrice) ?? 0;
         const value = currentPrice * position.quantity;
         const cost = position.buyPrice * position.quantity;
 
@@ -37,7 +59,7 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
           currentPrice,
           value,
           pnl: value - cost,
-          pnlPercent: cost ? ((value - cost) / cost) * 100 : 0,
+          pnlPercent: safePercent(value - cost, cost),
         };
       }),
     [positions, stocks],
@@ -49,32 +71,40 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
     return {
       value,
       pnl: value - cost,
-      pnlPercent: cost ? ((value - cost) / cost) * 100 : 0,
+      pnlPercent: safePercent(value - cost, cost),
     };
   }, [rows]);
 
   function addPosition(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (quantity <= 0 || buyPrice <= 0) return;
+    const normalizedTicker = ticker.trim().toUpperCase();
+    if (!normalizedTicker || quantity <= 0 || buyPrice <= 0 || !Number.isFinite(quantity) || !Number.isFinite(buyPrice)) {
+      setError("Введите тикер, количество и цену покупки больше нуля.");
+      return;
+    }
+    setError("");
 
     setPositions((current) => {
-      const existing = current.find((position) => position.ticker === ticker);
-      if (!existing) return [...current, { ticker, quantity, buyPrice }];
+      const existing = current.find((position) => position.ticker.toLowerCase() === normalizedTicker.toLowerCase());
+      if (!existing) return [...current, { ticker: normalizedTicker, quantity, buyPrice }];
 
       return current.map((position) =>
-        position.ticker === ticker
+        position.ticker.toLowerCase() === normalizedTicker.toLowerCase()
           ? {
               ...position,
+              ticker: normalizedTicker,
               quantity: position.quantity + quantity,
               buyPrice: (position.buyPrice * position.quantity + buyPrice * quantity) / (position.quantity + quantity),
             }
           : position,
       );
     });
+    void syncPortfolioAdd(normalizedTicker, quantity, buyPrice);
   }
 
   function removePosition(positionTicker: string) {
     setPositions((current) => current.filter((position) => position.ticker !== positionTicker));
+    void syncPortfolioRemove(positionTicker);
   }
 
   return (
@@ -91,12 +121,13 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
           </label>
           <label className="text-sm font-medium text-[#0f172a]">
             Количество
-            <input value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} type="number" min="1" className="mt-1 h-10 w-full rounded-xl border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
+            <input value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} type="number" min="1" required className="mt-1 h-10 w-full rounded-xl border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
           </label>
           <label className="text-sm font-medium text-[#0f172a]">
             Цена покупки
-            <input value={buyPrice} onChange={(event) => setBuyPrice(Number(event.target.value))} type="number" min="0.01" step="0.01" className="mt-1 h-10 w-full rounded-xl border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
+            <input value={buyPrice} onChange={(event) => setBuyPrice(Number(event.target.value))} type="number" min="0.01" step="0.01" required className="mt-1 h-10 w-full rounded-xl border border-[#bfd0e3] px-3 focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]" />
           </label>
+          {error ? <p className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-xs font-medium text-[#b91c1c]">{error}</p> : null}
           <button className="mt-1 h-11 rounded-xl bg-[#0b63f6] text-sm font-semibold text-white shadow-sm hover:bg-[#084fc7] focus-visible:ring-2 focus-visible:ring-[#93c5fd]">
             Добавить в портфель
           </button>
@@ -109,17 +140,18 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
           <Summary label="Доходность" value={formatCurrency(summary.pnl)} tone={summary.pnl >= 0 ? "green" : "red"} />
           <Summary label="%" value={`${summary.pnlPercent.toFixed(2)}%`} tone={summary.pnl >= 0 ? "green" : "red"} />
         </div>
+        {rows.length ? (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[680px] text-left text-sm">
             <thead className="border-b border-[#dbe4ef] text-xs uppercase text-[#475569]">
               <tr>
-                <th className="py-2">Актив</th>
-                <th>Кол-во</th>
-                <th>Покупка</th>
-                <th>Текущая</th>
-                <th>Стоимость</th>
-                <th>P/L</th>
-                <th></th>
+                <th scope="col" className="py-2">Актив</th>
+                <th scope="col">Кол-во</th>
+                <th scope="col">Покупка</th>
+                <th scope="col">Текущая</th>
+                <th scope="col">Стоимость</th>
+                <th scope="col">P/L</th>
+                <th scope="col"><span className="sr-only">Действия</span></th>
               </tr>
             </thead>
             <tbody>
@@ -141,9 +173,70 @@ export function PortfolioClient({ stocks }: { stocks: Stock[] }) {
             </tbody>
           </table>
         </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-8 text-center text-sm text-[#64748b]">
+            Портфель пуст. Добавьте первый актив через форму слева.
+          </div>
+        )}
       </Panel>
     </div>
   );
+}
+
+function loadPositions() {
+  if (typeof window === "undefined") return initialPositions;
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as Position[] | null;
+    if (!Array.isArray(parsed)) return initialPositions;
+    const sanitized = parsed
+      .map((position) => ({
+        ticker: String(position.ticker ?? "").trim().toUpperCase(),
+        quantity: Number(position.quantity),
+        buyPrice: Number(position.buyPrice),
+      }))
+      .filter((position) => position.ticker && safePositive(position.quantity) && safePositive(position.buyPrice));
+    return sanitized.length ? sanitized : initialPositions;
+  } catch {
+    return initialPositions;
+  }
+}
+
+function resolveTicker(stocks: Stock[], ticker?: string) {
+  if (!ticker) return undefined;
+  return stocks.find((stock) => stock.ticker.toLowerCase() === ticker.toLowerCase())?.ticker;
+}
+
+function safePositive(value?: number) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function safePercent(delta: number, base: number) {
+  if (!Number.isFinite(delta) || !Number.isFinite(base) || base <= 0) return 0;
+  return (delta / base) * 100;
+}
+
+async function syncPortfolioAdd(ticker: string, quantity: number, buyPrice: number) {
+  try {
+    await fetch(getApiUrl("/portfolio/add"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: "demo-user", ticker, quantity, buy_price: buyPrice }),
+    });
+  } catch {
+    // LocalStorage remains the source of truth for the MVP client.
+  }
+}
+
+async function syncPortfolioRemove(ticker: string) {
+  try {
+    await fetch(getApiUrl("/portfolio/remove"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: "demo-user", ticker }),
+    });
+  } catch {
+    // LocalStorage remains the source of truth for the MVP client.
+  }
 }
 
 function Summary({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" }) {

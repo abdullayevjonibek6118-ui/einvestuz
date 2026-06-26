@@ -122,7 +122,16 @@ class UzseProvider:
         cached = self._cache.get(key)
         if cached and cached.expires_at > now:
             return cached.value
-        value = loader()
+        try:
+            value = loader()
+        except Exception:
+            if cached:
+                return cached.value
+            return []
+        if value in (None, [], {}):
+            if cached:
+                return cached.value
+            ttl_seconds = min(ttl_seconds, 60)
         self._cache[key] = _CacheEntry(now + ttl_seconds, value)
         return value
 
@@ -155,8 +164,8 @@ class UzseProvider:
 
     def _fetch_market_indices(self, idx_ind_cd: str) -> list[dict[str, Any]]:
         payload = self._request_json(
-            "/price_indices",
-            {"idx_ind_cd": idx_ind_cd},
+            "/price_indices/range",
+            {"idx_ind_cd": idx_ind_cd, "range_type": "1y"},
             accept="application/json",
             x_requested_with=False,
             referer=f"/price_indices?idx_ind_cd={idx_ind_cd}",
@@ -192,8 +201,8 @@ class UzseProvider:
                     for point in series
                     if isinstance(point, dict)
                 ],
-                "source": "uzse.uz/price_indices",
-                "source_url": self._url("/price_indices", {"idx_ind_cd": idx_ind_cd}),
+                "source": "uzse.uz/price_indices/range",
+                "source_url": self._url("/price_indices/range", {"idx_ind_cd": idx_ind_cd, "range_type": "1y"}),
                 "fetched_at": _now_iso(),
             }
         ]

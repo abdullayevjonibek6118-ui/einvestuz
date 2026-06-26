@@ -61,7 +61,7 @@ function Toggle({ title, subtitle, checked = false }: { title: string; subtitle:
           <span className="mt-1 block text-xs text-[#667085]">{subtitle}</span>
         </span>
       </span>
-      <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-[#cbd5e1] bg-white p-1 transition has-[:checked]:border-[#3861fb] has-[:checked]:bg-[#3861fb]">
+      <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-[#cbd5e1] bg-white p-1 transition has-[:checked]:border-[#3861fb] has-[:checked]:bg-[#3861fb] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#93c5fd]">
         <input type="checkbox" defaultChecked={checked} className="peer sr-only" />
         <span className="size-5 rounded-full bg-[#cbd5e1] shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-white" />
       </span>

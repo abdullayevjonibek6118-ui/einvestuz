@@ -130,20 +130,20 @@ export type NewsItem = {
 };
 
 export const indexes: MarketIndex[] = [
-  { name: "S&P 500", ticker: "SPX", value: "6 112.34", change: 0.42 },
-  { name: "Nasdaq", ticker: "IXIC", value: "19 841.20", change: 0.77 },
-  { name: "Dow Jones", ticker: "DJI", value: "43 226.11", change: -0.18 },
-  { name: "Bitcoin", ticker: "BTC", value: "$103 420", change: 1.64 },
-  { name: "Gold", ticker: "XAU", value: "$3 318", change: -0.31 },
-  { name: "Oil", ticker: "WTI", value: "$71.90", change: 0.25 },
+  { name: "S&P 500", ticker: "SPX", value: "7 380.00", change: -0.4 },
+  { name: "Nasdaq", ticker: "IXIC", value: "25 680.00", change: -0.5 },
+  { name: "Dow Jones", ticker: "DJI", value: "51 690.00", change: -0.2 },
+  { name: "Bitcoin", ticker: "BTC", value: "$62 200", change: -0.6 },
+  { name: "Gold", ticker: "XAU", value: "$4 145", change: 0.1 },
+  { name: "Oil", ticker: "WTI", value: "$73.00", change: -0.2 },
 ];
 
 export const stocks: Stock[] = [
   {
     ticker: "AAPL",
     name: "Apple",
-    price: 214.32,
-    change: 0.84,
+    price: 298,
+    change: 0.4,
     marketCap: "$3.2T",
     pe: 33.1,
     dividend: "0.45%",
@@ -154,8 +154,8 @@ export const stocks: Stock[] = [
   {
     ticker: "NVDA",
     name: "Nvidia",
-    price: 142.67,
-    change: 2.18,
+    price: 201,
+    change: -1.2,
     marketCap: "$3.5T",
     pe: 52.7,
     dividend: "0.03%",
@@ -166,8 +166,8 @@ export const stocks: Stock[] = [
   {
     ticker: "MSFT",
     name: "Microsoft",
-    price: 467.81,
-    change: 0.51,
+    price: 373,
+    change: -0.6,
     marketCap: "$3.4T",
     pe: 36.8,
     dividend: "0.71%",
@@ -178,8 +178,8 @@ export const stocks: Stock[] = [
   {
     ticker: "TSLA",
     name: "Tesla",
-    price: 331.45,
-    change: -1.34,
+    price: 383,
+    change: -1.4,
     marketCap: "$1.0T",
     pe: 84.2,
     dividend: "0%",
@@ -190,8 +190,8 @@ export const stocks: Stock[] = [
   {
     ticker: "AMZN",
     name: "Amazon",
-    price: 196.88,
-    change: -0.29,
+    price: 234,
+    change: -0.5,
     marketCap: "$2.1T",
     pe: 42.5,
     dividend: "0%",
@@ -202,8 +202,8 @@ export const stocks: Stock[] = [
   {
     ticker: "META",
     name: "Meta",
-    price: 612.24,
-    change: 1.12,
+    price: 563,
+    change: -0.8,
     marketCap: "$1.5T",
     pe: 29.4,
     dividend: "0.32%",

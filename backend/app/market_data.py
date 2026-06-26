@@ -14,6 +14,9 @@ from typing import Any, Literal
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 AssetCategory = Literal["index", "crypto", "commodity", "stock"]
 SourceStatus = Literal["live", "delayed", "fallback", "needs_license", "offline"]
@@ -345,7 +348,7 @@ def get_stock(ticker: str) -> Quote | None:
 def get_quote_snapshot(ticker: str) -> Quote | None:
     spec = QUOTE_UNIVERSE.get(ticker.upper())
     if spec is None:
-        spec = SymbolSpec(ticker.upper(), ticker.upper(), ticker.upper(), "unknown")
+        return None
     return _get_quote(spec)
 
 
@@ -974,7 +977,7 @@ def _category_for_symbol(symbol: str) -> str:
     if symbol in {"AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "META"}:
         return "Technology"
     if symbol in {"SBER", "GAZP", "LKOH"}:
-        return "US"
+        return "ETF"
     return "ETF"
 
 

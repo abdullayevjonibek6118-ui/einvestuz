@@ -78,12 +78,12 @@ export function getWebSocketUrl(path = "/ws/quotes") {
   const explicit = cleanUrl(process.env.NEXT_PUBLIC_WS_URL);
   if (explicit) return `${explicit}${path}`;
 
-  const apiUrl = cleanUrl(process.env.NEXT_PUBLIC_API_URL) ?? "http://localhost:8000";
+  const apiUrl = cleanUrl(process.env.NEXT_PUBLIC_API_URL) ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
   return `${apiUrl.replace(/^http/, "ws")}${path}`;
 }
 
 export function getApiUrl(path = "") {
-  const apiUrl = cleanUrl(process.env.NEXT_PUBLIC_API_URL) ?? "http://localhost:8000";
+  const apiUrl = cleanUrl(process.env.NEXT_PUBLIC_API_URL) ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
   return `${apiUrl}${path}`;
 }
 

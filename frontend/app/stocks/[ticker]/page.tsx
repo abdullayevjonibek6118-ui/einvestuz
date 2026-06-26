@@ -2,13 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Plus, Star } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
-import { getNews, getStock, getStocks } from "@/lib/api";
+import { getNews, getStock } from "@/lib/api";
 import { type Stock, type StockSourceMeta } from "@/lib/data";
 
-export async function generateStaticParams() {
-  const stocks = await getStocks();
-  return stocks.map((stock) => ({ ticker: stock.ticker }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function StockPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await params;

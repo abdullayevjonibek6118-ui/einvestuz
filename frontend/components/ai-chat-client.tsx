@@ -7,6 +7,7 @@ import { getApiUrl } from "@/lib/live-market";
 type Message = {
   role: "user" | "assistant";
   text: string;
+  error?: boolean;
 };
 
 const initialMessages: Message[] = [
@@ -30,30 +31,38 @@ export function AIChatClient() {
     const message = input.trim();
     if (!message || loading) return;
 
-    setInput("");
     setLoading(true);
     setMessages((current) => [...current, { role: "user", text: message }]);
 
     try {
+      const history = messages.slice(-6).map(({ role, text }) => ({ role, text }));
       const response = await fetch(getApiUrl("/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, history }),
       });
       const data = response.ok ? await response.json() : null;
+      if (!response.ok) {
+        setInput(message);
+      } else {
+        setInput("");
+      }
       setMessages((current) => [
         ...current,
         {
           role: "assistant",
           text: data?.response ?? "Сейчас не удалось получить ответ от AI. Проверьте backend API и повторите запрос.",
+          error: !response.ok,
         },
       ]);
     } catch {
+      setInput(message);
       setMessages((current) => [
         ...current,
         {
           role: "assistant",
           text: "Нет соединения с AI API. Данные на странице остаются образовательными и не являются инвестиционной рекомендацией.",
+          error: true,
         },
       ]);
     } finally {
@@ -63,14 +72,14 @@ export function AIChatClient() {
 
   return (
     <div className="flex min-h-[560px] flex-col">
-      <div className="flex-1 space-y-4">
+      <div className="max-h-[520px] flex-1 space-y-4 overflow-y-auto pr-1">
         {messages.map((message, index) => {
           const assistant = message.role === "assistant";
           const Icon = assistant ? Bot : User;
           return (
             <div key={`${message.role}-${index}`} className={`flex gap-3 ${assistant ? "" : "justify-end"}`}>
               {assistant && <Avatar icon={<Icon size={17} />} />}
-              <div className={`max-w-[760px] rounded-2xl px-4 py-3 text-sm leading-6 ${assistant ? "bg-[#eff6ff] text-[#1e3a8a]" : "bg-[#0f172a] text-white"}`}>
+              <div className={`max-w-[760px] rounded-2xl px-4 py-3 text-sm leading-6 ${message.error ? "bg-[#fef2f2] text-[#b91c1c]" : assistant ? "bg-[#eff6ff] text-[#1e3a8a]" : "bg-[#0f172a] text-white"}`}>
                 {message.text}
               </div>
               {!assistant && <Avatar icon={<Icon size={17} />} />}
@@ -83,6 +92,8 @@ export function AIChatClient() {
           value={input}
           onChange={(event) => setInput(event.target.value)}
           placeholder="Спросите про компанию, ETF, риск или термин..."
+          aria-label="Сообщение AI-чату"
+          maxLength={2000}
           className="h-11 flex-1 rounded-xl border border-[#bfd0e3] px-3 text-sm outline-none focus:border-[#0b63f6] focus:ring-2 focus:ring-[#bfdbfe]"
         />
         <button className="grid size-11 place-items-center rounded-xl bg-[#0b63f6] text-white shadow-sm hover:bg-[#084fc7] disabled:cursor-not-allowed disabled:bg-[#94a3b8]" disabled={loading || !input.trim()} aria-label="Отправить">
