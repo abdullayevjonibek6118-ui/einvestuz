@@ -21,6 +21,13 @@ export type Stock = {
   source?: string;
   sourceStatus?: LiveSourceStatus;
   asOf?: string;
+  currency?: "USD" | "UZS" | string;
+  market?: string;
+  isin?: string;
+  listingCategory?: string;
+  stockType?: string;
+  openinfoId?: number | string;
+  website?: string;
   fundamentals?: StockFundamentals;
   earnings?: StockEarningPoint[];
   news?: NewsItem[];
@@ -44,6 +51,14 @@ export type MarketTableRow = {
   source?: string;
   sourceStatus?: LiveSourceStatus;
   asOf?: string;
+  market?: string;
+  currency?: "USD" | "UZS" | string;
+  sector?: string;
+  isin?: string;
+  listingCategory?: string;
+  stockType?: string;
+  openinfoId?: number | string;
+  volumePeriod?: string;
 };
 
 export type LiveSourceStatus = "live" | "delayed" | "stale" | "offline" | "fallback" | "needs_license";

@@ -27,7 +27,7 @@ const sortOptions: Array<{ key: MarketSortKey; label: string }> = [
 
 const marketOptions: Array<{ key: MarketFilter; label: string }> = [
   { key: "all", label: "Все рынки" },
-  { key: "uzse", label: "UZSE" },
+  { key: "uzse", label: "Узбекистан" },
   { key: "global", label: "Глобальные" },
 ];
 
@@ -56,9 +56,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       <LiveMarketStatus sources={sources} symbols={dashboardSymbols} />
 
       <div className="mb-4 grid gap-3 md:grid-cols-3">
-        <Metric label="Охват рынка" value={`${indexes.length} активов`} detail="Индексы, криптовалюты и сырье" />
-        <Metric label="Список наблюдения" value={`${stocks.length} компаний`} detail="Компании США и MOEX для MVP" />
-        <Metric label="Источники данных" value={`${activeSourceCount}/${sources.length} активны`} detail="REST-котировки и live polling" />
+        <Metric label="Охват рынка" value={`${marketTable.length} инструментов`} detail="UZSE, StockScope и глобальные активы" />
+        <Metric label="Узбекистан" value={`${marketTable.filter(isUzbekistanRow).length} строк`} detail="Акции, OTC и локальные инструменты" />
+        <Metric label="Источники данных" value={`${activeSourceCount}/${sources.length} активны`} detail="UZSE, StockScope, CBU и market APIs" />
       </div>
 
       <Panel title="Рынок" action={<span className="tabular-data rounded-xl border border-[#dbe4ef] bg-white px-2.5 py-1 text-xs font-semibold text-[#475569]">{sortedRows.length.toLocaleString("ru-RU")} строк</span>}>
@@ -197,7 +197,7 @@ function MarketToolbar({
             <input
               name="q"
               defaultValue={query}
-              placeholder="UZSE, HMKB, AAPL, Nvidia..."
+              placeholder="UZSE, HMKB, RBQB, AAPL..."
               className="h-11 w-full rounded-2xl border border-[#dbe4ef] bg-white pl-9 pr-3 text-sm text-[#0f172a] shadow-inner outline-none transition placeholder:text-[#94a3b8] focus:border-[#3861fb] focus:ring-4 focus:ring-[#dbe4ff]"
             />
           </div>
@@ -287,12 +287,13 @@ function MarketDesktopTable({ rows, currencyContext }: { rows: MarketTableRow[];
               <th scope="col" className="w-12 whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">#</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Logo</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Name / Ticker</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Market</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Price ({currencyContext.currency})</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">1h %</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">24h %</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">7d %</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Market Cap</th>
-              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Volume (24h)</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Volume</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Circulating Supply</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">7d Price%</th>
             </tr>
@@ -312,6 +313,9 @@ function MarketDesktopTable({ rows, currencyContext }: { rows: MarketTableRow[];
                       <SourceStatusBadge source={row.source} status={row.sourceStatus} />
                     </div>
                   </Link>
+                </td>
+                <td className="px-3 py-3">
+                  <MarketMeta row={row} />
                 </td>
                 <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatPrice(row, currencyContext)}</td>
                 <td className="px-3 py-3 text-right">
@@ -352,6 +356,9 @@ function MarketMobileCards({ rows, currencyContext }: { rows: MarketTableRow[]; 
                   <p className="truncate text-sm font-semibold text-[#0f172a]">{row.name}</p>
                   <p className="tabular-data mt-1 text-xs font-semibold text-[#1e40af]">{row.ticker}</p>
                   <div className="mt-1">
+                    <MarketMeta row={row} compact />
+                  </div>
+                  <div className="mt-1">
                     <SourceStatusBadge source={row.source} status={row.sourceStatus} />
                   </div>
                 </div>
@@ -370,7 +377,7 @@ function MarketMobileCards({ rows, currencyContext }: { rows: MarketTableRow[]; 
             <MetricChip label="24h %" value={row.change24h} />
             <MetricChip label="7d %" value={row.change7d} />
             <MetricChip label="Market Cap" value={formatMarketMoney(row, row.marketCap, row.marketCapValue, currencyContext)} />
-            <MetricChip label="Volume (24h)" value={formatMarketMoney(row, row.volume24h, row.volume24hValue, currencyContext)} />
+            <MetricChip label={volumeLabel(row)} value={formatMarketMoney(row, row.volume24h, row.volume24hValue, currencyContext)} />
             <MetricChip label="Circulating Supply" value={row.circulatingSupply} />
           </div>
         </Link>
@@ -389,6 +396,23 @@ function MetricChip({ label, value }: { label: string; value: number | string })
       ) : (
         <p className="tabular-data mt-1 truncate text-sm font-semibold text-[#0f172a]">{value}</p>
       )}
+    </div>
+  );
+}
+
+function MarketMeta({ row, compact = false }: { row: MarketTableRow; compact?: boolean }) {
+  const market = isUzbekistanRow(row) ? "Узбекистан" : "Global";
+  const details = [row.sector, row.listingCategory, row.stockType].filter(Boolean).join(" · ");
+
+  if (compact) {
+    return <p className="truncate text-[11px] font-medium text-[#64748b]">{details || market}</p>;
+  }
+
+  return (
+    <div className="max-w-[180px]">
+      <p className="text-xs font-semibold text-[#0f172a]">{market}</p>
+      <p className="mt-1 truncate text-[11px] text-[#64748b]">{details || row.isin || "instrument"}</p>
+      {row.isin ? <p className="tabular-data mt-1 truncate text-[10px] text-[#94a3b8]">{row.isin}</p> : null}
     </div>
   );
 }
@@ -514,8 +538,8 @@ function logoPalette(ticker: string) {
 function applyMarketFilters(rows: MarketTableRow[], query: string, market: MarketFilter) {
   const needle = query.toLowerCase();
   return rows.filter((row) => {
-    const matchesMarket = market === "all" || (market === "uzse" ? isUzseRow(row) : !isUzseRow(row));
-    const matchesQuery = !needle || [row.ticker, row.name, row.source].some((value) => typeof value === "string" && value.toLowerCase().includes(needle));
+    const matchesMarket = market === "all" || (market === "uzse" ? isUzbekistanRow(row) : !isUzbekistanRow(row));
+    const matchesQuery = !needle || [row.ticker, row.name, row.source, row.sector, row.isin, row.listingCategory].some((value) => typeof value === "string" && value.toLowerCase().includes(needle));
     return matchesMarket && matchesQuery;
   });
 }
@@ -607,11 +631,18 @@ function formatMarketMoney(row: MarketTableRow, display: string, rawValue: numbe
 }
 
 function rowCurrency(row: MarketTableRow): DisplayCurrency {
-  return isUzseRow(row) ? "UZS" : "USD";
+  return row.currency === "UZS" || isUzbekistanRow(row) ? "UZS" : "USD";
 }
 
-function isUzseRow(row: MarketTableRow) {
-  return (row.source?.toLowerCase() ?? "").includes("uzse");
+function isUzbekistanRow(row: MarketTableRow) {
+  const source = row.source?.toLowerCase() ?? "";
+  return row.market === "uzbekistan" || row.currency === "UZS" || source.includes("uzse") || source.includes("stockscope");
+}
+
+function volumeLabel(row: MarketTableRow) {
+  if (row.volumePeriod === "7d") return "Volume (7d)";
+  if (row.volumePeriod === "latest") return "Volume";
+  return "Volume (24h)";
 }
 
 function convertAmount(value: number, from: DisplayCurrency, to: DisplayCurrency, usdUzsRate: number) {

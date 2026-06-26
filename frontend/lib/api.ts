@@ -42,6 +42,16 @@ type BackendStock = {
   status?: string;
   as_of?: string;
   asOf?: string;
+  currency?: string;
+  market?: string;
+  isin?: string;
+  listing_category?: string;
+  listingCategory?: string;
+  stock_type?: string;
+  stockType?: string;
+  openinfo_id?: number | string;
+  openinfoId?: number | string;
+  website?: string;
   fundamentals?: BackendStockFundamentals;
   fundamentals_data?: BackendStockFundamentals;
   earnings?: BackendEarningPoint[];
@@ -244,6 +254,18 @@ type BackendMarketTableRow = Record<string, unknown> & {
   status?: string;
   as_of?: string;
   asOf?: string;
+  market?: string;
+  currency?: string;
+  sector?: string;
+  isin?: string;
+  listing_category?: string;
+  listingCategory?: string;
+  stock_type?: string;
+  stockType?: string;
+  openinfo_id?: number | string;
+  openinfoId?: number | string;
+  volume_period?: string;
+  volumePeriod?: string;
 };
 
 const categoryLabels: Record<string, NewsItem["category"]> = {
@@ -292,6 +314,13 @@ function normalizeStock(stock: BackendStock): Stock {
     source: stock.source ?? fallback?.source,
     sourceStatus: normalizeSourceStatus(stock.sourceStatus ?? stock.source_status ?? fallback?.sourceStatus),
     asOf: stock.asOf ?? stock.as_of ?? fallback?.asOf,
+    currency: stock.currency ?? fallback?.currency ?? "USD",
+    market: stock.market ?? fallback?.market,
+    isin: stock.isin ?? fallback?.isin,
+    listingCategory: stock.listingCategory ?? stock.listing_category ?? fallback?.listingCategory,
+    stockType: stock.stockType ?? stock.stock_type ?? fallback?.stockType,
+    openinfoId: stock.openinfoId ?? stock.openinfo_id ?? fallback?.openinfoId,
+    website: stock.website ?? fallback?.website,
     fundamentals,
     earnings,
     news,
@@ -395,6 +424,14 @@ function normalizeMarketTableRow(row: BackendMarketTableRow): MarketTableRow {
     source: stringValue(row.source),
     sourceStatus: normalizeSourceStatus(stringValue(row.sourceStatus ?? row.source_status ?? row.status)),
     asOf: stringValue(row.asOf ?? row.as_of),
+    market: stringValue(row.market),
+    currency: stringValue(row.currency),
+    sector: stringValue(row.sector),
+    isin: stringValue(row.isin),
+    listingCategory: stringValue(row.listingCategory ?? row.listing_category),
+    stockType: stringValue(row.stockType ?? row.stock_type),
+    openinfoId: stringValue(row.openinfoId ?? row.openinfo_id),
+    volumePeriod: stringValue(row.volumePeriod ?? row.volume_period),
   };
 }
 
@@ -537,6 +574,8 @@ function buildFallbackMarketTable(stocks: Stock[]): MarketTableRow[] {
       source: stock.source,
       sourceStatus: stock.sourceStatus,
       asOf: stock.asOf,
+      currency: stock.currency ?? "USD",
+      market: stock.market ?? "global",
     };
   });
 }
@@ -795,14 +834,32 @@ export async function getSources(): Promise<MarketDataSource[]> {
 
 export async function getStock(ticker: string): Promise<Stock | undefined> {
   const encodedTicker = encodeURIComponent(ticker);
-  const [data, fundamentals, earnings, news] = await Promise.all([
-    fetchJson<BackendStock>(`/stock/${encodedTicker}`),
-    fetchJson<BackendFundamentalsResponse>(`/fundamentals/${encodedTicker}`),
-    fetchJson<BackendEarningsResponse>(`/earnings/${encodedTicker}`),
-    fetchJson<BackendNewsItem[]>(`/news?symbol=${encodedTicker}`),
-  ]);
+  const data = await fetchJson<BackendStock>(`/stock/${encodedTicker}`);
 
   if (data) {
+    const isLocal = data.market === "uzbekistan" || data.currency === "UZS" || (data.source ?? "").toLowerCase().includes("stockscope");
+    if (isLocal) {
+      return normalizeStock({
+        ...data,
+        source_meta: [
+          {
+            source: data.source,
+            status: data.source_status,
+            as_of: data.as_of,
+            detail: data.isin ? `${data.name} · ${data.isin}` : data.name,
+            market: "Uzbekistan",
+            notes: [data.listing_category ?? data.listingCategory, data.stock_type ?? data.stockType].filter(Boolean).join(" · ") || undefined,
+          },
+        ],
+      });
+    }
+
+    const [fundamentals, earnings, news] = await Promise.all([
+      fetchJson<BackendFundamentalsResponse>(`/fundamentals/${encodedTicker}`),
+      fetchJson<BackendEarningsResponse>(`/earnings/${encodedTicker}`),
+      fetchJson<BackendNewsItem[]>(`/news?symbol=${encodedTicker}`),
+    ]);
+
     return normalizeStock({
       ...data,
       fundamentals: fundamentals ?? data.fundamentals,

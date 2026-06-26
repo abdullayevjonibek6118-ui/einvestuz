@@ -15,6 +15,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const earnings = stock.earnings ?? [];
   const sources = stock.sources?.length ? stock.sources : resolveSources(stock);
   const companyNews = stock.news?.length ? stock.news : news.slice(0, 3);
+  const isLocal = stock.market === "uzbekistan" || stock.currency === "UZS" || (stock.source ?? "").toLowerCase().includes("stockscope");
 
   return (
     <>
@@ -26,8 +27,14 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
             <div>
               <p className="text-sm text-[#667085]">{stock.sector}</p>
               <div className="mt-2 flex items-center gap-3">
-                <span className="text-3xl font-semibold">${stock.price.toFixed(2)}</span>
+                <span className="text-3xl font-semibold">{formatStockPrice(stock)}</span>
                 <ChangeBadge value={stock.change} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {stock.market ? <span className="rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1 text-xs font-semibold text-[#475569]">{stock.market}</span> : null}
+                {stock.listingCategory ? <span className="rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1 text-xs font-semibold text-[#475569]">{stock.listingCategory}</span> : null}
+                {stock.stockType ? <span className="rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1 text-xs font-semibold text-[#475569]">{stock.stockType}</span> : null}
+                {stock.isin ? <span className="tabular-data rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1 text-xs font-semibold text-[#475569]">{stock.isin}</span> : null}
               </div>
             </div>
             <div className="flex gap-2">
@@ -39,13 +46,22 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
               </Link>
             </div>
           </div>
-          <div className="mt-5 h-[360px] overflow-hidden rounded-2xl border border-[#dde3eb] bg-[#0f172a]">
-            <iframe
-              title={`${stock.ticker} TradingView chart`}
-              src={`https://s.tradingview.com/widgetembed/?symbol=NASDAQ:${stock.ticker}&interval=D&theme=dark&style=1&hideideas=1`}
-              className="h-full w-full"
-            />
-          </div>
+          {isLocal ? (
+            <div className="mt-5 grid gap-3 rounded-2xl border border-[#dde3eb] bg-[#f8fafc] p-4 sm:grid-cols-2">
+              <Metric label="Источник" value={stock.source ?? "StockScope"} detail={stock.asOf ? `updated ${formatStamp(stock.asOf)}` : undefined} />
+              <Metric label="Валюта" value={stock.currency ?? "UZS"} detail="локальный рынок" />
+              <Metric label="OpenInfo ID" value={stock.openinfoId ? String(stock.openinfoId) : "N/A"} />
+              <Metric label="Website" value={stock.website ?? "N/A"} />
+            </div>
+          ) : (
+            <div className="mt-5 h-[360px] overflow-hidden rounded-2xl border border-[#dde3eb] bg-[#0f172a]">
+              <iframe
+                title={`${stock.ticker} TradingView chart`}
+                src={`https://s.tradingview.com/widgetembed/?symbol=NASDAQ:${stock.ticker}&interval=D&theme=dark&style=1&hideideas=1`}
+                className="h-full w-full"
+              />
+            </div>
+          )}
         </Panel>
 
         <Panel title="Fundamentals" action={<SourceStatusBadge source={fundamentals.source} status={fundamentals.sourceStatus} />}>
@@ -174,6 +190,12 @@ function resolveSources(stock: Stock) {
 function formatNumber(value?: number) {
   if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
   return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+function formatStockPrice(stock: Stock) {
+  if (!Number.isFinite(stock.price) || stock.price <= 0) return "N/A";
+  if (stock.currency === "UZS") return `UZS ${stock.price.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return `$${stock.price.toFixed(2)}`;
 }
 
 function formatStamp(value: string) {

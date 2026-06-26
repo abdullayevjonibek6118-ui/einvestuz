@@ -61,6 +61,13 @@ class Stock(BaseModel):
     source: str
     source_status: Literal["live", "delayed", "fallback", "needs_license", "offline"]
     as_of: datetime
+    currency: str = "USD"
+    market: str | None = None
+    isin: str | None = None
+    listing_category: str | None = None
+    stock_type: str | None = None
+    openinfo_id: int | str | None = None
+    website: str | None = None
 
 
 class MarketAsset(BaseModel):
@@ -99,6 +106,17 @@ class MarketTableRow(BaseModel):
     source: str
     status: Literal["live", "delayed", "fallback", "needs_license", "offline"]
     as_of: datetime
+    market: str | None = None
+    currency: str = "USD"
+    sector: str | None = None
+    isin: str | None = None
+    listing_category: str | None = None
+    stock_type: str | None = None
+    openinfo_id: int | str | None = None
+    market_cap_value: float | None = None
+    volume_24h_value: float | None = None
+    circulating_supply_value: float | None = None
+    volume_period: str | None = None
 
 
 class DataSource(BaseModel):
@@ -404,6 +422,9 @@ def get_stock(ticker: str) -> Stock:
     stock = fetch_stock(ticker)
     if stock is not None:
         return _stock_response(stock)
+    stockscope = _stockscope_listing_for_ticker(ticker)
+    if stockscope is not None:
+        return _stockscope_stock_response(stockscope)
     raise HTTPException(status_code=404, detail="Stock not found")
 
 
@@ -601,6 +622,43 @@ def _stock_response(stock) -> Stock:
         source=stock.source,
         source_status=stock.status,
         as_of=stock.as_of or datetime.now(timezone.utc),
+        currency="USD",
+        market="global",
+    )
+
+
+def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
+    ticker = str(item.get("ticker") or "").upper()
+    price = _coerce_numeric(item.get("currentPrice"))
+    market_cap_value = _stockscope_market_cap(item)
+    description_parts = [
+        str(item.get("uzseName") or item.get("name") or ticker),
+        "локальная акция Узбекистана из StockScope screener.",
+    ]
+    if item.get("listingCategory"):
+        description_parts.append(f"Категория листинга: {item.get('listingCategory')}.")
+    if item.get("isin"):
+        description_parts.append(f"ISIN: {item.get('isin')}.")
+    return Stock(
+        ticker=ticker,
+        name=str(item.get("name") or item.get("uzseName") or ticker),
+        price=price,
+        change=_stockscope_change(item, "yesterday"),
+        market_cap=_format_uzs_value(market_cap_value) if market_cap_value else "N/A",
+        pe=0.0,
+        dividend="N/A",
+        sector=str(item.get("sector") or "Рынок Узбекистана"),
+        description=" ".join(description_parts),
+        source="stockscope.uz",
+        source_status="delayed",
+        as_of=_stockscope_as_of(item),
+        currency="UZS",
+        market="uzbekistan",
+        isin=str(item.get("isin") or "") or None,
+        listing_category=str(item.get("listingCategory") or "") or None,
+        stock_type=str(item.get("stockType") or "") or None,
+        openinfo_id=item.get("openinfoId"),
+        website=str(item.get("website") or "") or None,
     )
 
 
@@ -855,6 +913,17 @@ def _market_table_row_response(row: dict[str, Any]) -> MarketTableRow:
         source=str(row.get("source") or "fallback"),
         status=str(row.get("status") or "fallback"),
         as_of=row.get("as_of") or datetime.now(timezone.utc),
+        market=row.get("market"),
+        currency=str(row.get("currency") or "USD"),
+        sector=row.get("sector"),
+        isin=row.get("isin"),
+        listing_category=row.get("listing_category"),
+        stock_type=row.get("stock_type"),
+        openinfo_id=row.get("openinfo_id"),
+        market_cap_value=_optional_float(row.get("market_cap_value")),
+        volume_24h_value=_optional_float(row.get("volume_24h_value")),
+        circulating_supply_value=_optional_float(row.get("circulating_supply_value")),
+        volume_period=row.get("volume_period"),
     )
 
 
@@ -908,7 +977,7 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
         stockscope = stockscope_by_ticker.get(ticker.upper(), {})
         price = _coerce_numeric(trade.get("price")) or _coerce_numeric(stockscope.get("currentPrice"))
         shares = _coerce_numeric(listing.get("shares_outstanding")) or _coerce_numeric(stockscope.get("noOfShares"))
-        market_cap_value = price * shares if price and shares else 0.0
+        market_cap_value = _stockscope_market_cap(stockscope) or (price * shares if price and shares else 0.0)
         volume_value = volume_by_key.get(key, 0.0) or _stockscope_volume(stockscope)
         issuer = str(listing.get("issuer") or trade.get("issuer") or company.get("name") or stockscope.get("name") or ticker)
         seen_tickers.add(ticker.upper())
@@ -933,6 +1002,17 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
                 "source": "uzse.uz + stockscope.uz" if stockscope else "uzse.uz",
                 "status": "delayed",
                 "as_of": datetime.now(timezone.utc),
+                "market": "uzbekistan",
+                "currency": "UZS",
+                "sector": stockscope.get("sector"),
+                "isin": stockscope.get("isin") or listing.get("isin") or company.get("isin") or trade.get("isin"),
+                "listing_category": stockscope.get("listingCategory"),
+                "stock_type": stockscope.get("stockType"),
+                "openinfo_id": stockscope.get("openinfoId"),
+                "market_cap_value": market_cap_value or None,
+                "volume_24h_value": volume_value or None,
+                "circulating_supply_value": shares or None,
+                "volume_period": "7d" if stockscope and not volume_by_key.get(key) else "latest",
             }
         )
     for stockscope in stockscope_listings:
@@ -941,8 +1021,9 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
             continue
         price = _coerce_numeric(stockscope.get("currentPrice"))
         shares = _coerce_numeric(stockscope.get("noOfShares"))
-        market_cap_value = price * shares if price and shares else 0.0
+        market_cap_value = _stockscope_market_cap(stockscope) or (price * shares if price and shares else 0.0)
         name = str(stockscope.get("name") or stockscope.get("uzseName") or ticker)
+        volume_value = _stockscope_volume(stockscope)
         rows.append(
             {
                 "rank": 0,
@@ -958,12 +1039,23 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
                 "change_24h": _stockscope_change(stockscope, "yesterday"),
                 "change_7d": _stockscope_change(stockscope, "lastWeek"),
                 "market_cap": _format_uzs_value(market_cap_value) if market_cap_value else "N/A",
-                "volume_24h": _format_uzs_value(_stockscope_volume(stockscope)) if _stockscope_volume(stockscope) else "N/A",
+                "volume_24h": _format_uzs_value(volume_value) if volume_value else "N/A",
                 "circulating_supply": _format_units(shares, ticker) if shares else "N/A",
                 "sparkline_7d": _stockscope_sparkline(stockscope),
                 "source": "stockscope.uz",
                 "status": "delayed",
                 "as_of": datetime.now(timezone.utc),
+                "market": "uzbekistan",
+                "currency": "UZS",
+                "sector": stockscope.get("sector"),
+                "isin": stockscope.get("isin"),
+                "listing_category": stockscope.get("listingCategory"),
+                "stock_type": stockscope.get("stockType"),
+                "openinfo_id": stockscope.get("openinfoId"),
+                "market_cap_value": market_cap_value or None,
+                "volume_24h_value": volume_value or None,
+                "circulating_supply_value": shares or None,
+                "volume_period": "7d",
             }
         )
     return rows
@@ -972,6 +1064,15 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
 def _stockscope_volume(item: dict[str, Any]) -> float:
     volumes = item.get("volumes") if isinstance(item.get("volumes"), dict) else {}
     return _coerce_numeric(volumes.get("lastWeekUzs")) or _coerce_numeric(volumes.get("lastMonthUzs"))
+
+
+def _stockscope_market_cap(item: dict[str, Any]) -> float:
+    explicit = _coerce_numeric(item.get("marketCap"))
+    if explicit:
+        return explicit
+    price = _coerce_numeric(item.get("currentPrice"))
+    shares = _coerce_numeric(item.get("noOfShares"))
+    return price * shares if price and shares else 0.0
 
 
 def _stockscope_change(item: dict[str, Any], field: str) -> float:
@@ -992,6 +1093,19 @@ def _stockscope_sparkline(item: dict[str, Any]) -> list[float]:
         price,
     ]
     return [value for value in values if value]
+
+
+def _stockscope_as_of(item: dict[str, Any]) -> datetime:
+    timestamp = item.get("lastPriceUpdateAt") if isinstance(item.get("lastPriceUpdateAt"), dict) else {}
+    seconds = _coerce_numeric(timestamp.get("seconds"))
+    if seconds:
+        return datetime.fromtimestamp(seconds, tz=timezone.utc)
+    return datetime.now(timezone.utc)
+
+
+def _stockscope_listing_for_ticker(ticker: str) -> dict[str, Any] | None:
+    normalized = ticker.upper().strip()
+    return next((item for item in STOCKSCOPE_PROVIDER.get_listings() if str(item.get("ticker") or "").upper() == normalized), None)
 
 
 def _instrument_key(item: dict[str, Any]) -> tuple[str, str, str] | None:
@@ -1019,6 +1133,11 @@ def _coerce_numeric(value: Any) -> float:
         return float(str(value).replace(",", "").replace(" ", ""))
     except (TypeError, ValueError):
         return 0.0
+
+
+def _optional_float(value: Any) -> float | None:
+    number = _coerce_numeric(value)
+    return number if number else None
 
 
 def _parse_compact_value(value: Any) -> float:
