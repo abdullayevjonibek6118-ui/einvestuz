@@ -16,6 +16,8 @@ import {
   type StockFundamentals,
   type StockInsight,
   type StockRiskFactor,
+  type StockScopeDetails,
+  type StockScopeTradingRow,
   type StockSourceMeta,
   type Stock,
 } from "@/lib/data";
@@ -69,6 +71,35 @@ type BackendStock = {
   news?: BackendNewsItem[];
   sources?: BackendStockSourceMeta[];
   sourceMeta?: BackendStockSourceMeta[];
+  stockscope?: BackendStockScopeDetails;
+};
+
+type BackendStockScopeDetails = Record<string, unknown> & {
+  source_url?: string;
+  sourceUrl?: string;
+  company_type?: string;
+  companyType?: string;
+  price_history?: unknown;
+  priceHistory?: unknown;
+  trading_stats?: {
+    daily?: BackendStockScopeTradingRow[];
+    monthly?: BackendStockScopeTradingRow[];
+    yearly?: BackendStockScopeTradingRow[];
+  };
+  tradingStats?: {
+    daily?: BackendStockScopeTradingRow[];
+    monthly?: BackendStockScopeTradingRow[];
+    yearly?: BackendStockScopeTradingRow[];
+  };
+};
+
+type BackendStockScopeTradingRow = {
+  date?: string;
+  price?: number | null;
+  volume_uzs?: number | null;
+  volumeUzs?: number | null;
+  volume_pcs?: number | null;
+  volumePcs?: number | null;
 };
 
 type BackendStockInsight = {
@@ -391,11 +422,99 @@ function normalizeStock(stock: BackendStock): Stock {
     riskFactors: normalizeStockRiskFactors(stock.riskFactors ?? stock.risk_factors ?? fallback?.riskFactors),
     decisionSummary: normalizeDecisionSummary(stock.decisionSummary ?? stock.decision_summary ?? fallback?.decisionSummary),
     sourceMeta: normalizeDecisionSourceMeta(isDecisionSourceMeta(stock.source_meta) ? stock.source_meta : undefined) ?? fallback?.sourceMeta,
+    stockscope: normalizeStockScopeDetails(stock.stockscope ?? fallback?.stockscope),
     fundamentals,
     earnings,
     news,
     sources,
   };
+}
+
+function normalizeStockScopeDetails(source?: BackendStockScopeDetails | StockScopeDetails): StockScopeDetails | undefined {
+  if (!source) return undefined;
+  const raw = source as Record<string, unknown>;
+  const fundamentals = isRecord(raw.fundamentals) ? raw.fundamentals : undefined;
+
+  return {
+    ...raw,
+    sourceUrl: stringValue(raw.sourceUrl ?? raw.source_url),
+    companyType: stringValue(raw.companyType ?? raw.company_type),
+    priceHistory: normalizeStockScopePriceHistory(raw.priceHistory ?? raw.price_history),
+    fundamentals: normalizeStockScopeFundamentals(fundamentals),
+    tradingStats: normalizeStockScopeTradingStats(raw.tradingStats ?? raw.trading_stats),
+    reports: Array.isArray(raw.reports) ? (raw.reports as StockScopeDetails["reports"]) : undefined,
+    dividends: normalizeStockScopeDividends(raw.dividends),
+    indicators: Array.isArray(raw.indicators) ? (raw.indicators as StockScopeDetails["indicators"]) : undefined,
+    charts: isRecord(raw.charts) ? (raw.charts as StockScopeDetails["charts"]) : undefined,
+  };
+}
+
+function normalizeStockScopeFundamentals(source?: Record<string, unknown>): StockScopeDetails["fundamentals"] {
+  if (!source) return undefined;
+  return {
+    reports: Array.isArray(source.reports) ? (source.reports as StockScopeDetails["reports"]) : undefined,
+    earnings: isRecord(source.earnings) ? (source.earnings as NonNullable<StockScopeDetails["fundamentals"]>["earnings"]) : undefined,
+    balanceSheet: isRecord(source.balanceSheet ?? source.balance_sheet)
+      ? ((source.balanceSheet ?? source.balance_sheet) as NonNullable<StockScopeDetails["fundamentals"]>["balanceSheet"])
+      : undefined,
+    raw: Array.isArray(source.raw) ? source.raw : undefined,
+  };
+}
+
+function normalizeStockScopePriceHistory(source: unknown): StockScopeDetails["priceHistory"] {
+  if (!isRecord(source)) return undefined;
+  const points = Array.isArray(source.points)
+    ? source.points
+        .filter(isRecord)
+        .map((point) => ({
+          date: stringValue(point.date) ?? "",
+          value: typeof point.value === "number" ? point.value : undefined,
+        }))
+        .filter((point) => point.date)
+    : undefined;
+  return {
+    points,
+    raw: isRecord(source.raw) ? source.raw : undefined,
+    lastUpdateAt: stringValue(source.lastUpdateAt ?? source.last_update_at),
+  };
+}
+
+function normalizeStockScopeTradingStats(source: unknown) {
+  if (!isRecord(source)) return undefined;
+  return {
+    daily: Array.isArray(source.daily) ? source.daily.map((row) => normalizeStockScopeTradingRow(row as BackendStockScopeTradingRow)) : undefined,
+    monthly: Array.isArray(source.monthly) ? source.monthly.map((row) => normalizeStockScopeTradingRow(row as BackendStockScopeTradingRow)) : undefined,
+    yearly: Array.isArray(source.yearly) ? source.yearly.map((row) => normalizeStockScopeTradingRow(row as BackendStockScopeTradingRow)) : undefined,
+  };
+}
+
+function normalizeStockScopeTradingRow(row: BackendStockScopeTradingRow): StockScopeTradingRow {
+  return {
+    date: row.date ?? "",
+    price: row.price,
+    volumeUzs: row.volumeUzs ?? row.volume_uzs,
+    volumePcs: row.volumePcs ?? row.volume_pcs,
+  };
+}
+
+function normalizeStockScopeDividends(source: unknown): StockScopeDetails["dividends"] {
+  if (!Array.isArray(source)) return undefined;
+  return source.filter(isRecord).map((item) => ({
+    id: stringValue(item.id),
+    companyId: stringValue(item.companyId ?? item.company_id),
+    companyName: stringValue(item.companyName ?? item.company_name),
+    approvedDate: stringValue(item.approvedDate ?? item.approved_date),
+    publishedDate: stringValue(item.publishedDate ?? item.published_date),
+    scrapedAt: stringValue(item.scrapedAt ?? item.scraped_at),
+    commonDividend: numberValue(item.commonDividend ?? item.common_dividend, undefined),
+    preferredDividend: numberValue(item.preferredDividend ?? item.preferred_dividend, undefined),
+    commonYield: numberValue(item.commonYield ?? item.common_yield, undefined),
+    preferredYield: numberValue(item.preferredYield ?? item.preferred_yield, undefined),
+  }));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function normalizeFundamentals(stock: BackendStock, fallback?: Stock): StockFundamentals | undefined {

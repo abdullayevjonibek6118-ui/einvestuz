@@ -32,10 +32,98 @@ export type Stock = {
   riskFactors?: StockRiskFactor[];
   decisionSummary?: StockDecisionSummary;
   sourceMeta?: StockDecisionSourceMeta;
+  stockscope?: StockScopeDetails;
   fundamentals?: StockFundamentals;
   earnings?: StockEarningPoint[];
   news?: NewsItem[];
   sources?: StockSourceMeta[];
+};
+
+export type StockScopeSeries = {
+  name: string;
+  data: Array<number | string | null> | Array<[string | number, number | null]>;
+};
+
+export type StockScopeChart = {
+  title?: string;
+  categories?: string[];
+  series?: StockScopeSeries[];
+};
+
+export type StockScopeIndicatorPeriod = {
+  period?: string;
+  type?: string;
+  date?: string;
+  values?: Record<string, number | null>;
+};
+
+export type StockScopeFinancialRow = {
+  id: string;
+  label: string;
+  values: Array<{ period?: string; date?: string; value?: number | null }>;
+};
+
+export type StockScopeFinancialTable = {
+  periods?: Array<{ period?: string; type?: string; date?: string }>;
+  rows?: StockScopeFinancialRow[];
+};
+
+export type StockScopeDetails = {
+  ticker?: string;
+  source?: string;
+  sourceUrl?: string;
+  companyType?: string;
+  priceHistory?: {
+    points?: Array<{ date: string; value?: number | null }>;
+    lastUpdateAt?: string;
+    raw?: Record<string, unknown>;
+  };
+  fundamentals?: {
+    reports?: StockScopeReport[];
+    earnings?: StockScopeFinancialTable;
+    balanceSheet?: StockScopeFinancialTable;
+    raw?: unknown[];
+  };
+  indicators?: StockScopeIndicatorPeriod[];
+  tradingStats?: {
+    daily?: StockScopeTradingRow[];
+    monthly?: StockScopeTradingRow[];
+    yearly?: StockScopeTradingRow[];
+  };
+  reports?: StockScopeReport[];
+  dividends?: StockScopeDividend[];
+  charts?: Record<string, StockScopeChart>;
+};
+
+export type StockScopeTradingRow = {
+  date: string;
+  price?: number | null;
+  volumeUzs?: number | null;
+  volumePcs?: number | null;
+};
+
+export type StockScopeReport = {
+  id?: string;
+  period?: string;
+  type?: string;
+  companyType?: string;
+  companyId?: number | string;
+  companyName?: string;
+  date?: string;
+  url?: string;
+};
+
+export type StockScopeDividend = {
+  id?: number | string;
+  companyId?: number | string;
+  companyName?: string;
+  approvedDate?: string;
+  publishedDate?: string;
+  scrapedAt?: string;
+  commonDividend?: number | null;
+  preferredDividend?: number | null;
+  commonYield?: number | null;
+  preferredYield?: number | null;
 };
 
 export type StockInsight = {

@@ -72,6 +72,7 @@ class Stock(BaseModel):
     risk_factors: list[dict[str, Any]] = Field(default_factory=list)
     decision_summary: dict[str, Any] | None = None
     source_meta: dict[str, Any] | None = None
+    stockscope: dict[str, Any] | None = None
 
 
 class MarketAsset(BaseModel):
@@ -510,6 +511,14 @@ def stockscope_listings() -> list[dict[str, Any]]:
     return STOCKSCOPE_PROVIDER.get_listings()
 
 
+@app.get("/api/stockscope/listings/{ticker}/details")
+def stockscope_listing_details(ticker: str) -> dict[str, Any]:
+    details = STOCKSCOPE_PROVIDER.get_listing_details(ticker)
+    if not details:
+        raise HTTPException(status_code=404, detail="StockScope listing details not found")
+    return details
+
+
 @app.get("/quotes/live", response_model=list[LiveQuote])
 def live_quotes(
     symbols: str = Query(default="AAPL,NVDA,MSFT,SBER", description="Comma-separated tickers, e.g. AAPL,NVDA,SBER"),
@@ -718,6 +727,7 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         risk_factors=decision_room["risk_factors"],
         decision_summary=decision_room["decision_summary"],
         source_meta=decision_room["source_meta"],
+        stockscope=STOCKSCOPE_PROVIDER.get_listing_details(ticker),
     )
 
 

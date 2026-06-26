@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, Banknote, Bot, ChartNoAxesCombined, FileText, Globe2, Newspaper, Plus, ShieldAlert, Star, TriangleAlert, type LucideIcon } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
 import { getDashboardData, getNews, getStock } from "@/lib/api";
-import { type MarketTableRow, type Stock, type StockRiskFactor, type StockSourceMeta } from "@/lib/data";
+import { type MarketTableRow, type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockSourceMeta } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -176,6 +176,34 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
           </div>
         </Panel>
       </section>
+
+      {stock.stockscope ? (
+        <section className="grid gap-4">
+          <Panel title="StockScope data room" action={<SourceStatusBadge source="stockscope.uz" status="delayed" />}>
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+              <ChartPanel chart={stock.stockscope.charts?.price} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Metric label="Reports" value={`${stock.stockscope.reports?.length ?? 0}`} detail="OpenInfo / issuer filings" />
+                <Metric label="Price points" value={`${stock.stockscope.priceHistory?.points?.length ?? 0}`} detail={stock.stockscope.priceHistory?.lastUpdateAt ? `updated ${formatStamp(stock.stockscope.priceHistory.lastUpdateAt)}` : "history"} />
+                <Metric label="Dividends" value={`${stock.stockscope.dividends?.length ?? 0}`} detail="approved facts" />
+                <Metric label="Trading rows" value={`${stock.stockscope.tradingStats?.daily?.length ?? 0}`} detail="daily volume and price" />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 xl:grid-cols-2">
+              <ChartPanel chart={stock.stockscope.charts?.earnings} />
+              <ChartPanel chart={stock.stockscope.charts?.balance} />
+              <ChartPanel chart={stock.stockscope.charts?.indicators} />
+              <ChartPanel chart={stock.stockscope.charts?.trading_volume} />
+            </div>
+
+            <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+              <IndicatorGrid indicators={stock.stockscope.indicators} />
+              <StockScopeTables stock={stock} />
+            </div>
+          </Panel>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Panel title="Fundamentals" action={<Banknote size={18} className="text-[#1e40af]" />}>
@@ -378,6 +406,36 @@ function fallbackRiskFactors(stock: Stock, fundamentals: ReturnType<typeof resol
   ];
 }
 
+function seriesPointValue(point: number | string | null | [string | number, number | null]) {
+  if (Array.isArray(point)) return typeof point[1] === "number" ? point[1] : null;
+  if (typeof point === "number") return point;
+  if (typeof point === "string") {
+    const numeric = Number(point);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+  return null;
+}
+
+function formatKpiValue(key: string, value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "N/A";
+  if (key.includes("Margin") || key === "ROE" || key === "ROA") return `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
+  return formatCompactValue(value);
+}
+
+function formatCompactValue(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "N/A";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toLocaleString("en-US", { maximumFractionDigits: 2 })}B`;
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 2 })}M`;
+  if (abs >= 1_000) return `${(value / 1_000).toLocaleString("en-US", { maximumFractionDigits: 2 })}K`;
+  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+function formatPercentValue(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "yield n/a";
+  return `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
+}
+
 function formatNumber(value?: number) {
   if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
   return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -424,6 +482,145 @@ function DecisionList({ title, items }: { title: string; items?: string[] }) {
       ) : (
         <p className="mt-2 text-sm text-[#64748b]">No clear match yet.</p>
       )}
+    </div>
+  );
+}
+
+function ChartPanel({ chart }: { chart?: StockScopeChart }) {
+  const series = chart?.series?.filter((item) => item.data?.length) ?? [];
+  if (!series.length) {
+    return (
+      <div className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
+        <p className="text-sm font-semibold text-[#0f172a]">{chart?.title ?? "Chart"}</p>
+        <p className="mt-3 text-sm text-[#64748b]">No chart points yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-[16px] border border-[#dbe4ef] bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-[#0f172a]">{chart?.title ?? "Chart"}</p>
+        <div className="flex flex-wrap gap-2">
+          {series.slice(0, 3).map((item) => (
+            <span key={item.name} className="rounded-full bg-[#eef2ff] px-2 py-1 text-[11px] font-semibold text-[#1e40af]">{item.name}</span>
+          ))}
+        </div>
+      </div>
+      <MiniSeriesChart series={series.slice(0, 3)} />
+    </div>
+  );
+}
+
+function MiniSeriesChart({ series }: { series: NonNullable<StockScopeChart["series"]> }) {
+  const width = 620;
+  const height = 180;
+  const padding = 16;
+  const colors = ["#0b63f6", "#16a34a", "#d97706"];
+  const numericSeries = series.map((item) => ({
+    name: item.name,
+    values: item.data.map(seriesPointValue).filter((value): value is number => typeof value === "number" && Number.isFinite(value)),
+  }));
+  const allValues = numericSeries.flatMap((item) => item.values);
+  const min = Math.min(...allValues);
+  const max = Math.max(...allValues);
+  const spread = max - min || 1;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="mt-4 h-48 w-full overflow-visible">
+      <line x1={padding} x2={width - padding} y1={height - padding} y2={height - padding} stroke="#e2e8f0" />
+      <line x1={padding} x2={padding} y1={padding} y2={height - padding} stroke="#e2e8f0" />
+      {numericSeries.map((item, seriesIndex) => {
+        const step = (width - padding * 2) / Math.max(1, item.values.length - 1);
+        const points = item.values
+          .map((value, index) => {
+            const x = padding + index * step;
+            const y = height - padding - ((value - min) / spread) * (height - padding * 2);
+            return `${x},${y}`;
+          })
+          .join(" ");
+        return <polyline key={item.name} points={points} fill="none" stroke={colors[seriesIndex % colors.length]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />;
+      })}
+    </svg>
+  );
+}
+
+function IndicatorGrid({ indicators }: { indicators?: StockScopeIndicatorPeriod[] }) {
+  const latest = indicators?.[0];
+  const values = latest?.values ?? {};
+  const keys = ["ROE", "ROA", "GrossProfitMargin", "NetProfitMargin", "DebtToEquity", "CurrentRatio", "WorkingCapital", "Earnings"];
+
+  return (
+    <div className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
+      <p className="text-sm font-semibold text-[#0f172a]">Performance indicators</p>
+      <p className="mt-1 text-xs text-[#64748b]">{latest?.period ?? "Latest period"} · ROE, ROA and StockScope ratios</p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {keys.map((key) => (
+          <MetricChip key={key} label={key} value={formatKpiValue(key, values[key])} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StockScopeTables({ stock }: { stock: Stock }) {
+  const earningsRows = stock.stockscope?.fundamentals?.earnings?.rows ?? [];
+  const balanceRows = stock.stockscope?.fundamentals?.balanceSheet?.rows ?? [];
+  const dividends = stock.stockscope?.dividends ?? [];
+  const reports = stock.stockscope?.reports ?? [];
+
+  return (
+    <div className="grid gap-3">
+      <MiniFinancialTable title="Earnings rows" rows={earningsRows.slice(0, 10)} />
+      <MiniFinancialTable title="Balance sheet rows" rows={balanceRows.slice(0, 10)} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FactsList title="Reports" items={reports.slice(0, 5).map((item) => `${item.period ?? item.type ?? "Report"} · ${item.date ? formatStamp(item.date) : "date n/a"}`)} />
+        <FactsList title="Dividends" items={dividends.slice(0, 5).map((item) => `${formatCompactValue(item.commonDividend)} UZS · ${formatPercentValue(item.commonYield)}`)} />
+      </div>
+    </div>
+  );
+}
+
+function MiniFinancialTable({ title, rows }: { title: string; rows: Array<{ id: string; label: string; values: Array<{ period?: string; value?: number | null }> }> }) {
+  return (
+    <div className="overflow-hidden rounded-[16px] border border-[#dbe4ef] bg-white">
+      <div className="border-b border-[#e2e8f0] px-4 py-3 text-sm font-semibold text-[#0f172a]">{title}</div>
+      <div className="max-h-72 overflow-auto">
+        <table className="min-w-full text-sm">
+          <tbody>
+            {rows.map((row) => {
+              const latest = row.values?.[0];
+              return (
+                <tr key={`${title}-${row.id}`} className="border-b border-[#f1f5f9] last:border-0">
+                  <td className="px-4 py-2 text-xs font-semibold text-[#64748b]">{row.id}</td>
+                  <td className="px-3 py-2 text-[#0f172a]">{row.label}</td>
+                  <td className="tabular-data px-4 py-2 text-right font-semibold text-[#0f172a]">{formatCompactValue(latest?.value)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function FactsList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="rounded-[16px] border border-[#dbe4ef] bg-white p-4">
+      <p className="text-sm font-semibold text-[#0f172a]">{title}</p>
+      <div className="mt-2 space-y-1">
+        {items.length ? items.map((item) => <p key={item} className="text-sm text-[#475569]">{item}</p>) : <p className="text-sm text-[#64748b]">No data yet.</p>}
+      </div>
+    </div>
+  );
+}
+
+function MetricChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-[#dbe4ef] bg-white p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">{label}</p>
+      <p className="tabular-data mt-1 text-sm font-semibold text-[#0f172a]">{value}</p>
     </div>
   );
 }
