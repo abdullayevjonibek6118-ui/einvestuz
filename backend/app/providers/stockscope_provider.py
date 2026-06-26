@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin
@@ -94,6 +95,66 @@ class StockScopeProvider:
         if not normalized:
             return {}
         return self._cached(f"details:{normalized}", 3600, lambda: self._fetch_listing_details(normalized))
+
+    def get_listing_details_batch(
+        self,
+        tickers: list[str] | None = None,
+        *,
+        offset: int = 0,
+        limit: int = 25,
+        max_workers: int = 4,
+        include_raw: bool = False,
+    ) -> dict[str, Any]:
+        catalog = self.get_listings()
+        catalog_tickers = [str(item.get("ticker") or "").upper() for item in catalog if item.get("ticker")]
+        requested = [str(ticker or "").strip().upper() for ticker in (tickers or catalog_tickers)]
+        requested = [ticker for ticker in requested if ticker]
+        selected = requested[max(offset, 0) : max(offset, 0) + max(1, limit)]
+        details: list[dict[str, Any]] = []
+
+        with ThreadPoolExecutor(max_workers=max(1, min(max_workers, 8, len(selected) or 1))) as executor:
+            futures = {executor.submit(self.get_listing_details, ticker): ticker for ticker in selected}
+            for future in as_completed(futures):
+                ticker = futures[future]
+                try:
+                    detail = future.result()
+                except Exception as exc:
+                    details.append({"ticker": ticker, "error": str(exc), "source": "stockscope.uz"})
+                    continue
+                if detail:
+                    details.append(self._compact_detail(detail, include_raw=include_raw))
+                else:
+                    details.append({"ticker": ticker, "error": "not_found", "source": "stockscope.uz"})
+
+        details_by_order = {str(item.get("ticker") or ""): item for item in details}
+        ordered = [details_by_order.get(ticker, {"ticker": ticker, "error": "not_found", "source": "stockscope.uz"}) for ticker in selected]
+        return {
+            "total": len(requested),
+            "offset": max(offset, 0),
+            "limit": max(1, limit),
+            "count": len(ordered),
+            "has_more": max(offset, 0) + max(1, limit) < len(requested),
+            "tickers": selected,
+            "items": ordered,
+        }
+
+    def get_listing_details_coverage(self) -> dict[str, Any]:
+        listings = self.get_listings()
+        rows = []
+        for item in listings:
+            ticker = str(item.get("ticker") or "").upper()
+            if not ticker:
+                continue
+            detail = self.get_listing_details(ticker)
+            rows.append(self._coverage_row(ticker, item, detail))
+        return {
+            "total": len(rows),
+            "with_reports": sum(1 for row in rows if row["reports_count"] > 0),
+            "with_indicators": sum(1 for row in rows if row["indicators_count"] > 0),
+            "with_dividends": sum(1 for row in rows if row["dividends_count"] > 0),
+            "with_price_history": sum(1 for row in rows if row["price_points_count"] > 0),
+            "items": rows,
+        }
 
     def get_sectors(self) -> dict[str, str]:
         return self._cached("sectors", 86400, self._fetch_sectors)
@@ -194,6 +255,41 @@ class StockScopeProvider:
             "reports": reports,
             "dividends": dividends,
             "charts": charts,
+        }
+
+    def _compact_detail(self, detail: dict[str, Any], *, include_raw: bool) -> dict[str, Any]:
+        if include_raw:
+            return detail
+        compact = dict(detail)
+        fundamentals = dict(compact.get("fundamentals") or {})
+        price_history = dict(compact.get("price_history") or {})
+        fundamentals.pop("raw", None)
+        price_history.pop("raw", None)
+        compact["fundamentals"] = fundamentals
+        compact["price_history"] = price_history
+        return compact
+
+    def _coverage_row(self, ticker: str, listing: dict[str, Any], detail: dict[str, Any]) -> dict[str, Any]:
+        indicators = detail.get("indicators") if isinstance(detail.get("indicators"), list) else []
+        latest_indicators = (indicators[0].get("values") if indicators and isinstance(indicators[0], dict) else {}) or {}
+        reports = detail.get("reports") if isinstance(detail.get("reports"), list) else []
+        dividends = detail.get("dividends") if isinstance(detail.get("dividends"), list) else []
+        price_points = ((detail.get("price_history") or {}).get("points") if isinstance(detail.get("price_history"), dict) else []) or []
+        return {
+            "ticker": ticker,
+            "name": listing.get("name") or listing.get("uzseName") or ticker,
+            "isin": listing.get("isin"),
+            "openinfo_id": listing.get("openinfoId"),
+            "price_points_count": len(price_points),
+            "reports_count": len(reports),
+            "indicators_count": len(indicators),
+            "dividends_count": len(dividends),
+            "latest_period": indicators[0].get("period") if indicators and isinstance(indicators[0], dict) else None,
+            "roe": latest_indicators.get("ROE"),
+            "roa": latest_indicators.get("ROA"),
+            "pe": self._ratio(self._number(listing.get("marketCap")), latest_indicators.get("Earnings")),
+            "pb": self._ratio(self._number(listing.get("marketCap")), latest_indicators.get("Equity")),
+            "dividend_yield": dividends[0].get("common_yield") if dividends and isinstance(dividends[0], dict) else None,
         }
 
     def _extract_nuxt_payload(self, html: str) -> list[Any]:

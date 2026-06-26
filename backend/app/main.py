@@ -519,6 +519,29 @@ def stockscope_listing_details(ticker: str) -> dict[str, Any]:
     return details
 
 
+@app.get("/api/stockscope/details")
+def stockscope_details_batch(
+    tickers: str | None = Query(default=None, description="Comma-separated tickers. If omitted, uses the StockScope catalog."),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=25, ge=1, le=200),
+    full: bool = Query(default=False, description="Include raw Nuxt payload fragments. Default false keeps response lighter."),
+    max_workers: int = Query(default=4, ge=1, le=8),
+) -> dict[str, Any]:
+    parsed_tickers = _parse_symbols(tickers) if tickers else None
+    return STOCKSCOPE_PROVIDER.get_listing_details_batch(
+        parsed_tickers,
+        offset=offset,
+        limit=limit,
+        max_workers=max_workers,
+        include_raw=full,
+    )
+
+
+@app.get("/api/stockscope/coverage")
+def stockscope_coverage() -> dict[str, Any]:
+    return STOCKSCOPE_PROVIDER.get_listing_details_coverage()
+
+
 @app.get("/quotes/live", response_model=list[LiveQuote])
 def live_quotes(
     symbols: str = Query(default="AAPL,NVDA,MSFT,SBER", description="Comma-separated tickers, e.g. AAPL,NVDA,SBER"),
