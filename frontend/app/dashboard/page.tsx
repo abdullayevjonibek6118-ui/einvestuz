@@ -638,7 +638,7 @@ function formatCurrencyAmount(value: number, currency: DisplayCurrency, mode: "p
   for (const [threshold, suffix] of suffixes) {
     if (abs >= threshold) return `${prefix}${(value / threshold).toFixed(abs >= 100 * threshold ? 0 : 2)}${suffix}`;
   }
-  return `${prefix}${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return `${prefix}${value.toLocaleString("en-US", { maximumFractionDigits: currency === "USD" && value < 1 ? 4 : 2 })}`;
 }
 
 function resolveUsdUzsRate(fxRates: Array<{ pair: string; rate: number; base?: string; quote?: string }>) {

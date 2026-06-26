@@ -259,7 +259,7 @@ const categoryLabels: Record<string, NewsItem["category"]> = {
 async function fetchJson<T>(path: string): Promise<T | null> {
   if (!API_URL) return null;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
     const response = await fetch(`${API_URL}${path}`, { cache: "no-store", signal: controller.signal });
