@@ -7,6 +7,13 @@ import { type MarketTableRow } from "@/lib/data";
 
 type DashboardSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type MarketSortKey = "marketCap" | "volume24h" | "price" | "change1h" | "change24h" | "change7d" | "name";
+type MarketFilter = "all" | "uzse" | "global";
+type DisplayCurrency = "USD" | "UZS";
+
+type CurrencyContext = {
+  currency: DisplayCurrency;
+  usdUzsRate: number;
+};
 
 const sortOptions: Array<{ key: MarketSortKey; label: string }> = [
   { key: "marketCap", label: "Market cap" },
@@ -18,13 +25,27 @@ const sortOptions: Array<{ key: MarketSortKey; label: string }> = [
   { key: "name", label: "Name" },
 ];
 
+const marketOptions: Array<{ key: MarketFilter; label: string }> = [
+  { key: "all", label: "Все рынки" },
+  { key: "uzse", label: "UZSE" },
+  { key: "global", label: "Глобальные" },
+];
+
+const currencyOptions: Array<{ key: DisplayCurrency; label: string }> = [
+  { key: "USD", label: "USD" },
+  { key: "UZS", label: "UZS" },
+];
+
 export default async function DashboardPage({ searchParams }: { searchParams?: DashboardSearchParams }) {
   const { indexes, stocks, marketTable, news, sources, fxRates, macro } = await getDashboardData();
   const resolvedSearchParams = (await Promise.resolve(searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>;
   const query = firstQueryValue(resolvedSearchParams.q).trim();
   const sort = normalizeSort(firstQueryValue(resolvedSearchParams.sort));
-  const filteredRows = applyMarketFilters(marketTable, query);
-  const sortedRows = sortMarketRows(filteredRows, sort);
+  const market = normalizeMarketFilter(firstQueryValue(resolvedSearchParams.market));
+  const currency = normalizeCurrency(firstQueryValue(resolvedSearchParams.currency));
+  const currencyContext = { currency, usdUzsRate: resolveUsdUzsRate(fxRates) };
+  const filteredRows = applyMarketFilters(marketTable, query, market);
+  const sortedRows = sortMarketRows(filteredRows, sort, currencyContext);
   const activeSourceCount = sources.filter((source) => source.status === "live" || source.status === "delayed").length;
   const dashboardSymbols = [...indexes.map((index) => index.ticker), ...stocks.map((stock) => stock.ticker)];
 
@@ -41,11 +62,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </div>
 
       <Panel title="Рынок" action={<span className="tabular-data rounded-xl border border-[#dbe4ef] bg-white px-2.5 py-1 text-xs font-semibold text-[#475569]">{sortedRows.length.toLocaleString("ru-RU")} строк</span>}>
-        <MarketToolbar query={query} sort={sort} total={marketTable.length} visible={sortedRows.length} />
+        <MarketToolbar query={query} sort={sort} market={market} currency={currency} total={marketTable.length} visible={sortedRows.length} usdUzsRate={currencyContext.usdUzsRate} />
         {sortedRows.length ? (
           <>
-            <MarketDesktopTable rows={sortedRows} />
-            <MarketMobileCards rows={sortedRows} />
+            <MarketDesktopTable rows={sortedRows} currencyContext={currencyContext} />
+            <MarketMobileCards rows={sortedRows} currencyContext={currencyContext} />
           </>
         ) : (
           <EmptyMarketState query={query} />
@@ -149,10 +170,26 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   );
 }
 
-function MarketToolbar({ query, sort, total, visible }: { query: string; sort: MarketSortKey; total: number; visible: number }) {
+function MarketToolbar({
+  query,
+  sort,
+  market,
+  currency,
+  total,
+  visible,
+  usdUzsRate,
+}: {
+  query: string;
+  sort: MarketSortKey;
+  market: MarketFilter;
+  currency: DisplayCurrency;
+  total: number;
+  visible: number;
+  usdUzsRate: number;
+}) {
   return (
     <div className="mb-4 flex flex-col gap-3 border-b border-[#e2e8f0] pb-4 lg:flex-row lg:items-end lg:justify-between">
-      <form className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_180px_auto] lg:items-end" method="get">
+      <form className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_150px_130px_150px_auto] lg:items-end" method="get">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Поиск</span>
           <div className="relative">
@@ -163,6 +200,42 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
               placeholder="UZSE, HMKB, AAPL, Nvidia..."
               className="h-11 w-full rounded-2xl border border-[#dbe4ef] bg-white pl-9 pr-3 text-sm text-[#0f172a] shadow-inner outline-none transition placeholder:text-[#94a3b8] focus:border-[#3861fb] focus:ring-4 focus:ring-[#dbe4ff]"
             />
+          </div>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Рынок</span>
+          <div className="relative">
+            <select
+              name="market"
+              defaultValue={market}
+              className="h-11 w-full appearance-none rounded-2xl border border-[#dbe4ef] bg-white px-3 pr-9 text-sm text-[#0f172a] shadow-inner outline-none transition focus:border-[#3861fb] focus:ring-4 focus:ring-[#dbe4ff]"
+            >
+              {marketOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <Globe2 className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" size={15} />
+          </div>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-[#667085]">Валюта</span>
+          <div className="relative">
+            <select
+              name="currency"
+              defaultValue={currency}
+              className="h-11 w-full appearance-none rounded-2xl border border-[#dbe4ef] bg-white px-3 pr-9 text-sm text-[#0f172a] shadow-inner outline-none transition focus:border-[#3861fb] focus:ring-4 focus:ring-[#dbe4ff]"
+            >
+              {currencyOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <Globe2 className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" size={15} />
           </div>
         </label>
 
@@ -192,6 +265,7 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
 
       <div className="flex items-center gap-2 text-xs font-medium text-[#64748b]">
         <span className="rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1">{visible.toLocaleString("ru-RU")} / {total.toLocaleString("ru-RU")}</span>
+        <span className="hidden rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-2 py-1 md:inline">USD/UZS {usdUzsRate.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
         <Link
           href="/dashboard"
           className="inline-flex h-10 items-center rounded-2xl border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-[#f8fafc]"
@@ -203,7 +277,7 @@ function MarketToolbar({ query, sort, total, visible }: { query: string; sort: M
   );
 }
 
-function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
+function MarketDesktopTable({ rows, currencyContext }: { rows: MarketTableRow[]; currencyContext: CurrencyContext }) {
   return (
     <div className="hidden md:block">
       <div className="max-h-[720px] overflow-auto rounded-3xl border border-[#dbe4ef] bg-white shadow-inner">
@@ -213,7 +287,7 @@ function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
               <th scope="col" className="w-12 whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">#</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Logo</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-left">Name / Ticker</th>
-              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Price</th>
+              <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">Price ({currencyContext.currency})</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">1h %</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">24h %</th>
               <th scope="col" className="whitespace-nowrap border-b border-[#e2e8f0] px-3 py-3 text-right">7d %</th>
@@ -239,7 +313,7 @@ function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
                     </div>
                   </Link>
                 </td>
-                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatPrice(row)}</td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatPrice(row, currencyContext)}</td>
                 <td className="px-3 py-3 text-right">
                   <ChangeBadge value={row.change1h} />
                 </td>
@@ -249,8 +323,8 @@ function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
                 <td className="px-3 py-3 text-right">
                   <ChangeBadge value={row.change7d} />
                 </td>
-                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{row.marketCap}</td>
-                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{row.volume24h}</td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatMarketMoney(row, row.marketCap, row.marketCapValue, currencyContext)}</td>
+                <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{formatMarketMoney(row, row.volume24h, row.volume24hValue, currencyContext)}</td>
                 <td className="tabular-data px-3 py-3 text-right text-sm font-semibold text-[#0f172a]">{row.circulatingSupply}</td>
                 <td className="px-3 py-3 text-right">
                   <Sparkline values={row.sparkline7d} positive={row.change7d >= 0} />
@@ -264,7 +338,7 @@ function MarketDesktopTable({ rows }: { rows: MarketTableRow[] }) {
   );
 }
 
-function MarketMobileCards({ rows }: { rows: MarketTableRow[] }) {
+function MarketMobileCards({ rows, currencyContext }: { rows: MarketTableRow[]; currencyContext: CurrencyContext }) {
   return (
     <div className="grid gap-2 md:hidden">
       {rows.map((row, index) => (
@@ -284,7 +358,7 @@ function MarketMobileCards({ rows }: { rows: MarketTableRow[] }) {
               </div>
             </div>
             <div className="text-right">
-              <p className="tabular-data text-sm font-semibold text-[#0f172a]">{formatPrice(row)}</p>
+              <p className="tabular-data text-sm font-semibold text-[#0f172a]">{formatPrice(row, currencyContext)}</p>
               <div className="mt-2 flex justify-end">
                 <Sparkline values={row.sparkline7d} positive={row.change7d >= 0} />
               </div>
@@ -295,8 +369,8 @@ function MarketMobileCards({ rows }: { rows: MarketTableRow[] }) {
             <MetricChip label="1h %" value={row.change1h} />
             <MetricChip label="24h %" value={row.change24h} />
             <MetricChip label="7d %" value={row.change7d} />
-            <MetricChip label="Market Cap" value={row.marketCap} />
-            <MetricChip label="Volume (24h)" value={row.volume24h} />
+            <MetricChip label="Market Cap" value={formatMarketMoney(row, row.marketCap, row.marketCapValue, currencyContext)} />
+            <MetricChip label="Volume (24h)" value={formatMarketMoney(row, row.volume24h, row.volume24hValue, currencyContext)} />
             <MetricChip label="Circulating Supply" value={row.circulatingSupply} />
           </div>
         </Link>
@@ -437,33 +511,36 @@ function logoPalette(ticker: string) {
   return palette[index];
 }
 
-function applyMarketFilters(rows: MarketTableRow[], query: string) {
-  if (!query) return rows;
+function applyMarketFilters(rows: MarketTableRow[], query: string, market: MarketFilter) {
   const needle = query.toLowerCase();
-  return rows.filter((row) => [row.ticker, row.name, row.source].some((value) => typeof value === "string" && value.toLowerCase().includes(needle)));
+  return rows.filter((row) => {
+    const matchesMarket = market === "all" || (market === "uzse" ? isUzseRow(row) : !isUzseRow(row));
+    const matchesQuery = !needle || [row.ticker, row.name, row.source].some((value) => typeof value === "string" && value.toLowerCase().includes(needle));
+    return matchesMarket && matchesQuery;
+  });
 }
 
-function sortMarketRows(rows: MarketTableRow[], sort: MarketSortKey) {
+function sortMarketRows(rows: MarketTableRow[], sort: MarketSortKey, currencyContext: CurrencyContext) {
   const sorted = [...rows];
   sorted.sort((a, b) => {
     if (sort === "name") return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
 
-    const aValue = marketSortValue(a, sort);
-    const bValue = marketSortValue(b, sort);
+    const aValue = marketSortValue(a, sort, currencyContext);
+    const bValue = marketSortValue(b, sort, currencyContext);
     if (bValue !== aValue) return bValue - aValue;
     return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
   });
   return sorted;
 }
 
-function marketSortValue(row: MarketTableRow, sort: MarketSortKey) {
+function marketSortValue(row: MarketTableRow, sort: MarketSortKey, currencyContext: CurrencyContext) {
   switch (sort) {
     case "marketCap":
-      return finiteNumber(row.marketCapValue ?? parseCompactNumber(row.marketCap));
+      return comparableMoneyValue(row, row.marketCap, row.marketCapValue, currencyContext);
     case "volume24h":
-      return finiteNumber(row.volume24hValue ?? parseCompactNumber(row.volume24h));
+      return comparableMoneyValue(row, row.volume24h, row.volume24hValue, currencyContext);
     case "price":
-      return finiteNumber(row.price);
+      return comparableMoneyValue(row, undefined, row.price, currencyContext);
     case "change1h":
       return finiteNumber(row.change1h);
     case "change24h":
@@ -477,7 +554,7 @@ function marketSortValue(row: MarketTableRow, sort: MarketSortKey) {
 
 function parseCompactNumber(value: string) {
   const cleaned = value.replace(/,/g, "").trim();
-  const match = cleaned.match(/^\$?(-?\d+(?:\.\d+)?)([KMBTQ])?$/i);
+  const match = cleaned.match(/(-?\d+(?:\.\d+)?)\s*([KMBTQ])?/i);
   if (!match) return finiteNumber(Number(cleaned.replace(/[^\d.-]/g, "")));
 
   const amount = Number(match[1]);
@@ -492,23 +569,81 @@ function parseCompactNumber(value: string) {
   return finiteNumber(amount * (suffix ? multiplierMap[suffix] ?? 1 : 1));
 }
 
+function comparableMoneyValue(row: MarketTableRow, display: string | undefined, rawValue: number | undefined, currencyContext: CurrencyContext) {
+  const value = finiteNumber(rawValue ?? (display ? parseCompactNumber(display) : undefined));
+  return convertAmount(value, rowCurrency(row), "USD", currencyContext.usdUzsRate);
+}
+
 function normalizeSort(value?: string): MarketSortKey {
   if (!value) return "marketCap";
   return sortOptions.some((option) => option.key === value) ? (value as MarketSortKey) : "marketCap";
+}
+
+function normalizeMarketFilter(value?: string): MarketFilter {
+  return marketOptions.some((option) => option.key === value) ? (value as MarketFilter) : "all";
+}
+
+function normalizeCurrency(value?: string): DisplayCurrency {
+  return value === "UZS" ? "UZS" : "USD";
 }
 
 function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
-function formatPrice(row: MarketTableRow) {
+function formatPrice(row: MarketTableRow, currencyContext: CurrencyContext) {
   const value = row.price;
-  const source = row.source?.toLowerCase() ?? "";
   if (!Number.isFinite(value) || value <= 0) return "N/A";
-  if (source.includes("uzse")) {
-    return `UZS ${value >= 1 ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value.toFixed(4)}`;
+  const converted = convertAmount(value, rowCurrency(row), currencyContext.currency, currencyContext.usdUzsRate);
+  return formatCurrencyAmount(converted, currencyContext.currency, "price");
+}
+
+function formatMarketMoney(row: MarketTableRow, display: string, rawValue: number | undefined, currencyContext: CurrencyContext) {
+  if (display === "N/A") return "N/A";
+  const value = finiteNumber(rawValue ?? parseCompactNumber(display));
+  if (value <= 0) return "N/A";
+  const converted = convertAmount(value, rowCurrency(row), currencyContext.currency, currencyContext.usdUzsRate);
+  return formatCurrencyAmount(converted, currencyContext.currency, "compact");
+}
+
+function rowCurrency(row: MarketTableRow): DisplayCurrency {
+  return isUzseRow(row) ? "UZS" : "USD";
+}
+
+function isUzseRow(row: MarketTableRow) {
+  return (row.source?.toLowerCase() ?? "").includes("uzse");
+}
+
+function convertAmount(value: number, from: DisplayCurrency, to: DisplayCurrency, usdUzsRate: number) {
+  if (!Number.isFinite(value) || value <= 0 || from === to) return value;
+  return from === "USD" ? value * usdUzsRate : value / usdUzsRate;
+}
+
+function formatCurrencyAmount(value: number, currency: DisplayCurrency, mode: "price" | "compact") {
+  if (!Number.isFinite(value) || value <= 0) return "N/A";
+  const prefix = currency === "USD" ? "$" : "UZS ";
+  if (mode === "price") {
+    if (currency === "UZS") return `${prefix}${value.toLocaleString("en-US", { maximumFractionDigits: value >= 1 ? 2 : 4 })}`;
+    return `${prefix}${value >= 1 ? value.toFixed(2) : value.toFixed(4)}`;
   }
-  return value >= 1 ? `$${value.toFixed(2)}` : `$${value.toFixed(4)}`;
+
+  const abs = Math.abs(value);
+  const suffixes: Array<[number, string]> = [
+    [1e15, "Q"],
+    [1e12, "T"],
+    [1e9, "B"],
+    [1e6, "M"],
+    [1e3, "K"],
+  ];
+  for (const [threshold, suffix] of suffixes) {
+    if (abs >= threshold) return `${prefix}${(value / threshold).toFixed(abs >= 100 * threshold ? 0 : 2)}${suffix}`;
+  }
+  return `${prefix}${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
+
+function resolveUsdUzsRate(fxRates: Array<{ pair: string; rate: number; base?: string; quote?: string }>) {
+  const usdRate = fxRates.find((rate) => rate.pair === "USD/UZS" || (rate.base === "USD" && rate.quote === "UZS"));
+  return usdRate?.rate && Number.isFinite(usdRate.rate) ? usdRate.rate : 12000;
 }
 
 function formatPercent(value: number) {
