@@ -66,6 +66,8 @@ Output: .next
 
 ### Backend: Railway
 
+Backend production target is Railway. Do not use Vercel as the long-term backend host; the existing Vercel backend deployment is only a temporary fallback until the Railway project is linked and deployed.
+
 Deploy the `backend` directory as the Railway service root. Railway can use `backend/railway.json` or `backend/Procfile`.
 
 Start command:
@@ -83,6 +85,11 @@ Market data uses a provider architecture:
 ```text
 provider adapters -> in-memory TTL cache -> FastAPI REST/WebSocket -> Next.js dashboard
 ```
+
+Data-source inventory and ingestion notes live in:
+
+- `data/data_source_catalog.json`
+- `docs/data-ingestion-plan.md`
 
 Active MVP providers:
 

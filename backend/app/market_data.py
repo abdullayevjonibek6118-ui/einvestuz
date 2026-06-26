@@ -176,6 +176,16 @@ class TTLCache:
 
 SOURCES: list[DataSource] = [
     DataSource(
+        id="uzse",
+        name="UZSE public endpoints",
+        market="Узбекистан",
+        coverage="Тикеры, ISIN, эмитенты, индексы, листинг и результаты торгов Республиканской фондовой биржи Тошкент",
+        update_mode="Публичные JSON endpoints и HTML-таблицы, best-effort",
+        status="delayed",
+        url="https://uzse.uz/isu_infos/",
+        notes="Подтверждены /isu_infos/names, /price_indices/range и /price_indices/histories; часть торговых таблиц парсится из HTML.",
+    ),
+    DataSource(
         id="finnhub",
         name="Finnhub REST API",
         market="США / глобальные рынки",
@@ -200,20 +210,20 @@ SOURCES: list[DataSource] = [
         name="data.egov.uz",
         market="Узбекистан",
         coverage="Макроэкономические и госданные, где доступен машинный доступ",
-        update_mode="Публичный портал; прямое API discovery не подтверждено",
+        update_mode="Публичный портал; прямое API discovery пока не подключено",
         status="fallback",
         url="https://data.egov.uz/",
-        notes="Пока служит metadata placeholder для макро-панели до подтверждения машинного endpoint.",
+        notes="Пока служит metadata placeholder; приоритет отдан проверенному api.stat.uz.",
     ),
     DataSource(
         id="stat-uz",
-        name="stat.uz",
+        name="Statistics Agency API",
         market="Узбекистан",
-        coverage="Официальная статистика и макроэкономические ряды",
-        update_mode="Публичный портал; прямое API discovery не подтверждено",
-        status="fallback",
-        url="https://stat.uz/",
-        notes="Пока служит metadata placeholder для макро-панели до подтверждения машинного endpoint.",
+        coverage="Официальная статистика и макроэкономические ряды, включая национальные счета",
+        update_mode="Публичный api.stat.uz JSON/XLSX, dataset-by-dataset discovery",
+        status="delayed",
+        url="https://api.stat.uz/api/v1.0/data/milliy-hisoblar-choraklik?format=json&lang=ru",
+        notes="Проверен JSON/XLSX endpoint для квартальных национальных счетов; нужен discovery dataset IDs для инфляции, экспорта и импорта.",
     ),
     DataSource(
         id="yfinance",
@@ -464,8 +474,8 @@ def get_macro_summary() -> MacroSummary:
         if source is not None
     ]
     summary = MacroSummary(
-        status="fallback",
-        summary="Макро-панель работает в режиме заглушек: публичные порталы data.egov.uz и stat.uz доступны как metadata placeholders, а машинный endpoint пока не подтвержден.",
+        status="delayed",
+        summary="Макро-панель частично подключена: CBU FX и api.stat.uz national accounts доступны как machine-readable источники, остальные макроиндикаторы требуют dataset discovery.",
         sources=source_catalog,
         indicators=[
             {
@@ -477,19 +487,19 @@ def get_macro_summary() -> MacroSummary:
             {
                 "name": "Inflation",
                 "value": None,
-                "source": "stat.uz",
+                "source": "api.stat.uz",
                 "status": "fallback",
-                "note": "Требуется подтвержденный machine-readable endpoint.",
+                "note": "Нужно найти dataset ID для инфляции.",
             },
             {
-                "name": "GDP / macro tables",
-                "value": None,
-                "source": "data.egov.uz",
-                "status": "fallback",
-                "note": "Требуется подтвержденный machine-readable endpoint.",
+                "name": "GDP / national accounts",
+                "value": "api.stat.uz national accounts quarterly JSON/XLSX",
+                "source": "api.stat.uz",
+                "status": "delayed",
+                "note": "Проверен endpoint milliy-hisoblar-choraklik.",
             },
         ],
-        fallback_reason="Direct API discovery unavailable for macro portals; using source metadata and placeholders.",
+        fallback_reason="CBU FX and one stat.uz dataset are verified; inflation, exports, imports, reserves, and debt still need dataset-specific connectors.",
         as_of=datetime.now(timezone.utc),
     )
     _DETAIL_CACHE.set("macro:summary", summary)

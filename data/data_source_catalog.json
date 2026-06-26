@@ -1,0 +1,399 @@
+{
+  "generated_at": "2026-06-26T00:00:00+03:00",
+  "architecture": [
+    "data_sources",
+    "parsers_api_connectors",
+    "normalization",
+    "postgresql",
+    "fastapi",
+    "frontend_ai"
+  ],
+  "priority_order": [
+    "uzbekistan_companies",
+    "uzbekistan_company_news",
+    "uzbekistan_macro",
+    "financial_reports",
+    "ipo_calendar",
+    "global_companies"
+  ],
+  "sources": [
+    {
+      "id": "uzse_companies",
+      "group": "uzbekistan_companies",
+      "name": "UZSE listed securities",
+      "base_url": "https://uzse.uz",
+      "status": "verified",
+      "priority": 5,
+      "access": "public_json",
+      "refresh": "daily",
+      "endpoints": [
+        {
+          "method": "GET",
+          "url": "https://uzse.uz/isu_infos/names?mkt_id=STK",
+          "headers": {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": "https://uzse.uz/isu_infos/"
+          },
+          "fields": [
+            "isin",
+            "ticker",
+            "issuer_name"
+          ],
+          "verified_result": "121 stock-market rows returned on 2026-06-26"
+        },
+        {
+          "method": "GET",
+          "url": "https://uzse.uz/price_indices/range?idx_ind_cd=001&range_type=1y",
+          "fields": [
+            "last_index",
+            "indices"
+          ],
+          "verified_result": "application/json returned on 2026-06-26"
+        },
+        {
+          "method": "GET",
+          "url": "https://uzse.uz/price_indices/histories?ind_idx_cd=001",
+          "fields": [
+            "bz_dd",
+            "clsprc_idx",
+            "prevdd_idx",
+            "acc_trdvol",
+            "acc_trdval"
+          ]
+        }
+      ],
+      "normalize_to": [
+        "companies",
+        "securities",
+        "market_indices",
+        "index_history"
+      ]
+    },
+    {
+      "id": "uzse_trade_results",
+      "group": "uzbekistan_companies",
+      "name": "UZSE trade results",
+      "base_url": "https://uzse.uz/trade_results",
+      "status": "verified_html",
+      "priority": 5,
+      "access": "public_html",
+      "refresh": "intraday_5m_to_15m",
+      "fields": [
+        "trade_time",
+        "isin",
+        "ticker",
+        "issuer",
+        "security_type",
+        "market_id",
+        "board_id",
+        "price",
+        "quantity",
+        "volume"
+      ],
+      "normalize_to": [
+        "trades",
+        "quotes_latest"
+      ]
+    },
+    {
+      "id": "stockscope_uzbekistan",
+      "group": "uzbekistan_companies",
+      "name": "StockScope Uzbekistan",
+      "base_url": "https://stockscope.uz",
+      "status": "research_needed",
+      "priority": 4,
+      "access": "website_or_private_api",
+      "refresh": "daily",
+      "fields": [
+        "company_profile",
+        "charts",
+        "market_ratios",
+        "descriptive_metrics"
+      ],
+      "normalize_to": [
+        "company_profiles",
+        "market_ratios"
+      ]
+    },
+    {
+      "id": "openinfo_reports",
+      "group": "financial_reports",
+      "name": "Единый портал корпоративной информации",
+      "base_url": "https://openinfo.uz",
+      "status": "blocked_public_api_unconfirmed",
+      "priority": 5,
+      "access": "public_site_or_report_api",
+      "refresh": "daily",
+      "candidate_endpoints": [
+        "https://openinfo.uz/api/v1/reports/",
+        "https://test.openinfo.uz/api/v1/reports/"
+      ],
+      "verification_notes": [
+        "https://openinfo.uz/api/v1/reports/ returned 404 on 2026-06-26",
+        "https://test.openinfo.uz/api/v1/reports/ failed TLS handshake on 2026-06-26"
+      ],
+      "fields": [
+        "issuer",
+        "tin",
+        "report_period",
+        "report_type",
+        "document_url",
+        "revenue",
+        "ebitda",
+        "net_income",
+        "assets",
+        "liabilities",
+        "cash_flow"
+      ],
+      "normalize_to": [
+        "issuer_reports",
+        "financial_statements",
+        "corporate_events",
+        "documents"
+      ]
+    },
+    {
+      "id": "napp_regulation",
+      "group": "ipo_calendar",
+      "name": "Национальное агентство перспективных проектов",
+      "base_url": "https://napp.uz",
+      "status": "verified_html",
+      "priority": 4,
+      "access": "public_html",
+      "refresh": "daily",
+      "urls": [
+        "https://napp.uz/",
+        "https://napp.uz/ru/regulatory-documents/"
+      ],
+      "fields": [
+        "regulatory_news",
+        "capital_market_rules",
+        "issuer_permissions",
+        "ipo_related_notices"
+      ],
+      "normalize_to": [
+        "regulatory_events",
+        "ipo_events"
+      ]
+    },
+    {
+      "id": "gazeta_uz_rss",
+      "group": "uzbekistan_company_news",
+      "name": "Газета.uz RSS",
+      "url": "https://www.gazeta.uz/ru/rss/",
+      "status": "verified",
+      "priority": 4,
+      "access": "rss",
+      "refresh": "15m",
+      "content_type": "application/rss+xml"
+    },
+    {
+      "id": "kun_uz_rss",
+      "group": "uzbekistan_company_news",
+      "name": "Kun.uz RSS",
+      "url": "https://kun.uz/ru/news/rss",
+      "status": "verified",
+      "priority": 4,
+      "access": "rss",
+      "refresh": "15m",
+      "content_type": "application/xml"
+    },
+    {
+      "id": "spot_uz_rss",
+      "group": "uzbekistan_company_news",
+      "name": "Spot.uz RSS",
+      "url": "https://www.spot.uz/ru/rss/",
+      "status": "verified",
+      "priority": 5,
+      "access": "rss",
+      "refresh": "15m",
+      "content_type": "application/rss+xml"
+    },
+    {
+      "id": "daryo_uz_rss",
+      "group": "uzbekistan_company_news",
+      "name": "Daryo.uz RSS",
+      "url": "https://daryo.uz/rss",
+      "status": "candidate_unverified",
+      "priority": 3,
+      "access": "rss_or_html",
+      "refresh": "15m",
+      "verification_notes": [
+        "https://daryo.uz/ru/feed returned text/html on 2026-06-26; use /rss candidate or HTML fallback"
+      ]
+    },
+    {
+      "id": "uza_uz_rss",
+      "group": "uzbekistan_company_news",
+      "name": "UZA RSS",
+      "url": "https://uza.uz/ru/rss",
+      "status": "verified",
+      "priority": 3,
+      "access": "rss",
+      "refresh": "15m",
+      "content_type": "text/xml"
+    },
+    {
+      "id": "cbu_fx",
+      "group": "uzbekistan_macro",
+      "name": "Central Bank of Uzbekistan FX archive",
+      "url": "https://cbu.uz/en/arkhiv-kursov-valyut/json/",
+      "status": "verified",
+      "priority": 5,
+      "access": "public_json",
+      "refresh": "daily",
+      "fields": [
+        "Ccy",
+        "CcyNm_EN",
+        "Nominal",
+        "Rate",
+        "Diff",
+        "Date"
+      ],
+      "normalize_to": [
+        "fx_rates"
+      ]
+    },
+    {
+      "id": "stat_uz_national_accounts_quarterly",
+      "group": "uzbekistan_macro",
+      "name": "Statistics Agency API - national accounts quarterly",
+      "url": "https://api.stat.uz/api/v1.0/data/milliy-hisoblar-choraklik?format=json&lang=ru",
+      "status": "verified",
+      "priority": 5,
+      "access": "public_json_or_xlsx",
+      "refresh": "monthly_or_quarterly",
+      "formats": [
+        "json",
+        "xlsx"
+      ],
+      "fields": [
+        "metadata",
+        "data"
+      ],
+      "normalize_to": [
+        "macro_indicators",
+        "gdp"
+      ]
+    },
+    {
+      "id": "ministry_economy_finance",
+      "group": "uzbekistan_macro",
+      "name": "Ministry of Economy and Finance",
+      "url": "https://gov.uz/ru/imv",
+      "status": "verified_html",
+      "priority": 4,
+      "access": "public_html_or_documents",
+      "refresh": "daily",
+      "fields": [
+        "state_debt",
+        "budget",
+        "fiscal_reports",
+        "macro_forecasts"
+      ],
+      "normalize_to": [
+        "macro_indicators",
+        "fiscal_indicators",
+        "documents"
+      ]
+    },
+    {
+      "id": "finnhub",
+      "group": "global_companies",
+      "name": "Finnhub API",
+      "url": "https://finnhub.io/docs/api",
+      "status": "needs_key",
+      "priority": 5,
+      "access": "api_key",
+      "env": "FINNHUB_API_KEY",
+      "refresh": "provider_limits",
+      "fields": [
+        "quote",
+        "company_profile",
+        "company_news",
+        "financial_metrics",
+        "earnings"
+      ],
+      "normalize_to": [
+        "global_companies",
+        "quotes_latest",
+        "financial_metrics",
+        "news_items"
+      ]
+    },
+    {
+      "id": "roic_ai",
+      "group": "global_companies",
+      "name": "ROIC AI API",
+      "url": "https://roic.ai/api",
+      "status": "needs_key_or_account",
+      "priority": 4,
+      "access": "api_key",
+      "fields": [
+        "fundamental_metrics",
+        "company_profiles"
+      ],
+      "normalize_to": [
+        "global_companies",
+        "financial_metrics"
+      ]
+    },
+    {
+      "id": "finazon",
+      "group": "global_companies",
+      "name": "Finazon API",
+      "url": "https://finazon.io",
+      "status": "needs_key_or_account",
+      "priority": 4,
+      "access": "api_key",
+      "fields": [
+        "global_market_data",
+        "multi_asset_quotes"
+      ],
+      "normalize_to": [
+        "global_companies",
+        "quotes_latest"
+      ]
+    }
+  ],
+  "ai_news_enrichment": {
+    "input_tables": [
+      "news_items",
+      "companies",
+      "security_aliases"
+    ],
+    "output_fields": [
+      "mentioned_company_ids",
+      "sentiment",
+      "market_impact",
+      "summary",
+      "confidence"
+    ],
+    "sentiment_values": [
+      "positive",
+      "neutral",
+      "negative"
+    ],
+    "market_impact_values": [
+      "high",
+      "medium",
+      "low",
+      "unknown"
+    ]
+  },
+  "financial_metrics_required": [
+    "revenue",
+    "ebitda",
+    "net_income",
+    "assets",
+    "liabilities",
+    "cash_flow",
+    "roe",
+    "roa",
+    "eps",
+    "pe",
+    "pb",
+    "debt_to_equity"
+  ]
+}
