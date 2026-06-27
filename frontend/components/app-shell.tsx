@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import {
@@ -44,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="topbar">
         <div className="topbar-inner">
           <Link href="/" className="brand" aria-label="EInvest, главная">
-            <span className="brand-mark"><span /></span>
+            <span className="brand-logo"><Image src="/brand/einvest-logo.svg" alt="" width={82} height={82} priority unoptimized /></span>
             <span className="brand-copy"><strong>EINVEST</strong><small>UZBEKISTAN MARKETS</small></span>
           </Link>
 
