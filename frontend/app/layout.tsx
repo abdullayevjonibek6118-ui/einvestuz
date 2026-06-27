@@ -15,8 +15,8 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: "Einvestuz - AI-инвесткопилот для Узбекистана",
-  description: "AI-анализ акций, виртуальные портфели и обучение инвестициям для начинающих инвесторов в Узбекистане.",
+  title: "EInvest — рынок Узбекистана в цифрах",
+  description: "Финансовая отчётность, торговая статистика и AI-анализ публичных компаний Узбекистана.",
 };
 
 export default function RootLayout({

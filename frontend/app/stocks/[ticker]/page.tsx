@@ -2,14 +2,38 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Banknote, Bot, ChartNoAxesCombined, FileText, Globe2, Newspaper, Plus, ShieldAlert, Star, TriangleAlert, type LucideIcon } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
-import { getDashboardData, getNews, getStock } from "@/lib/api";
+import { getDashboardData, getNews, getStock, getStockScopeScreener } from "@/lib/api";
 import { type MarketTableRow, type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockSourceMeta } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function StockPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await params;
-  const [stock, news, dashboardData] = await Promise.all([getStock(ticker), getNews(), getDashboardData()]);
+  const [initialStock, news, dashboardData] = await Promise.all([getStock(ticker), getNews(), getDashboardData()]);
+  let stock = initialStock;
+  if (!stock) {
+    const screener = await getStockScopeScreener({ q: ticker, limit: 1 });
+    const row = screener.items.find((item) => item.ticker.toUpperCase() === ticker.toUpperCase());
+    if (row) {
+      stock = {
+        ticker: row.ticker,
+        name: row.name,
+        price: row.currentPrice ?? 0,
+        change: 0,
+        marketCap: row.marketCap ? `UZS ${row.marketCap.toLocaleString("ru-RU")}` : "N/A",
+        pe: row.pe ?? 0,
+        dividend: row.dividendYield == null ? "N/A" : `${row.dividendYield.toFixed(2)}%`,
+        sector: "Uzbekistan",
+        description: `${row.name} — эмитент рынка Узбекистана. Подробные данные источника временно загружаются.`,
+        source: "stockscope.uz",
+        sourceStatus: "delayed",
+        currency: "UZS",
+        market: "uzbekistan",
+        isin: row.isin,
+        openinfoId: row.openinfoId,
+      };
+    }
+  }
   if (!stock) notFound();
 
   const fundamentals = resolveFundamentals(stock);

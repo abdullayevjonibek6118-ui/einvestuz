@@ -1,219 +1,42 @@
 import Link from "next/link";
-import { ArrowUpRight, BarChart3, FileSearch, Filter, GitCompareArrows, Search } from "lucide-react";
-import { Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
+import { ArrowRight, Filter, GitCompareArrows, RotateCcw, Search } from "lucide-react";
+import { Metric, PageHeader, SourceStatusBadge } from "@/components/ui";
 import { getStockScopeScreener } from "@/lib/api";
-import type { StockScopeScreenerRow } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
-
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-const sortOptions = [
-  ["reports_count", "Отчётность"],
-  ["roe", "ROE"],
-  ["roa", "ROA"],
-  ["pe", "P/E"],
-  ["pb", "P/B"],
-  ["dividend_yield", "Дивиденды"],
-  ["price_points_count", "История цены"],
-] as const;
+const sorts = [["market_cap","Капитализация"],["roe","ROE"],["roa","ROA"],["pe","P/E"],["pb","P/B"],["dividend_yield","Дивиденды"],["reports_count","Раскрытие"]];
 
 export default async function ScreenerPage({ searchParams }: { searchParams?: SearchParams }) {
   const params = (await Promise.resolve(searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>;
-  const filters = {
-    q: first(params.q),
-    min_roe: first(params.min_roe),
-    min_roa: first(params.min_roa),
-    max_pe: first(params.max_pe),
-    max_pb: first(params.max_pb),
-    min_reports: first(params.min_reports),
-    sort_by: first(params.sort_by) || "reports_count",
-    sort_dir: first(params.sort_dir) || "desc",
-    limit: 100,
-  };
-  const data = await getStockScopeScreener(filters);
-  const compareTickers = data.items.slice(0, 3).map((row) => row.ticker).join(",");
-
-  return (
-    <>
-      <PageHeader
-        title="Скринер рынка Узбекистана"
-        subtitle="Отберите компании UZSE по рентабельности, оценке и качеству раскрытия, затем откройте карточку или сравните лидеров."
-      />
-
-      <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Компании" value={String(data.coverage?.total ?? data.total)} detail="каталог StockScope Uzbekistan" />
-        <Metric label="С отчётностью" value={String(data.coverage?.withReports ?? "N/A")} detail="доступны периоды и документы" />
-        <Metric label="С показателями" value={String(data.coverage?.withIndicators ?? "N/A")} detail="ROE, ROA, margins, debt" />
-        <Metric label="Результат" value={String(data.total)} detail="после выбранных фильтров" />
-      </section>
-
-      <Panel
-        title="Фильтры"
-        action={
-          <Link href={`/compare?tickers=${compareTickers}`} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#0b63f6] px-3 text-xs font-semibold text-white hover:bg-[#084fc7]">
-            <GitCompareArrows size={15} />
-            Сравнить лидеров
-          </Link>
-        }
-      >
-        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <label className="xl:col-span-2">
-            <span className="mb-1.5 block text-xs font-semibold text-[#475569]">Компания, тикер или ISIN</span>
-            <span className="flex h-11 items-center gap-2 rounded-xl border border-[#cbd5e1] bg-white px-3 focus-within:border-[#0b63f6] focus-within:ring-4 focus-within:ring-[#0b63f6]/10">
-              <Search size={16} className="text-[#64748b]" />
-              <input name="q" defaultValue={filters.q} placeholder="AGBA, Uzmetkombinat..." className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
-            </span>
-          </label>
-          <NumberFilter name="min_roe" label="ROE не ниже, %" value={filters.min_roe} />
-          <NumberFilter name="min_roa" label="ROA не ниже, %" value={filters.min_roa} />
-          <NumberFilter name="max_pe" label="P/E не выше" value={filters.max_pe} />
-          <NumberFilter name="max_pb" label="P/B не выше" value={filters.max_pb} />
-          <NumberFilter name="min_reports" label="Минимум отчётов" value={filters.min_reports} />
-          <label>
-            <span className="mb-1.5 block text-xs font-semibold text-[#475569]">Сортировка</span>
-            <select name="sort_by" defaultValue={filters.sort_by} className="h-11 w-full rounded-xl border border-[#cbd5e1] bg-white px-3 text-sm outline-none focus:border-[#0b63f6]">
-              {sortOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
-          </label>
-          <label>
-            <span className="mb-1.5 block text-xs font-semibold text-[#475569]">Порядок</span>
-            <select name="sort_dir" defaultValue={filters.sort_dir} className="h-11 w-full rounded-xl border border-[#cbd5e1] bg-white px-3 text-sm outline-none focus:border-[#0b63f6]">
-              <option value="desc">По убыванию</option>
-              <option value="asc">По возрастанию</option>
-            </select>
-          </label>
-          <div className="flex items-end gap-2">
-            <button type="submit" className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0b63f6] px-4 text-sm font-semibold text-white hover:bg-[#084fc7]">
-              <Filter size={16} />
-              Применить
-            </button>
-            <Link href="/screener" aria-label="Сбросить фильтры" title="Сбросить фильтры" className="grid size-11 place-items-center rounded-xl border border-[#cbd5e1] bg-white text-[#475569] hover:bg-[#f8fafc]">
-              <FileSearch size={17} />
-            </Link>
-          </div>
+  const f = { q:first(params.q), min_roe:first(params.min_roe), min_roa:first(params.min_roa), max_pe:first(params.max_pe), max_pb:first(params.max_pb), min_reports:first(params.min_reports), sort_by:first(params.sort_by)||"market_cap", sort_dir:first(params.sort_dir)||"desc", limit:100 };
+  const data = await getStockScopeScreener(f);
+  const leaders = data.items.slice(0,3).map((item)=>item.ticker).join(",");
+  return <>
+    <PageHeader title="Скринер акций" subtitle="Отберите узбекские компании по рентабельности, оценке, дивидендам и качеству раскрытия." />
+    <div className="screener-layout">
+      <aside className="panel filter-panel">
+        <div className="panel-header"><h2><Filter size={14}/> Фильтры</h2><Link href="/screener" aria-label="Сбросить"><RotateCcw size={14}/></Link></div>
+        <form className="filter-form">
+          <label><span>Компания / тикер / ISIN</span><div className="input-control"><Search size={15}/><input name="q" defaultValue={f.q} placeholder="A011030"/></div></label>
+          <div className="filter-pair"><NumberField name="min_roe" label="ROE от, %" value={f.min_roe}/><NumberField name="min_roa" label="ROA от, %" value={f.min_roa}/></div>
+          <div className="filter-pair"><NumberField name="max_pe" label="P/E до" value={f.max_pe}/><NumberField name="max_pb" label="P/B до" value={f.max_pb}/></div>
+          <NumberField name="min_reports" label="Минимум отчётов" value={f.min_reports}/>
+          <label><span>Сортировать по</span><select name="sort_by" defaultValue={f.sort_by}>{sorts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
+          <label><span>Порядок</span><select name="sort_dir" defaultValue={f.sort_dir}><option value="desc">По убыванию</option><option value="asc">По возрастанию</option></select></label>
+          <button className="terminal-button primary" type="submit"><Filter size={14}/> Применить</button>
         </form>
-      </Panel>
-
-      <Panel title="Компании" action={<SourceStatusBadge source="stockscope.uz" status="delayed" />} className="mt-4">
-        {data.items.length ? (
-          <>
-            <div className="hidden overflow-x-auto lg:block">
-              <table className="w-full min-w-[940px] border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-[#e2e8f0] text-[11px] font-semibold uppercase text-[#64748b]">
-                    <th className="px-3 py-3">Компания</th>
-                    <th className="px-3 py-3">Период</th>
-                    <th className="px-3 py-3 text-right">Цена</th>
-                    <th className="px-3 py-3 text-right">Капитализация</th>
-                    <th className="px-3 py-3 text-right">ROE</th>
-                    <th className="px-3 py-3 text-right">ROA</th>
-                    <th className="px-3 py-3 text-right">P/E</th>
-                    <th className="px-3 py-3 text-right">P/B</th>
-                    <th className="px-3 py-3 text-right">Отчёты</th>
-                    <th className="px-3 py-3 text-right">Данные</th>
-                  </tr>
-                </thead>
-                <tbody>{data.items.map((row) => <ScreenerTableRow key={row.ticker} row={row} />)}</tbody>
-              </table>
-            </div>
-            <div className="grid gap-3 lg:hidden">
-              {data.items.map((row) => <ScreenerCard key={row.ticker} row={row} />)}
-            </div>
-          </>
-        ) : (
-          <div className="grid min-h-48 place-items-center text-center">
-            <div>
-              <BarChart3 className="mx-auto text-[#94a3b8]" />
-              <p className="mt-3 font-semibold text-[#0f172a]">Компании не найдены</p>
-              <p className="mt-1 text-sm text-[#64748b]">Ослабьте фильтры или попробуйте другой тикер.</p>
-            </div>
-          </div>
-        )}
-      </Panel>
-    </>
-  );
-}
-
-function ScreenerTableRow({ row }: { row: StockScopeScreenerRow }) {
-  return (
-    <tr className="border-b border-[#eef2f7] text-sm transition hover:bg-[#f8fafc]">
-      <td className="px-3 py-3">
-        <Link href={`/stocks/${row.ticker}`} className="group flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-xl bg-[#e8f0ff] text-xs font-bold text-[#1e40af]">{row.ticker.slice(0, 2)}</span>
-          <span>
-            <span className="block font-semibold text-[#0f172a] group-hover:text-[#0b63f6]">{row.name}</span>
-            <span className="text-xs text-[#64748b]">{row.ticker}{row.isin ? ` · ${row.isin}` : ""}</span>
-          </span>
-        </Link>
-      </td>
-      <td className="px-3 py-3 text-[#475569]">{row.latestPeriod ?? "N/A"}</td>
-      <td className="tabular-data px-3 py-3 text-right font-semibold text-[#0f172a]">{formatMoney(row.currentPrice)}</td>
-      <td className="tabular-data px-3 py-3 text-right font-semibold text-[#0f172a]">{formatMoney(row.marketCap, true)}</td>
-      <MetricCell value={row.roe} suffix="%" />
-      <MetricCell value={row.roa} suffix="%" />
-      <MetricCell value={row.pe} />
-      <MetricCell value={row.pb} />
-      <td className="px-3 py-3 text-right font-semibold text-[#0f172a]">{row.reportsCount}</td>
-      <td className="px-3 py-3 text-right">
-        <Link href={`/stocks/${row.ticker}`} aria-label={`Открыть ${row.ticker}`} className="inline-grid size-9 place-items-center rounded-xl border border-[#dbe4ef] text-[#1e40af] hover:border-[#93c5fd] hover:bg-[#eff6ff]">
-          <ArrowUpRight size={16} />
-        </Link>
-      </td>
-    </tr>
-  );
-}
-
-function ScreenerCard({ row }: { row: StockScopeScreenerRow }) {
-  return (
-    <Link href={`/stocks/${row.ticker}`} className="rounded-[16px] border border-[#dbe4ef] bg-white p-4 transition hover:border-[#93c5fd]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold text-[#1e40af]">{row.ticker}</p>
-          <h2 className="mt-1 font-semibold text-[#0f172a]">{row.name}</h2>
-          <p className="mt-1 text-xs text-[#64748b]">{row.latestPeriod ?? "Период не указан"} · {row.reportsCount} отчётов</p>
-        </div>
-        <ArrowUpRight size={17} className="text-[#64748b]" />
+      </aside>
+      <div className="screener-results">
+        <section className="metric-row"><Metric label="В базе" value={String(data.coverage?.total ?? data.total)} detail="эмитентов"/><Metric label="С отчётностью" value={String(data.coverage?.withReports ?? "—")} detail="компаний"/><Metric label="С дивидендами" value={String(data.coverage?.withDividends ?? "—")} detail="компаний"/><Metric label="Найдено" value={String(data.total)} detail="по фильтрам"/></section>
+        <section className="panel">
+          <div className="panel-header"><div><h2>Результаты</h2><span>{data.total} компаний</span></div><div className="header-actions"><SourceStatusBadge source="StockScope" status="delayed"/><Link href={`/compare?tickers=${leaders}`} className="terminal-button"><GitCompareArrows size={14}/> Сравнить</Link></div></div>
+          <div className="data-table-wrap"><table className="data-table screener-table"><thead><tr><th>Компания</th><th>Цена</th><th>Капитализация</th><th>ROE</th><th>ROA</th><th>P/E</th><th>P/B</th><th>Див.</th><th>Отчёты</th><th></th></tr></thead><tbody>{data.items.map(row=><tr key={row.ticker}><td className="company-cell"><Link href={`/stocks/${row.ticker}`}><span className="ticker">{row.ticker}</span><small>{row.name}</small></Link></td><td>{money(row.currentPrice)}</td><td>{compact(row.marketCap)}</td><td className={tone(row.roe)}>{pct(row.roe)}</td><td className={tone(row.roa)}>{pct(row.roa)}</td><td>{ratio(row.pe)}</td><td>{ratio(row.pb)}</td><td>{pct(row.dividendYield)}</td><td>{row.reportsCount}</td><td><Link className="row-arrow" href={`/stocks/${row.ticker}`}><ArrowRight size={14}/></Link></td></tr>)}</tbody></table></div>
+          {!data.items.length?<div className="empty-state"><Search/><strong>Ничего не найдено</strong><span>Измените значения фильтров.</span></div>:null}
+        </section>
       </div>
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        <TinyMetric label="ROE" value={formatMetric(row.roe, "%")} />
-        <TinyMetric label="ROA" value={formatMetric(row.roa, "%")} />
-        <TinyMetric label="P/E" value={formatMetric(row.pe)} />
-        <TinyMetric label="P/B" value={formatMetric(row.pb)} />
-      </div>
-    </Link>
-  );
+    </div>
+  </>;
 }
-
-function NumberFilter({ name, label, value }: { name: string; label: string; value: string }) {
-  return (
-    <label>
-      <span className="mb-1.5 block text-xs font-semibold text-[#475569]">{label}</span>
-      <input name={name} defaultValue={value} inputMode="decimal" className="h-11 w-full rounded-xl border border-[#cbd5e1] bg-white px-3 text-sm outline-none focus:border-[#0b63f6] focus:ring-4 focus:ring-[#0b63f6]/10" />
-    </label>
-  );
-}
-
-function MetricCell({ value, suffix = "" }: { value?: number | null; suffix?: string }) {
-  return <td className="tabular-data px-3 py-3 text-right font-semibold text-[#0f172a]">{formatMetric(value, suffix)}</td>;
-}
-
-function TinyMetric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl bg-[#f8fafc] p-2 text-center"><p className="text-[10px] font-semibold text-[#64748b]">{label}</p><p className="mt-1 text-xs font-bold text-[#0f172a]">{value}</p></div>;
-}
-
-function formatMetric(value?: number | null, suffix = "") {
-  return typeof value === "number" && Number.isFinite(value) ? `${value.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}${suffix}` : "N/A";
-}
-
-function formatMoney(value?: number | null, compact = false) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "N/A";
-  return new Intl.NumberFormat("ru-RU", {
-    notation: compact ? "compact" : "standard",
-    maximumFractionDigits: compact ? 2 : 0,
-  }).format(value);
-}
-
-function first(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
+function NumberField({name,label,value}:{name:string;label:string;value:string}) { return <label><span>{label}</span><input name={name} defaultValue={value} inputMode="decimal"/></label>; }
+function first(v:string|string[]|undefined){return Array.isArray(v)?v[0]??"":v??""} function pct(v?:number|null){return v==null?"—":`${v.toFixed(1)}%`} function ratio(v?:number|null){return v==null?"—":v.toFixed(2)} function tone(v?:number|null){return v==null?"":v>0?"positive":v<0?"negative":""} function money(v?:number|null){return v==null?"—":new Intl.NumberFormat("ru-RU",{maximumFractionDigits:0}).format(v)} function compact(v?:number|null){return v==null?"—":new Intl.NumberFormat("ru-RU",{notation:"compact",maximumFractionDigits:1}).format(v)}
