@@ -1,11 +1,24 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight, Banknote, Bot, ChartNoAxesCombined, FileText, Globe2, Newspaper, Plus, ShieldAlert, Star, TriangleAlert, type LucideIcon } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
 import { getDashboardData, getNews, getStock, getStockScopeScreener } from "@/lib/api";
 import { type MarketTableRow, type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockSourceMeta } from "@/lib/data";
+import { pageMetadata, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
+  const { ticker } = await params;
+  const normalized = ticker.toUpperCase();
+  const stock = await getStock(normalized);
+  const name = stock?.name ?? normalized;
+  const description = stock
+    ? `${name} (${normalized}): цена, финансовая отчётность, ROE, ROA, мультипликаторы, дивиденды, документы и риски.`
+    : `${normalized}: финансовые показатели, отчётность и рыночные данные компании на EInvest.`;
+  return pageMetadata({ title: `${name} (${normalized}) — цена и финансовые показатели`, description, path: `/stocks/${encodeURIComponent(normalized)}` });
+}
 
 export default async function StockPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await params;
@@ -49,9 +62,20 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const primaryRisk = riskFactors[0]?.detail ?? buildRiskLine(stock, fundamentals, riskTone);
   const pricingLine = insight?.headline ?? insight?.signals?.[0] ?? buildValuationLine(stock, fundamentals);
   const nextAction = decision?.nextStep ?? "Open documents, compare peers, or ask AI to stress-test the thesis.";
+  const companySchema = {
+    "@context": "https://schema.org",
+    "@type": "Corporation",
+    name: stock.name,
+    tickerSymbol: stock.ticker,
+    url: `${SITE_URL}/stocks/${encodeURIComponent(stock.ticker)}`,
+    description: stock.description,
+    identifier: stock.isin ? { "@type": "PropertyValue", propertyID: "ISIN", value: stock.isin } : undefined,
+    sameAs: stock.website ? [stock.website.startsWith("http") ? stock.website : `https://${stock.website}`] : undefined,
+  };
 
   return (
     <main className="space-y-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(companySchema).replace(/</g, "\\u003c") }} />
       <PageHeader
         title={`${stock.name} (${stock.ticker})`}
         subtitle="Decision room: identity, price, risk, sources and peer comparison stay within a few scrolls."

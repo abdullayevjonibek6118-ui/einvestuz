@@ -1,6 +1,9 @@
 import { BarChart3, BookOpen, CheckCircle2, ClipboardCheck, FileText, PlayCircle } from "lucide-react";
 import { PageHeader, Panel } from "@/components/ui";
 import { lessons, type AcademyLesson } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({ title: "Академия инвестора", description: "Бесплатные материалы об акциях, финансовой отчётности, отраслевом анализе и управлении инвестиционными рисками.", path: "/academy" });
 
 const levels = ["Beginner", "Intermediate", "Advanced"];
 const levelLabels: Record<string, string> = {

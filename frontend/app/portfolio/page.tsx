@@ -1,6 +1,9 @@
 import { PortfolioClient } from "@/components/portfolio-client";
 import { PageHeader } from "@/components/ui";
 import { getStocks } from "@/lib/api";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({ title: "Виртуальный портфель", description: "Персональный учебный портфель пользователя EInvest.", path: "/portfolio", noIndex: true });
 
 type PortfolioSearchParams = Promise<Record<string, string | string[] | undefined>>;
 

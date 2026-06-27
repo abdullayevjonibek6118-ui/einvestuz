@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Bot, ChevronRight, CircleAlert, Database, Search, TrendingUp } from "lucide-react";
 import { getDashboardData, getStockScopeScreener } from "@/lib/api";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({ title: "Аналитика фондового рынка Узбекистана", description: "Котировки, финансовые показатели, отчётность, дивиденды и новости публичных компаний Узбекистана в едином инвестиционном терминале.", path: "/" });
 
 export default async function MarketOverview() {
   const [dashboard, screener] = await Promise.all([

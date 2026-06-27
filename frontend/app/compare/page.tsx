@@ -3,7 +3,9 @@ import { ArrowRight, GitCompareArrows, Search } from "lucide-react";
 import { PageHeader, SourceStatusBadge } from "@/components/ui";
 import { getStockScopeBatchDetails } from "@/lib/api";
 import type { StockScopeDetails, StockScopeIndicatorPeriod } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 export const dynamic="force-dynamic";
+export const metadata = pageMetadata({ title: "Сравнение публичных компаний Узбекистана", description: "Сравните ROE, ROA, маржинальность, долговую нагрузку, отчётность и дивиденды узбекских эмитентов.", path: "/compare" });
 type SearchParams=Promise<Record<string,string|string[]|undefined>>;
 const rows=[["ROE","ROE","%"],["ROA","ROA","%"],["NetProfitMargin","Чистая маржа","%"],["GrossProfitMargin","Валовая маржа","%"],["DebtToEquity","Долг / капитал","x"],["CurrentRatio","Текущая ликвидность","x"],["Revenue","Выручка",""] ,["Earnings","Чистая прибыль",""]] as const;
 export default async function ComparePage({searchParams}:{searchParams?:SearchParams}){

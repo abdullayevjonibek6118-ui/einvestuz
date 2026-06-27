@@ -1,6 +1,9 @@
 import { AIChatClient } from "@/components/ai-chat-client";
 import { PageHeader, Panel } from "@/components/ui";
 import { getStocks } from "@/lib/api";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({ title: "AI-анализ акций Узбекистана", description: "Задавайте вопросы об узбекских компаниях и получайте понятное объяснение показателей, рисков и доступных рыночных данных.", path: "/ai" });
 
 export default async function AIPage() {
   const stocks = await getStocks();

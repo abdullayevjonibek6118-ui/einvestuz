@@ -2,8 +2,10 @@ import Link from "next/link";
 import { ArrowRight, Filter, GitCompareArrows, RotateCcw, Search } from "lucide-react";
 import { Metric, PageHeader, SourceStatusBadge } from "@/components/ui";
 import { getStockScopeScreener } from "@/lib/api";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const metadata = pageMetadata({ title: "Скринер акций Узбекистана", description: "Фильтр компаний Узбекистана по ROE, ROA, P/E, P/B, дивидендной доходности и наличию финансовой отчётности.", path: "/screener" });
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const sorts = [["market_cap","Капитализация"],["roe","ROE"],["roa","ROA"],["pe","P/E"],["pb","P/B"],["dividend_yield","Дивиденды"],["reports_count","Раскрытие"]];
 

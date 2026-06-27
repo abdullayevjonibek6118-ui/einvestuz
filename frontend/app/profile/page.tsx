@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Bell, History, Star } from "lucide-react";
 import { PageHeader, Panel } from "@/components/ui";
 import { getStocks } from "@/lib/api";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({ title: "Профиль пользователя", description: "Персональные настройки, избранные компании и уведомления EInvest.", path: "/profile", noIndex: true });
 
 export default async function ProfilePage() {
   const stocks = await getStocks();
