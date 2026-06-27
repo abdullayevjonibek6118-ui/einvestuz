@@ -27,6 +27,7 @@ from .market_data import get_stock as fetch_stock
 from .market_data import get_stocks as fetch_stocks
 from .providers.stockscope_provider import StockScopeProvider
 from .providers.uzse_provider import UzseProvider
+from .database import supabase
 
 load_dotenv()
 
@@ -343,8 +344,23 @@ class NewsletterRequest(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, str | bool]:
+    database = supabase.health()
+    return {
+        "status": "ok" if database.connected else "degraded",
+        "database": "connected" if database.connected else "unavailable",
+        "database_configured": database.configured,
+    }
+
+
+@app.get("/health/database")
+def database_health() -> dict[str, str | bool]:
+    database = supabase.health()
+    return {
+        "configured": database.configured,
+        "connected": database.connected,
+        "detail": database.detail,
+    }
 
 
 @app.get("/homepage")

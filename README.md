@@ -84,6 +84,23 @@ Market data uses a provider architecture:
 
 ```text
 provider adapters -> in-memory TTL cache -> FastAPI REST/WebSocket -> Next.js dashboard
+
+## Supabase database
+
+The production database is Supabase PostgreSQL. Schema changes live in `supabase/migrations/` and are applied with the Supabase CLI. The backend uses the HTTPS Data API so Railway does not require a direct PostgreSQL connection.
+
+Required Railway variables:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (backend only; never expose it to the frontend)
+
+`GET /health/database` verifies the production Data API connection. Public market tables have read-only RLS policies; portfolios, positions, profiles, and watchlists are restricted to `auth.uid()`.
+
+Refresh the company catalog with:
+
+```powershell
+python backend/scripts/import_companies_to_supabase.py
+```
 ```
 
 Data-source inventory and ingestion notes live in:

@@ -1,0 +1,2 @@
+-- Reference sources are inserted by the initial migration.
+-- Company data is refreshed by backend/scripts/import_companies_to_supabase.py.
