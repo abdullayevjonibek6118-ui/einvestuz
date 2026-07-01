@@ -570,6 +570,9 @@ function MiniSeriesChart({ series }: { series: NonNullable<StockScopeChart["seri
     values: item.data.map(seriesPointValue).filter((value): value is number => typeof value === "number" && Number.isFinite(value)),
   }));
   const allValues = numericSeries.flatMap((item) => item.values);
+  if (!allValues.length) {
+    return <p className="mt-4 text-sm opacity-60">Нет данных для графика</p>;
+  }
   const min = Math.min(...allValues);
   const max = Math.max(...allValues);
   const spread = max - min || 1;

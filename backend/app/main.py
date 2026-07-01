@@ -1,9 +1,12 @@
 import asyncio
 import os
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Literal
+
+_EXECUTOR = ThreadPoolExecutor(max_workers=7)
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -305,6 +308,9 @@ NEWS = [
     NewsItem(id=4, title="Спрос на дивидендные ETF растет среди долгосрочных инвесторов", source="ETF.com", category="ETF", published_at=datetime.now(timezone.utc)),
 ]
 
+POSITIONS_LOCK = threading.Lock()
+NEWSLETTER_LOCK = threading.Lock()
+
 POSITIONS: list[Position] = [
     Position(id=1, user_id="demo-user", ticker="NVDA", quantity=4, buy_price=126.3),
     Position(id=2, user_id="demo-user", ticker="MSFT", quantity=3, buy_price=431.1),
@@ -404,22 +410,21 @@ def homepage() -> dict:
 
 @app.get("/dashboard-data")
 def dashboard_data() -> dict:
-    with ThreadPoolExecutor(max_workers=7) as executor:
-        market_future = executor.submit(fetch_market)
-        stocks_future = executor.submit(fetch_stocks)
-        sources_future = executor.submit(fetch_sources)
-        fx_future = executor.submit(fetch_fx_rates)
-        macro_future = executor.submit(fetch_macro_summary)
-        news_future = executor.submit(fetch_news)
-        market_table_future = executor.submit(fetch_market_table)
+    market_future = _EXECUTOR.submit(fetch_market)
+    stocks_future = _EXECUTOR.submit(fetch_stocks)
+    sources_future = _EXECUTOR.submit(fetch_sources)
+    fx_future = _EXECUTOR.submit(fetch_fx_rates)
+    macro_future = _EXECUTOR.submit(fetch_macro_summary)
+    news_future = _EXECUTOR.submit(fetch_news)
+    market_table_future = _EXECUTOR.submit(fetch_market_table)
 
-        market_assets = [_market_response(asset).model_dump(mode="json") for asset in market_future.result()]
-        stocks = [_stock_response(stock).model_dump(mode="json") for stock in stocks_future.result()]
-        sources = [_source_response(source).model_dump(mode="json") for source in sources_future.result()]
-        fx_rates = [_fx_response(rate).model_dump(mode="json") for rate in fx_future.result()]
-        macro = _macro_response(macro_future.result()).model_dump(mode="json")
-        news = [_news_response(item).model_dump(mode="json") for item in news_future.result()]
-        market_table = [_market_table_row_response(row).model_dump(mode="json") for row in _dashboard_market_table_rows(market_table_future.result())]
+    market_assets = [_market_response(asset).model_dump(mode="json") for asset in market_future.result()]
+    stocks = [_stock_response(stock).model_dump(mode="json") for stock in stocks_future.result()]
+    sources = [_source_response(source).model_dump(mode="json") for source in sources_future.result()]
+    fx_rates = [_fx_response(rate).model_dump(mode="json") for rate in fx_future.result()]
+    macro = _macro_response(macro_future.result()).model_dump(mode="json")
+    news = [_news_response(item).model_dump(mode="json") for item in news_future.result()]
+    market_table = [_market_table_row_response(row).model_dump(mode="json") for row in _dashboard_market_table_rows(market_table_future.result())]
     return {
         "market": market_assets,
         "stocks": stocks,
@@ -632,30 +637,32 @@ def macro_summary() -> MacroSummaryResponse:
 
 @app.post("/portfolio/add", response_model=Position)
 def add_position(payload: PositionCreate) -> Position:
-    for position in POSITIONS:
-        if position.user_id == payload.user_id and position.ticker.lower() == payload.ticker.lower():
-            total_quantity = position.quantity + payload.quantity
-            position.buy_price = (
-                (position.buy_price * position.quantity + payload.buy_price * payload.quantity) / total_quantity
-            )
-            position.quantity = total_quantity
-            position.ticker = payload.ticker.upper()
-            return position
-    next_id = max((position.id for position in POSITIONS), default=0) + 1
-    position = Position(id=next_id, **{**payload.model_dump(), "ticker": payload.ticker.upper()})
-    POSITIONS.append(position)
-    return position
+    with POSITIONS_LOCK:
+        for position in POSITIONS:
+            if position.user_id == payload.user_id and position.ticker.lower() == payload.ticker.lower():
+                total_quantity = position.quantity + payload.quantity
+                position.buy_price = (
+                    (position.buy_price * position.quantity + payload.buy_price * payload.quantity) / total_quantity
+                )
+                position.quantity = total_quantity
+                position.ticker = payload.ticker.upper()
+                return position
+        next_id = max((position.id for position in POSITIONS), default=0) + 1
+        position = Position(id=next_id, **{**payload.model_dump(), "ticker": payload.ticker.upper()})
+        POSITIONS.append(position)
+        return position
 
 
 @app.post("/portfolio/remove")
 def remove_position(payload: RemovePosition) -> dict[str, bool]:
-    before = len(POSITIONS)
-    POSITIONS[:] = [
-        position
-        for position in POSITIONS
-        if not (position.user_id == payload.user_id and position.ticker.lower() == payload.ticker.lower())
-    ]
-    return {"removed": len(POSITIONS) < before}
+    with POSITIONS_LOCK:
+        before = len(POSITIONS)
+        POSITIONS[:] = [
+            position
+            for position in POSITIONS
+            if not (position.user_id == payload.user_id and position.ticker.lower() == payload.ticker.lower())
+        ]
+        return {"removed": len(POSITIONS) < before}
 
 
 @app.post("/newsletter")
@@ -663,8 +670,9 @@ def newsletter(payload: NewsletterRequest) -> dict[str, bool | str]:
     email = payload.email.strip().lower()
     if "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(status_code=422, detail="Некорректный email")
-    if email not in NEWSLETTER_SUBSCRIBERS:
-        NEWSLETTER_SUBSCRIBERS.append(email)
+    with NEWSLETTER_LOCK:
+        if email not in NEWSLETTER_SUBSCRIBERS:
+            NEWSLETTER_SUBSCRIBERS.append(email)
     return {"ok": True, "message": "Вы подписаны на обновления Einvestuz."}
 
 

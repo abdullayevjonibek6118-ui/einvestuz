@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   Bot,
   BriefcaseBusiness,
@@ -30,12 +30,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const ticker = query.trim().toUpperCase();
     if (!ticker) return;
     setMobileOpen(false);
+    setQuery("");
     router.push(`/stocks/${encodeURIComponent(ticker)}`);
   }
 
@@ -60,11 +73,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="topbar-actions">
             <form onSubmit={submitSearch} className="global-search">
               <Search size={16} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Тикер или компания" aria-label="Поиск компании" />
+              <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Тикер или компания" aria-label="Поиск компании" />
               <kbd>⌘ K</kbd>
             </form>
             <Link href="/profile" className="icon-button" aria-label="Профиль"><CircleUserRound size={19} /></Link>
-            <button className="icon-button mobile-menu-button" onClick={() => setMobileOpen((value) => !value)} aria-label="Открыть меню" aria-expanded={mobileOpen}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>
+            <button className="icon-button mobile-menu-button" onClick={() => setMobileOpen((value) => !value)} aria-label={mobileOpen ? "Закрыть меню" : "Открыть меню"} aria-expanded={mobileOpen}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>
           </div>
         </div>
         <div className="market-strip" aria-label="Статус рынка">
@@ -72,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span>USD/UZS <b>12 640</b> <em className="down">−0,18%</em></span>
           <span>Золото <b>$2 326</b> <em className="up">+0,42%</em></span>
           <span>Brent <b>$84,21</b> <em className="up">+0,31%</em></span>
-          <span className="strip-time">Данные на 18:05 TST</span>
+          <span className="strip-time">Данные обновляются</span>
         </div>
       </header>
 
@@ -90,7 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {primaryNav.map((item) => {
           const Icon = item.icon;
           const active = item.href === "/" ? pathname === "/" || pathname === "/dashboard" : pathname.startsWith(item.href);
-          return <Link key={item.href} href={item.href} className={active ? "active" : ""}><Icon size={19} /><span>{item.label.replace("AI-анализ", "AI")}</span></Link>;
+          return <Link key={item.href} href={item.href} className={active ? "active" : ""} onClick={() => setMobileOpen(false)}><Icon size={19} /><span>{item.label.replace("AI-анализ", "AI")}</span></Link>;
         })}
       </nav>
     </div>
