@@ -637,8 +637,8 @@ def _quote_from_yfinance(spec: SymbolSpec) -> Quote | None:
             currency=spec.currency,
             source="yfinance",
             provider=spec.provider,
-            status="live",
-            is_realtime=True,
+            status="delayed",
+            is_realtime=False,
             delay_seconds=0,
             as_of=datetime.now(timezone.utc),
         )
@@ -853,7 +853,7 @@ def _build_fundamentals(ticker: str, bundle: dict[str, Any]) -> Fundamentals:
         market_cap=_format_large_number((market_cap * 1_000_000) if market_cap else None, str(profile.get("currency") or "USD")),
         pe=round(pe or 0.0, 2),
         dividend_yield=round(dividend_yield or 0.0, 2),
-        description=str(profile.get("weburl") or ""),
+        description=str(profile.get("longBusinessSummary") or profile.get("weburl") or ""),
         profile=profile,
         metrics=metric_values,
         source="finnhub",
@@ -952,10 +952,11 @@ def _dedupe_news(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _fallback_fx_rates() -> list[FxRate]:
     now = datetime.now(timezone.utc)
+    stale_date = date(2024, 12, 1)
     return [
-        FxRate(ccy="USD", rate=12017.04, diff=26.78, date=now.date(), name="US Dollar", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
-        FxRate(ccy="EUR", rate=13712.64, diff=-25.8, date=now.date(), name="Euro", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
-        FxRate(ccy="RUB", rate=160.63, diff=-1.6, date=now.date(), name="Russian Ruble", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
+        FxRate(ccy="USD", rate=12017.04, diff=26.78, date=stale_date, name="US Dollar", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
+        FxRate(ccy="EUR", rate=13712.64, diff=-25.8, date=stale_date, name="Euro", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
+        FxRate(ccy="RUB", rate=160.63, diff=-1.6, date=stale_date, name="Russian Ruble", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
     ]
 
 
@@ -998,7 +999,7 @@ def _category_for_symbol(symbol: str) -> str:
     if symbol in {"AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "META"}:
         return "Technology"
     if symbol in {"SBER", "GAZP", "LKOH"}:
-        return "ETF"
+        return "US"
     return "ETF"
 
 

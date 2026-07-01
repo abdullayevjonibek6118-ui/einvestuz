@@ -567,7 +567,7 @@ class StockScopeProvider:
                     "common_dividend": self._number(item.get("commonDividend")),
                     "preferred_dividend": self._number(item.get("preferredDividend")),
                     "common_yield": self._number(item.get("commonYield")),
-                    "preferred_yield": self._number(item.get("preferredYiedl")),
+                    "preferred_yield": self._number(item.get("preferredYield")),
                     "raw": item,
                 }
             )
