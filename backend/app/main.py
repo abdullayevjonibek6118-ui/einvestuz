@@ -30,6 +30,12 @@ from .market_data import get_stock as fetch_stock
 from .market_data import get_stocks as fetch_stocks
 from .providers.stockscope_provider import StockScopeProvider
 from .providers.uzse_provider import UzseProvider
+from .providers.financial_analytics import (
+    get_macro_indicators,
+    get_technical_indicators,
+    get_financial_ratios,
+    aggregate_daily_ohlcv,
+)
 from .database import supabase
 
 load_dotenv()
@@ -451,6 +457,10 @@ def get_stock(ticker: str) -> Stock:
     stockscope = _stockscope_listing_for_ticker(ticker)
     if stockscope is not None:
         return _stockscope_stock_response(stockscope)
+    # Try UZSE fallback
+    uzse_stock = _uzse_stock_by_ticker(ticker)
+    if uzse_stock is not None:
+        return uzse_stock
     raise HTTPException(status_code=404, detail="Stock not found")
 
 
@@ -697,6 +707,151 @@ def academy() -> list[dict[str, str | int]]:
     return ACADEMY
 
 
+# ---------------------------------------------------------------------------
+# Financial Analytics Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/analytics/macro")
+def analytics_macro() -> list[dict[str, Any]]:
+    """Macro-economic indicators for Uzbekistan (CBU rates, inflation, GDP)."""
+    indicators = get_macro_indicators()
+    return [
+        {
+            "name": ind.name,
+            "value": ind.value,
+            "unit": ind.unit,
+            "source": ind.source,
+            "as_of": ind.as_of,
+            "status": ind.status,
+        }
+        for ind in indicators
+    ]
+
+
+@app.get("/analytics/technical/{ticker}")
+def analytics_technical(ticker: str) -> dict[str, Any]:
+    """Technical indicators for a given ticker (SMA, EMA, RSI, MACD, Bollinger)."""
+    ticker_upper = ticker.upper()
+
+    # Try to get price history from StockScope
+    stockscope = STOCKSCOPE_PROVIDER.get_listing_details(ticker_upper)
+    closes: list[float] = []
+    highs: list[float] = []
+    lows: list[float] = []
+    volumes: list[float] = []
+
+    if stockscope:
+        trading_stats = stockscope.get("tradingStats") or stockscope.get("trading_stats") or {}
+        daily = trading_stats.get("daily") or []
+        for row in daily:
+            price = _coerce_numeric(row.get("price"))
+            vol = _coerce_numeric(row.get("volumeUzs") or row.get("volume_uzs") or row.get("volumePcs") or row.get("volume_pcs"))
+            if price and price > 0:
+                closes.append(price)
+                highs.append(price * 1.005)  # Approximate
+                lows.append(price * 0.995)   # Approximate
+                volumes.append(vol or 0)
+
+    # Fallback: try UZSE trade results
+    if len(closes) < 5:
+        try:
+            trades = UZSE_PROVIDER.get_trade_results()
+            ohlcv = aggregate_daily_ohlcv(trades, ticker_upper)
+            for bar in ohlcv[-200:]:  # Last 200 days
+                closes.append(bar.close)
+                highs.append(bar.high)
+                lows.append(bar.low)
+                volumes.append(bar.volume)
+        except Exception:
+            pass
+
+    if len(closes) < 5:
+        raise HTTPException(status_code=404, detail=f"Insufficient price data for {ticker_upper}")
+
+    indicators = get_technical_indicators(closes, highs, lows, volumes)
+    return {
+        "ticker": ticker_upper,
+        "data_points": len(closes),
+        "indicators": {
+            "sma_20": indicators.sma_20,
+            "sma_50": indicators.sma_50,
+            "sma_200": indicators.sma_200,
+            "ema_12": indicators.ema_12,
+            "ema_26": indicators.ema_26,
+            "macd": indicators.macd,
+            "rsi_14": indicators.rsi_14,
+            "bb_upper": indicators.bb_upper,
+            "bb_middle": indicators.bb_middle,
+            "bb_lower": indicators.bb_lower,
+            "atr_14": indicators.atr_14,
+            "obv": indicators.obv,
+            "vwap": indicators.vwap,
+        },
+        "as_of": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/analytics/ratios/{ticker}")
+def analytics_ratios(ticker: str) -> dict[str, Any]:
+    """Computed financial ratios for a given ticker."""
+    ticker_upper = ticker.upper()
+    stockscope = STOCKSCOPE_PROVIDER.get_listing_details(ticker_upper)
+
+    if not stockscope:
+        raise HTTPException(status_code=404, detail=f"No financial data for {ticker_upper}")
+
+    ratios = get_financial_ratios(stockscope)
+    return {
+        "ticker": ticker_upper,
+        "ratios": {
+            "current_ratio": ratios.current_ratio,
+            "quick_ratio": ratios.quick_ratio,
+            "debt_to_equity": ratios.debt_to_equity,
+            "debt_to_assets": ratios.debt_to_assets,
+            "interest_coverage": ratios.interest_coverage,
+            "roe": ratios.roe,
+            "roa": ratios.roa,
+            "roce": ratios.roce,
+            "gross_margin": ratios.gross_margin,
+            "operating_margin": ratios.operating_margin,
+            "net_margin": ratios.net_margin,
+            "pe": ratios.pe,
+            "pb": ratios.pb,
+            "ps": ratios.ps,
+            "ev_ebitda": ratios.ev_ebitda,
+            "dividend_yield": ratios.dividend_yield,
+            "payout_ratio": ratios.payout_ratio,
+            "eps": ratios.eps,
+            "book_value_per_share": ratios.book_value_per_share,
+            "fcf_yield": ratios.fcf_yield,
+        },
+        "as_of": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/analytics/ohlcv/{ticker}")
+def analytics_ohlcv(ticker: str, limit: int = Query(default=60, ge=1, le=500)) -> list[dict[str, Any]]:
+    """Daily OHLCV bars aggregated from UZSE trade results."""
+    ticker_upper = ticker.upper()
+    try:
+        trades = UZSE_PROVIDER.get_trade_results()
+        bars = aggregate_daily_ohlcv(trades, ticker_upper)
+        return [
+            {
+                "date": bar.date,
+                "open": bar.open,
+                "high": bar.high,
+                "low": bar.low,
+                "close": bar.close,
+                "volume": bar.volume,
+                "turnover": bar.turnover,
+            }
+            for bar in bars[-limit:]
+        ]
+    except Exception:
+        return []
+
+
 def _stock_response(stock) -> Stock:
     as_of = stock.as_of or datetime.now(timezone.utc)
     decision_room = _build_stock_decision_room(
@@ -785,8 +940,8 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         price=price,
         change=_stockscope_change(item, "yesterday"),
         market_cap=_format_uzs_value(market_cap_value) if market_cap_value else "N/A",
-        pe=0.0,
-        dividend="N/A",
+        pe=_coerce_numeric(item.get("pe", 0)) or 0.0,
+        dividend=f"{item.get('dividendYield', 0) or 0:.1f}%" if item.get("dividendYield") else "N/A",
         sector=str(item.get("sector") or "Рынок Узбекистана"),
         description=" ".join(description_parts),
         source="stockscope.uz",
@@ -1438,6 +1593,39 @@ def _stockscope_as_of(item: dict[str, Any]) -> datetime:
 def _stockscope_listing_for_ticker(ticker: str) -> dict[str, Any] | None:
     normalized = ticker.upper().strip()
     return next((item for item in STOCKSCOPE_PROVIDER.get_listings() if str(item.get("ticker") or "").upper() == normalized), None)
+
+
+def _uzse_stock_by_ticker(ticker: str) -> Stock | None:
+    try:
+        companies = UZSE_PROVIDER.get_companies()
+        listings = UZSE_PROVIDER.get_listings()
+        trades = UZSE_PROVIDER.get_trade_results()
+        ticker_upper = ticker.upper()
+        company = next((c for c in companies if str(c.get("ticker", "")).upper() == ticker_upper), None)
+        if not company:
+            return None
+        listing = next((l for l in listings if str(l.get("ticker", "")).upper() == ticker_upper), {})
+        trade = next((t for t in trades if str(t.get("ticker", "")).upper() == ticker_upper), {})
+        price = _coerce_numeric(trade.get("price")) or _coerce_numeric(listing.get("current_price")) or 0.0
+        return Stock(
+            ticker=ticker_upper,
+            name=str(company.get("name") or ticker_upper),
+            price=price,
+            change=0.0,
+            market_cap="N/A",
+            pe=0.0,
+            dividend="N/A",
+            sector="Рынок Узбекистана",
+            description=f"{company.get('name', ticker_upper)} — акция UZSE.",
+            source="uzse.uz",
+            source_status="delayed",
+            as_of=datetime.now(timezone.utc),
+            currency="UZS",
+            market="uzbekistan",
+            isin=str(company.get("isin") or "") or None,
+        )
+    except Exception:
+        return None
 
 
 def _instrument_key(item: dict[str, Any]) -> tuple[str, str, str] | None:
