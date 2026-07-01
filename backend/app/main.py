@@ -713,7 +713,7 @@ def _stock_response(stock) -> Stock:
         source_status=stock.status,
         as_of=as_of,
         description=stock.description,
-        change_is_percent=False,
+        change_is_percent=True,
     )
     return Stock(
         ticker=stock.ticker,
