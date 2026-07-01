@@ -21,7 +21,7 @@ export default async function MarketOverview() {
           <h1>Понять рынок. Проверить компанию. Принять решение.</h1>
           <p>Финансовая отчётность, торговая статистика и AI-анализ узбекских компаний в одном исследовательском терминале.</p>
         </div>
-        <span className="as-of">27 ИЮНЯ 2026 · 18:05 TST</span>
+        <span className="as-of">Данные обновляются</span>
       </div>
 
       <section className="command-bar enter enter-delay" aria-label="Поиск по рынку">
@@ -39,7 +39,7 @@ export default async function MarketOverview() {
                 <span>{item.name}</span><b>{item.value}</b><em className={item.change >= 0 ? "positive" : "negative"}>{item.change >= 0 ? "+" : ""}{item.change.toFixed(2)}%</em>
               </div>
             )) : <EmptyInline text="Индексы временно недоступны" />}
-            <div className="pulse-item"><span>Компаний в базе</span><b>{screener.coverage?.total || screener.total || 166}</b><em>UZSE</em></div>
+            <div className="pulse-item"><span>Компаний в базе</span><b>{screener.coverage?.total ?? screener.total ?? 166}</b><em>UZSE</em></div>
           </div>
         </section>
 

@@ -487,7 +487,6 @@ function normalizeStockScopeDetails(source?: BackendStockScopeDetails | StockSco
   const fundamentals = isRecord(raw.fundamentals) ? raw.fundamentals : undefined;
 
   return {
-    ...raw,
     sourceUrl: stringValue(raw.sourceUrl ?? raw.source_url),
     companyType: stringValue(raw.companyType ?? raw.company_type),
     priceHistory: normalizeStockScopePriceHistory(raw.priceHistory ?? raw.price_history),

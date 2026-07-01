@@ -8,6 +8,7 @@ import json
 import os
 import re
 import ssl
+import threading
 import time
 import warnings
 from typing import Any, Literal
@@ -159,19 +160,29 @@ class TTLCache:
     def __init__(self, ttl_seconds: int) -> None:
         self.ttl_seconds = ttl_seconds
         self._values: dict[str, tuple[float, Any]] = {}
+        self._lock = threading.Lock()
 
     def get(self, key: str) -> Any | None:
-        cached = self._values.get(key)
-        if cached is None:
-            return None
-        expires_at, value = cached
-        if expires_at < time.time():
-            self._values.pop(key, None)
-            return None
-        return value
+        with self._lock:
+            cached = self._values.get(key)
+            if cached is None:
+                return None
+            expires_at, value = cached
+            if expires_at < time.time():
+                self._values.pop(key, None)
+                return None
+            return value
 
     def set(self, key: str, value: Any) -> None:
-        self._values[key] = (time.time() + self.ttl_seconds, value)
+        with self._lock:
+            self._values[key] = (time.time() + self.ttl_seconds, value)
+
+    def cleanup(self) -> None:
+        with self._lock:
+            now = time.time()
+            expired = [k for k, (exp, _) in self._values.items() if exp < now]
+            for k in expired:
+                self._values.pop(k, None)
 
 
 SOURCES: list[DataSource] = [
@@ -1298,12 +1309,12 @@ def _parse_compact_number(value: str | None) -> float | None:
     normalized = value.replace(",", "").replace(" ", "").strip()
     if normalized.upper() == "N/A":
         return None
-    match = re.search(r"(-?\d+(?:\.\d+)?)([TMB])?$", normalized, re.IGNORECASE)
+    match = re.search(r"(-?\d+(?:\.\d+)?)([TMBK])?$", normalized, re.IGNORECASE)
     if not match:
         return None
     number = float(match.group(1))
     suffix = (match.group(2) or "").upper()
-    multiplier = {"T": 1_000_000_000_000, "B": 1_000_000_000, "M": 1_000_000}.get(suffix, 1.0)
+    multiplier = {"T": 1_000_000_000_000, "B": 1_000_000_000, "M": 1_000_000, "K": 1_000}.get(suffix, 1.0)
     return number * multiplier
 
 

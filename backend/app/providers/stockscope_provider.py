@@ -269,6 +269,8 @@ class StockScopeProvider:
             if cached:
                 return cached.value
             return {} if key in {"sectors", "web_config"} else []
+        if not value and cached:
+            return cached.value
         self._cache[key] = _CacheEntry(now + ttl_seconds, value)
         return value
 

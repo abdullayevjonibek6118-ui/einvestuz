@@ -4,6 +4,7 @@ import html
 import json
 import re
 import time
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -358,8 +359,11 @@ class UzseProvider:
         if x_requested_with:
             headers["X-Requested-With"] = "XMLHttpRequest"
         request = Request(url, headers=headers)
-        with urlopen(request, timeout=15) as response:
-            return json.loads(response.read().decode("utf-8", "replace"))
+        try:
+            with urlopen(request, timeout=15) as response:
+                return json.loads(response.read().decode("utf-8", "replace"))
+        except (urllib.error.HTTPError, urllib.error.URLError, OSError):
+            return None
 
     def _request_text(self, path: str, params: dict[str, str | int] | None = None) -> str:
         request = Request(
@@ -369,8 +373,11 @@ class UzseProvider:
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             },
         )
-        with urlopen(request, timeout=20) as response:
-            return response.read().decode("utf-8", "replace")
+        try:
+            with urlopen(request, timeout=20) as response:
+                return response.read().decode("utf-8", "replace")
+        except (urllib.error.HTTPError, urllib.error.URLError, OSError):
+            return ""
 
     def _url(self, path: str, params: dict[str, str | int] | None = None) -> str:
         url = path if path.startswith("http") else f"{self.base_url}{path}"

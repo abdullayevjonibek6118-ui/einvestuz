@@ -92,19 +92,19 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
   const ConnectionIcon = connection === "offline" ? WifiOff : Radio;
 
   return (
-    <section className="mb-4 rounded-2xl border border-[#dbe4ef] bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+    <section className="mb-4 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex h-8 items-center gap-2 rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-3 text-xs font-semibold text-[#0f172a]">
-            <ConnectionIcon size={15} className={connection === "live" ? "text-[#16a34a]" : "text-[#64748b]"} />
+          <div className="inline-flex h-8 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 text-xs font-semibold text-[var(--text)]">
+            <ConnectionIcon size={15} className={connection === "live" ? "text-[var(--accent)]" : "text-[var(--muted)]"} />
             {connectionLabel}
           </div>
-          <div className="inline-flex h-8 items-center gap-2 rounded-lg border border-[#dbe4ef] bg-[#f8fafc] px-3 text-xs font-medium text-[#475569]">
+          <div className="inline-flex h-8 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 text-xs font-medium text-[var(--muted)]">
             <Database size={15} />
             {activeSources}/{sources.length} источника активны
           </div>
           {lastUpdate ? (
-            <div className="tabular-data inline-flex h-8 items-center gap-2 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-3 text-xs font-semibold text-[#166534]">
+            <div className="tabular-data inline-flex h-8 items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-3 text-xs font-semibold text-[var(--accent)]">
               <Activity size={15} />
               {lastUpdate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </div>
@@ -121,10 +121,10 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
       {latestQuotes.length ? (
         <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
           {latestQuotes.map((quote) => (
-            <div key={quote.ticker} className="flex items-center justify-between rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] px-3 py-2">
+            <div key={quote.ticker} className="flex items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--surface-2)] px-3 py-2">
               <div>
-                <p className="tabular-data text-xs font-semibold text-[#1e40af]">{quote.ticker}</p>
-                <p className="tabular-data text-sm font-semibold text-[#0f172a]">{formatQuotePrice(quote.price, quote.currency)}</p>
+                <p className="tabular-data text-xs font-semibold text-[var(--accent)]">{quote.ticker}</p>
+                <p className="tabular-data text-sm font-semibold text-[var(--text)]">{formatQuotePrice(quote.price, quote.currency)}</p>
               </div>
               <SourceStatusBadge source={quote.source} status={quote.sourceStatus} />
             </div>
