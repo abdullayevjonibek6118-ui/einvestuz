@@ -549,7 +549,7 @@ def get_news(symbol: str | None = None, category: str | None = None) -> list[dic
         return filtered
     return [
         {
-            "id": index + 1,
+            "id": hash((category_name, title, source)) & 0x7FFFFFFF,
             "title": title,
             "source": source,
             "category": category_name,
@@ -624,12 +624,13 @@ def _quote_from_yfinance(spec: SymbolSpec) -> Quote | None:
             price = closes[-1]
             previous_close = previous_close or (closes[-2] if len(closes) > 1 else None)
 
+        pct = _percent_change(price, previous_close)
         return Quote(
             ticker=spec.ticker,
             name=spec.name,
             price=round(price, 2),
-            change=round(_percent_change(price, previous_close), 2),
-            change_percent=round(_percent_change(price, previous_close), 2),
+            change=round(pct, 2) if pct is not None else 0.0,
+            change_percent=round(pct, 2) if pct is not None else None,
             market_cap=_format_large_number(market_cap, spec.currency),
             description=spec.description,
             category=spec.category,
@@ -661,12 +662,13 @@ def _quote_from_yahoo_chart(spec: SymbolSpec) -> Quote | None:
     previous_close = _coerce_float(meta.get("chartPreviousClose") or meta.get("previousClose"))
     if price is None:
         return None
+    pct = _percent_change(price, previous_close)
     return Quote(
         ticker=spec.ticker,
         name=str(meta.get("longName") or meta.get("shortName") or spec.name),
         price=round(price, 2),
-        change=round(_percent_change(price, previous_close), 2),
-        change_percent=round(_percent_change(price, previous_close), 2),
+        change=round(pct, 2) if pct is not None else 0.0,
+        change_percent=round(pct, 2) if pct is not None else None,
         open=_coerce_float(meta.get("regularMarketOpen")),
         high=_coerce_float(meta.get("regularMarketDayHigh")),
         low=_coerce_float(meta.get("regularMarketDayLow")),
@@ -727,8 +729,8 @@ def _quote_from_moex(spec: SymbolSpec) -> Quote | None:
         ticker=spec.ticker,
         name=str(security.get("SHORTNAME") or security.get("NAME") or spec.name),
         price=round(price, 2),
-        change=round(change or 0.0, 2),
-        change_percent=round(change or 0.0, 2),
+        change=round(change, 2) if change is not None else 0.0,
+        change_percent=round(change, 2) if change is not None else None,
         open=_coerce_float(row.get("OPEN") or row.get("OPENPRICE")),
         high=_coerce_float(row.get("HIGH") or row.get("HIGHPRICE")),
         low=_coerce_float(row.get("LOW") or row.get("LOWPRICE")),
@@ -1069,7 +1071,7 @@ def _empty_quote(spec: SymbolSpec) -> Quote:
         name=spec.name,
         price=0.0,
         change=0.0,
-        change_percent=0.0,
+        change_percent=None,
         description=spec.description,
         category=spec.category,
         exchange=spec.exchange,
@@ -1103,10 +1105,10 @@ def _coerce_float(value: Any) -> float | None:
         return None
 
 
-def _percent_change(price: float, previous_close: float | None) -> float:
+def _percent_change(price: float, previous_close: float | None) -> float | None:
     if previous_close in (None, 0):
-        return 0.0
-    return ((price - previous_close) / previous_close) * 100
+        return None
+    return round(((price - previous_close) / previous_close) * 100, 2)
 
 
 def _build_dashboard_market_row(spec: SymbolSpec) -> dict[str, Any]:
@@ -1241,7 +1243,8 @@ def _change_from_series(values: list[float], fallback: float, lookback: int = 1)
         return fallback
     current = values[-1]
     previous = values[-(lookback + 1)]
-    return _percent_change(current, previous)
+    result = _percent_change(current, previous)
+    return result if result is not None else fallback
 
 
 def _sparkline_7d(history: dict[str, Any], price: float, fallback_change: float) -> list[float]:

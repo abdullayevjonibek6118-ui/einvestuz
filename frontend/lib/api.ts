@@ -214,9 +214,12 @@ type BackendNewsItem = {
   id: number;
   title: string;
   source: string;
-  category: "US" | "Technology" | "ETF" | "Crypto" | NewsItem["category"];
+  category: "US" | "Technology" | "ETF" | "Crypto" | NewsItem["category"] | string;
   published_at?: string;
   time?: string;
+  url?: string;
+  summary?: string;
+  related?: string;
 };
 
 type BackendStockFundamentals = {
@@ -416,7 +419,7 @@ type BackendMarketTableRow = Record<string, unknown> & {
   volumePeriod?: string;
 };
 
-const categoryLabels: Record<string, NewsItem["category"]> = {
+const categoryLabels: Record<string, string> = {
   US: "США",
   Technology: "Технологии",
   ETF: "ETF",
@@ -723,10 +726,10 @@ function normalizeMarketAsset(asset: BackendMarketAsset): MarketIndex {
 
 function normalizeMarketTableRow(row: BackendMarketTableRow): MarketTableRow {
   const ticker = stringValue(row.ticker ?? row.symbol) ?? "UNKNOWN";
-  const price = numberValue(row.price ?? row.lastPrice ?? row.last, 0) ?? 0;
-  const change1h = numberValue(row.change1h ?? row.change_1h, estimateShortChange(price, ticker, 1)) ?? 0;
-  const change24h = numberValue(row.change24h ?? row.change_24h, estimateMediumChange(price, ticker)) ?? 0;
-  const change7d = numberValue(row.change7d ?? row.change_7d, estimateLongChange(price, ticker)) ?? 0;
+  const price = numberValue(row.price ?? row.lastPrice ?? row.last) ?? 0;
+  const change1h = numberValue(row.change1h ?? row.change_1h) ?? 0;
+  const change24h = numberValue(row.change24h ?? row.change_24h) ?? 0;
+  const change7d = numberValue(row.change7d ?? row.change_7d) ?? 0;
   const marketCapValue = numberValue(row.marketCapValue ?? row.market_cap_value ?? row.marketCap ?? row.market_cap, undefined);
   const volume24hValue = numberValue(row.volume24hValue ?? row.volume_24h_value ?? row.volume24h ?? row.volume_24h, undefined);
   const circulatingSupplyValue = numberValue(
@@ -801,8 +804,11 @@ function normalizeNewsItem(item: BackendNewsItem): NewsItem {
     id: item.id,
     title: item.title,
     source: item.source,
-    category: categoryLabels[item.category] ?? "США",
+    category: categoryLabels[item.category] ?? item.category ?? "США",
     time: item.time ?? relativeTime(item.published_at),
+    url: item.url ?? "",
+    summary: item.summary ?? "",
+    related: item.related ?? "",
   };
 }
 

@@ -291,6 +291,7 @@ export type FxRate = {
   asOf?: string;
   source?: string;
   sourceStatus?: LiveSourceStatus;
+  nominal?: number;
 };
 
 export type MacroMetric = {
@@ -323,8 +324,11 @@ export type NewsItem = {
   id: number;
   title: string;
   source: string;
-  category: "США" | "Технологии" | "ETF" | "Крипта";
+  category: string;
   time: string;
+  url?: string;
+  summary?: string;
+  related?: string;
 };
 
 export const indexes: MarketIndex[] = [
