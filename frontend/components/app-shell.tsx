@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { getApiUrl } from "@/lib/live-market";
 import {
   Bot,
   BriefcaseBusiness,
@@ -80,13 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button className="icon-button mobile-menu-button" onClick={() => setMobileOpen((value) => !value)} aria-label={mobileOpen ? "Закрыть меню" : "Открыть меню"} aria-expanded={mobileOpen}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>
           </div>
         </div>
-        <div className="market-strip" aria-label="Статус рынка">
-          <span className="session"><i /> UZSE · ЗАКРЫТ</span>
-          <span>USD/UZS <b>12 640</b> <em className="down">−0,18%</em></span>
-          <span>Золото <b>$2 326</b> <em className="up">+0,42%</em></span>
-          <span>Brent <b>$84,21</b> <em className="up">+0,31%</em></span>
-          <span className="strip-time">Данные обновляются</span>
-        </div>
+        <MarketStrip />
       </header>
 
       {mobileOpen ? (
@@ -108,4 +103,57 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
     </div>
   );
+}
+
+type StripPayload = {
+  market_status?: { label?: string; is_open?: boolean; as_of?: string };
+  fx_rates?: Array<{ ccy?: string; rate?: number; diff?: number; date?: string; status?: string }>;
+  market?: Array<{ ticker?: string; price?: number; change?: number; source_status?: string; as_of?: string }>;
+};
+
+function MarketStrip() {
+  const [data, setData] = useState<StripPayload | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await fetch(getApiUrl("/market-strip"), { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json() as StripPayload;
+        if (active) setData(payload);
+      } catch {
+        // Keep explicit unavailable placeholders when the API cannot be reached.
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, 60_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+
+  const usd = data?.fx_rates?.find((item) => item.ccy === "USD");
+  const gold = data?.market?.find((item) => item.ticker === "XAU");
+  const oil = data?.market?.find((item) => item.ticker === "WTI");
+  const latest = [usd?.date, gold?.as_of, oil?.as_of].filter(Boolean).sort().at(-1);
+
+  return (
+    <div className="market-strip" aria-label="Статус рынка">
+      <span className="session"><i /> UZSE · {(data?.market_status?.label ?? "Статус недоступен").replace("Рынок ", "").toUpperCase()}</span>
+      <StripValue label="USD/UZS" value={usd?.rate} change={usd?.diff} digits={2} />
+      <StripValue label="Золото" value={gold?.price} change={gold?.change} currency="$" />
+      <StripValue label="WTI" value={oil?.price} change={oil?.change} currency="$" />
+      <span className="strip-time">{latest ? `Данные: ${formatStripTime(latest)}` : "Данные недоступны"}</span>
+    </div>
+  );
+}
+
+function StripValue({ label, value, change, currency = "", digits = 2 }: { label: string; value?: number; change?: number; currency?: string; digits?: number }) {
+  const validValue = typeof value === "number" && Number.isFinite(value);
+  const validChange = typeof change === "number" && Number.isFinite(change);
+  return <span>{label} <b>{validValue ? `${currency}${value.toLocaleString("ru-RU", { maximumFractionDigits: digits })}` : "—"}</b>{validChange ? <em className={change >= 0 ? "up" : "down"}>{change >= 0 ? "+" : ""}{change.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}{label === "USD/UZS" ? " UZS" : "%"}</em> : null}</span>;
+}
+
+function formatStripTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent" });
 }

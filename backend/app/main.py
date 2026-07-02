@@ -3,8 +3,9 @@ import os
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, time as clock_time, timezone
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=7)
 
@@ -251,6 +252,8 @@ class MacroIndicator(BaseModel):
     source: str
     status: Literal["live", "delayed", "fallback", "needs_license", "offline"]
     note: str | None = None
+    unit: str | None = None
+    as_of: str | None = None
 
 
 class MacroSummaryResponse(BaseModel):
@@ -519,7 +522,25 @@ def uzse_indices() -> list[dict[str, Any]]:
 
 @app.get("/api/uzse/quotes")
 def uzse_quotes() -> list[dict[str, Any]]:
-    return UZSE_PROVIDER.get_quotes()
+    quotes = UZSE_PROVIDER.get_quotes()
+    if quotes:
+        return quotes
+    return [
+        {
+            "ticker": row.get("ticker"),
+            "name": row.get("name"),
+            "price": row.get("price"),
+            "change_percent": row.get("change_24h"),
+            "currency": row.get("currency", "UZS"),
+            "market": row.get("market", "uzbekistan"),
+            "source": row.get("source"),
+            "status": row.get("status", "delayed"),
+            "as_of": row.get("as_of"),
+            "note": "Fallback snapshot: UZSE trade table did not return rows.",
+        }
+        for row in _uzse_market_table_rows()
+        if row.get("price")
+    ]
 
 
 @app.get("/api/uzse/index-history/{name}")
@@ -748,8 +769,6 @@ def analytics_technical(ticker: str) -> dict[str, Any]:
             vol = _coerce_numeric(row.get("volumeUzs") or row.get("volume_uzs") or row.get("volumePcs") or row.get("volume_pcs"))
             if price and price > 0:
                 closes.append(price)
-                highs.append(price * 1.005)  # Approximate
-                lows.append(price * 0.995)   # Approximate
                 volumes.append(vol or 0)
 
     # Fallback: try UZSE trade results
@@ -768,7 +787,8 @@ def analytics_technical(ticker: str) -> dict[str, Any]:
     if len(closes) < 5:
         raise HTTPException(status_code=404, detail=f"Insufficient price data for {ticker_upper}")
 
-    indicators = get_technical_indicators(closes, highs, lows, volumes)
+    has_real_ohlc = len(highs) == len(closes) and len(lows) == len(closes)
+    indicators = get_technical_indicators(closes, highs if has_real_ohlc else None, lows if has_real_ohlc else None, volumes)
     return {
         "ticker": ticker_upper,
         "data_points": len(closes),
@@ -788,6 +808,9 @@ def analytics_technical(ticker: str) -> dict[str, Any]:
             "vwap": indicators.vwap,
         },
         "as_of": datetime.now(timezone.utc).isoformat(),
+        "status": "calculated",
+        "methodology": "Indicators are calculated from observed closes; ATR is returned only when real high/low data is available.",
+        "estimated_fields": [],
     }
 
 
@@ -826,6 +849,9 @@ def analytics_ratios(ticker: str) -> dict[str, Any]:
             "fcf_yield": ratios.fcf_yield,
         },
         "as_of": datetime.now(timezone.utc).isoformat(),
+        "status": "calculated",
+        "methodology": "Ratios are calculated only when every required source field is available; unavailable ratios remain null.",
+        "estimated_fields": [],
     }
 
 
@@ -1373,14 +1399,34 @@ def _format_volume_proxy(volume: float | None, currency: str) -> str:
 
 
 def _market_status() -> dict[str, str | bool]:
-    now = datetime.now(timezone.utc)
+    tashkent = ZoneInfo("Asia/Tashkent")
+    now = datetime.now(tashkent)
     is_weekday = now.weekday() < 5
+    is_open = is_weekday and clock_time(9, 30) <= now.time().replace(tzinfo=None) < clock_time(16, 0)
     return {
-        "label": "Рынок открыт" if is_weekday else "Рынок закрыт",
-        "is_open": is_weekday,
-        "timezone": "UTC",
+        "label": "Рынок открыт" if is_open else "Рынок закрыт",
+        "is_open": is_open,
+        "timezone": "Asia/Tashkent",
         "as_of": now.isoformat(),
     }
+
+
+@app.get("/market-strip")
+def market_strip() -> dict[str, Any]:
+    """Small, cache-friendly payload for the global market header."""
+    fx_future = _EXECUTOR.submit(fetch_fx_rates)
+    market_future = _EXECUTOR.submit(fetch_market)
+    fx_rates = [
+        _fx_response(rate).model_dump(mode="json")
+        for rate in fx_future.result()
+        if rate.ccy == "USD"
+    ]
+    market = [
+        _market_response(asset).model_dump(mode="json")
+        for asset in market_future.result()
+        if asset.ticker in {"XAU", "WTI"}
+    ]
+    return {"market_status": _market_status(), "fx_rates": fx_rates, "market": market}
 
 
 def _market_table_row_response(row: dict[str, Any]) -> MarketTableRow:
@@ -1488,7 +1534,7 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
                 "sparkline_7d": _stockscope_sparkline(stockscope) or ([price for _ in range(7)] if price else []),
                 "source": "uzse.uz + stockscope.uz" if stockscope else "uzse.uz",
                 "status": "delayed",
-                "as_of": datetime.now(timezone.utc),
+                "as_of": trade.get("trade_time") or _stockscope_as_of(stockscope),
                 "market": "uzbekistan",
                 "currency": "UZS",
                 "sector": stockscope.get("sector"),
@@ -1531,7 +1577,7 @@ def _uzse_market_table_rows() -> list[dict[str, Any]]:
                 "sparkline_7d": _stockscope_sparkline(stockscope),
                 "source": "stockscope.uz",
                 "status": "delayed",
-                "as_of": datetime.now(timezone.utc),
+                "as_of": _stockscope_as_of(stockscope),
                 "market": "uzbekistan",
                 "currency": "UZS",
                 "sector": stockscope.get("sector"),

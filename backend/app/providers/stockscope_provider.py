@@ -188,12 +188,16 @@ class StockScopeProvider:
             "roa",
             "pe",
             "pb",
+            "market_cap",
             "dividend_yield",
             "latest_period",
         }
         sort_key = sort_by if sort_by in allowed_sort_keys else "reports_count"
         reverse = str(sort_dir).lower() != "asc"
-        rows = sorted(rows, key=lambda row: self._sort_value(row.get(sort_key)), reverse=reverse)
+        populated = [row for row in rows if row.get(sort_key) is not None]
+        missing = [row for row in rows if row.get(sort_key) is None]
+        populated = sorted(populated, key=lambda row: self._sort_value(row.get(sort_key)), reverse=reverse)
+        rows = populated + missing
 
         start = max(offset, 0)
         page_size = max(1, min(limit, 200))

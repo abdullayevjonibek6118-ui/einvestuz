@@ -787,18 +787,6 @@ function numberValue(value: unknown, fallback?: number) {
   return fallback;
 }
 
-function estimateShortChange(price: number, ticker: string, divisor: number) {
-  return roundTo(seedVariance(ticker, divisor) * Math.max(0.12, price * 0.0006), 2);
-}
-
-function estimateMediumChange(price: number, ticker: string) {
-  return roundTo(seedVariance(ticker, 2) * Math.max(0.35, price * 0.0022), 2);
-}
-
-function estimateLongChange(price: number, ticker: string) {
-  return roundTo(seedVariance(ticker, 3) * Math.max(0.8, price * 0.0065), 2);
-}
-
 function normalizeNewsItem(item: BackendNewsItem): NewsItem {
   return {
     id: item.id,
@@ -845,9 +833,9 @@ function normalizeFxRate(rate: BackendFxRate): FxRate {
 
 function normalizeMacroMetric(metric: BackendMacroMetric): MacroMetric {
   const label = metric.label ?? metric.name ?? metric.key ?? metric.id ?? "Macro";
-  const stringValue =
+  const rawValue =
     typeof metric.value === "number"
-      ? metric.value.toLocaleString("en-US")
+      ? metric.value.toLocaleString("ru-RU", { maximumFractionDigits: 2 })
       : typeof metric.value === "string"
         ? metric.value
         : metric.value && typeof metric.value === "object"
@@ -855,6 +843,7 @@ function normalizeMacroMetric(metric: BackendMacroMetric): MacroMetric {
               .map(([key, value]) => `${key}: ${String(value)}`)
               .join(" · ")
           : "N/A";
+  const stringValue = rawValue === "N/A" || !metric.unit ? rawValue : `${rawValue} ${metric.unit}`;
 
   return {
     key: metric.key ?? metric.id ?? label,
