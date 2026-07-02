@@ -12,7 +12,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Профиль" subtitle="Watchlist, настройки уведомлений и история AI-запросов." />
+      <PageHeader title="Демо-профиль" subtitle="Предпросмотр будущего кабинета: watchlist, уведомления и история пока не сохраняются." />
 
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel title="Watchlist" action={<Star size={18} className="text-[#d97706]" fill="currentColor" />}>
@@ -41,7 +41,7 @@ export default async function ProfilePage() {
         </Panel>
       </div>
 
-      <Panel title="История запросов" action={<History size={18} className="text-[#667085]" />} className="mt-4">
+        <Panel title="Примеры запросов" action={<History size={18} className="text-[#667085]" />} className="mt-4">
         <div className="space-y-2 text-sm">
           {["Стоит ли покупать Nvidia?", "Объясни ETF простыми словами", "Какие риски у Tesla?"].map((item) => (
             <div key={item} className="rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3 text-[#334155]">{item}</div>
@@ -65,7 +65,7 @@ function Toggle({ title, subtitle, checked = false }: { title: string; subtitle:
         </span>
       </span>
       <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-[#cbd5e1] bg-white p-1 transition has-[:checked]:border-[#3861fb] has-[:checked]:bg-[#3861fb] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#93c5fd]">
-        <input type="checkbox" defaultChecked={checked} className="peer sr-only" />
+        <input type="checkbox" defaultChecked={checked} disabled className="peer sr-only" />
         <span className="size-5 rounded-full bg-[#cbd5e1] shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-white" />
       </span>
     </label>

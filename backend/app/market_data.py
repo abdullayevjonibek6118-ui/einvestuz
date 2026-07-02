@@ -319,26 +319,6 @@ QUOTE_UNIVERSE = {**STOCK_UNIVERSE, **MARKET_UNIVERSE}
 _QUOTE_CACHE = TTLCache(ttl_seconds=20)
 _DETAIL_CACHE = TTLCache(ttl_seconds=300)
 
-FALLBACK_QUOTES: dict[str, tuple[float, float]] = {
-    "AAPL": (298.0, 0.4),
-    "NVDA": (201.0, -1.2),
-    "MSFT": (373.0, -0.6),
-    "TSLA": (383.0, -1.4),
-    "AMZN": (234.0, -0.5),
-    "META": (563.0, -0.8),
-    "SBER": (307.0, 0.1),
-    "GAZP": (102.0, 0.1),
-    "LKOH": (4270.0, 0.2),
-    "SPX": (7380.0, -0.4),
-    "IXIC": (25680.0, -0.5),
-    "DJI": (51690.0, -0.2),
-    "IMOEX": (2318.0, 0.1),
-    "BTC": (62200.0, -0.6),
-    "ETH": (1655.0, -0.7),
-    "XAU": (4145.0, 0.1),
-    "WTI": (73.0, -0.2),
-}
-
 FALLBACK_NEWS = [
     ("Technology", "Nvidia расширяет партнерства по AI-серверам с облачными провайдерами", "Market Watch"),
     ("US", "Индексы США растут на фоне ожидания новых данных по инфляции", "Reuters"),
@@ -506,7 +486,7 @@ def get_macro_summary() -> MacroSummary:
             },
             {
                 "name": "Инфляция (г/г)",
-                "value": 8.7,
+                "value": 5.5,
                 "unit": "%",
                 "as_of": "2026-05-01",
                 "source": "api.stat.uz",
@@ -514,7 +494,7 @@ def get_macro_summary() -> MacroSummary:
             },
             {
                 "name": "Рост ВВП (г/г)",
-                "value": 6.5,
+                "value": 8.7,
                 "unit": "%",
                 "as_of": "2026-03-31",
                 "source": "api.stat.uz",
@@ -1071,26 +1051,6 @@ def _prefer_board_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _empty_quote(spec: SymbolSpec) -> Quote:
-    fallback = FALLBACK_QUOTES.get(spec.ticker)
-    if fallback is not None:
-        price, change = fallback
-        return Quote(
-            ticker=spec.ticker,
-            name=spec.name,
-            price=price,
-            change=change,
-            change_percent=change,
-            description=spec.description,
-            category=spec.category,
-            exchange=spec.exchange,
-            currency=spec.currency,
-            source="fallback-snapshot",
-            provider=spec.provider,
-            status="fallback",
-            is_realtime=False,
-            as_of=datetime.now(timezone.utc),
-        )
-
     return Quote(
         ticker=spec.ticker,
         name=spec.name,
@@ -1227,7 +1187,7 @@ def _fallback_dashboard_market_row(spec: SymbolSpec) -> dict[str, Any]:
         "market_cap": quote.market_cap,
         "volume_24h": "N/A",
         "circulating_supply": "N/A",
-        "sparkline_7d": _synthetic_sparkline(quote.price, quote.change or 0.0),
+        "sparkline_7d": [],
         "source": quote.source,
         "status": quote.status,
         "as_of": quote.as_of or datetime.now(timezone.utc),
@@ -1315,17 +1275,7 @@ def _sparkline_7d(history: dict[str, Any], price: float, fallback_change: float)
         elif len(values) < 7:
             values = [values[0]] * (7 - len(values)) + values
         return [round(float(value), 2) for value in values[-7:]]
-    return [round(value, 2) for value in _synthetic_sparkline(price, fallback_change)]
-
-
-def _synthetic_sparkline(price: float, change_percent: float, points: int = 7) -> list[float]:
-    if points <= 1:
-        return [round(price, 2)]
-    start = price / (1 + (change_percent / 100)) if change_percent not in (0, -100) else price
-    if not start or not start == start:
-        start = price
-    step = (price - start) / max(points - 1, 1)
-    return [max(0.0, start + (step * index)) for index in range(points)]
+    return []
 
 
 def _quote_volume(history: dict[str, Any], bundle: dict[str, Any], quote: Quote) -> float | None:

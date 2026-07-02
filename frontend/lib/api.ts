@@ -1,8 +1,5 @@
 import {
   getStock as getFallbackStock,
-  indexes as fallbackIndexes,
-  news as fallbackNews,
-  stocks as fallbackStocks,
   type FxRate,
   type LiveSourceStatus,
   type MarketIndex,
@@ -726,17 +723,17 @@ function normalizeMarketAsset(asset: BackendMarketAsset): MarketIndex {
 
 function normalizeMarketTableRow(row: BackendMarketTableRow): MarketTableRow {
   const ticker = stringValue(row.ticker ?? row.symbol) ?? "UNKNOWN";
-  const price = numberValue(row.price ?? row.lastPrice ?? row.last) ?? 0;
-  const change1h = numberValue(row.change1h ?? row.change_1h) ?? 0;
-  const change24h = numberValue(row.change24h ?? row.change_24h) ?? 0;
-  const change7d = numberValue(row.change7d ?? row.change_7d) ?? 0;
+  const price = numberValue(row.price ?? row.lastPrice ?? row.last);
+  const change1h = numberValue(row.change1h ?? row.change_1h);
+  const change24h = numberValue(row.change24h ?? row.change_24h);
+  const change7d = numberValue(row.change7d ?? row.change_7d);
   const marketCapValue = numberValue(row.marketCapValue ?? row.market_cap_value ?? row.marketCap ?? row.market_cap, undefined);
   const volume24hValue = numberValue(row.volume24hValue ?? row.volume_24h_value ?? row.volume24h ?? row.volume_24h, undefined);
   const circulatingSupplyValue = numberValue(
     row.circulatingSupplyValue ?? row.circulating_supply_value ?? row.circulatingSupply ?? row.circulating_supply,
     undefined,
   );
-  const sparkline7d = normalizeSparkline(row.sparkline7d ?? row.sparkline_7d ?? row.sparkline, change7d, ticker);
+  const sparkline7d = normalizeSparkline(row.sparkline7d ?? row.sparkline_7d ?? row.sparkline);
 
   return {
     ticker,
@@ -745,9 +742,9 @@ function normalizeMarketTableRow(row: BackendMarketTableRow): MarketTableRow {
     change1h,
     change24h,
     change7d,
-    marketCap: stringifyMoney(row.marketCap ?? row.market_cap, marketCapValue, price * 1000000000),
-    volume24h: stringifyMoney(row.volume24h ?? row.volume_24h, volume24hValue, price * 1000000),
-    circulatingSupply: stringifySupply(row.circulatingSupply ?? row.circulating_supply, circulatingSupplyValue, marketCapValue, price),
+    marketCap: stringifyMoney(row.marketCap ?? row.market_cap, marketCapValue),
+    volume24h: stringifyMoney(row.volume24h ?? row.volume_24h, volume24hValue),
+    circulatingSupply: stringifySupply(row.circulatingSupply ?? row.circulating_supply, circulatingSupplyValue),
     marketCapValue,
     volume24hValue,
     circulatingSupplyValue,
@@ -871,38 +868,6 @@ function normalizeMacroBlock(macro?: BackendMacroMetric[] | BackendMacroSummary)
   );
 }
 
-function buildFallbackMarketTable(stocks: Stock[]): MarketTableRow[] {
-  return stocks.map((stock, index) => {
-    const change24h = stock.change;
-    const change1h = roundTo((change24h / 3) + seedVariance(stock.ticker, 1) * 0.35, 2);
-    const change7d = roundTo(change24h * 2.6 + seedVariance(stock.ticker, 2) * 1.25, 2);
-    const marketCapValue = parseCompactMoney(stock.marketCap) ?? stock.price * (1000000000 / Math.max(1, 18 + index * 4));
-    const volume24hValue = marketCapValue * (0.015 + Math.abs(seedVariance(stock.ticker, 3)) * 0.006);
-    const circulatingSupplyValue = marketCapValue / Math.max(stock.price, 0.01);
-
-    return {
-      ticker: stock.ticker,
-      name: stock.name,
-      price: stock.price,
-      change1h,
-      change24h,
-      change7d,
-      marketCap: stock.marketCap,
-      volume24h: formatCompactMoney(volume24hValue),
-      circulatingSupply: formatCompactSupply(circulatingSupplyValue),
-      marketCapValue,
-      volume24hValue,
-      circulatingSupplyValue,
-      sparkline7d: buildSparkline(change7d, stock.ticker),
-      source: stock.source,
-      sourceStatus: stock.sourceStatus,
-      asOf: stock.asOf,
-      currency: stock.currency ?? "USD",
-      market: stock.market ?? "global",
-    };
-  });
-}
-
 function numberMetric(metrics: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
     const value = metrics[key];
@@ -934,19 +899,7 @@ function fetchMarketTableSource(source?: BackendDashboardData) {
   return null;
 }
 
-async function resolveMarketTableRows(data?: BackendDashboardData) {
-  const inPayload = fetchMarketTableSource(data);
-  if (inPayload?.length) return inPayload.map(normalizeMarketTableRow);
-
-  const remote = await fetchJson<BackendMarketTableRow[] | { marketTable?: BackendMarketTableRow[]; rows?: BackendMarketTableRow[] }>("/dashboard/market-table");
-  const rows = Array.isArray(remote) ? remote : remote?.marketTable ?? remote?.rows;
-  if (rows?.length) return rows.map(normalizeMarketTableRow);
-
-  const fallbackStocksWithMeta = data?.stocks?.length ? data.stocks.map(normalizeStock) : fallbackStocks;
-  return buildFallbackMarketTable(fallbackStocksWithMeta);
-}
-
-function normalizeSparkline(raw: number[] | string | undefined, change7d: number, ticker: string) {
+function normalizeSparkline(raw: number[] | string | undefined) {
   if (Array.isArray(raw) && raw.length >= 2) {
     const numeric = raw
       .map((point) => (typeof point === "number" && Number.isFinite(point) ? point : Number(point)))
@@ -962,24 +915,7 @@ function normalizeSparkline(raw: number[] | string | undefined, change7d: number
     if (numeric.length >= 2) return normalizeSeries(numeric);
   }
 
-  return buildSparkline(change7d, ticker);
-}
-
-function buildSparkline(change7d: number, ticker: string) {
-  const seed = ticker
-    .split("")
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const direction = change7d === 0 ? 0.15 : Math.sign(change7d) * Math.min(0.65, Math.abs(change7d) / 16);
-  let value = 100 + seedVariance(ticker, 9) * 6;
-  const points = [value];
-
-  for (let index = 1; index < 7; index += 1) {
-    const wobble = Math.sin((seed + index * 11) / 5) * 0.8 + Math.cos((seed + index * 7) / 6) * 0.6;
-    value = Math.max(20, value * (1 + direction * 0.08 + wobble * 0.01));
-    points.push(value);
-  }
-
-  return normalizeSeries(points);
+  return [];
 }
 
 function normalizeSeries(series: number[]) {
@@ -1016,19 +952,17 @@ function parseCompactMoney(value: string | number | undefined) {
   return amount * multiplier;
 }
 
-function stringifyMoney(display: unknown, fallbackValue: number | undefined, priceFallback?: number) {
+function stringifyMoney(display: unknown, fallbackValue: number | undefined) {
   if (typeof display === "string" && display.trim()) return display;
   if (typeof display === "number" && Number.isFinite(display)) return formatCompactMoney(display);
   if (typeof fallbackValue === "number" && Number.isFinite(fallbackValue)) return formatCompactMoney(fallbackValue);
-  if (typeof priceFallback === "number" && Number.isFinite(priceFallback)) return formatCompactMoney(priceFallback);
   return "N/A";
 }
 
-function stringifySupply(display: unknown, fallbackValue: number | undefined, marketCapValue?: number, price?: number) {
+function stringifySupply(display: unknown, fallbackValue: number | undefined) {
   if (typeof display === "string" && display.trim()) return display;
   if (typeof display === "number" && Number.isFinite(display)) return formatCompactSupply(display);
   if (typeof fallbackValue === "number" && Number.isFinite(fallbackValue)) return formatCompactSupply(fallbackValue);
-  if (typeof price === "number" && price > 0) return formatCompactSupply((marketCapValue ?? price * 1000000000) / price);
   return "N/A";
 }
 
@@ -1065,22 +999,9 @@ function formatCompactSupply(value: number) {
   return value.toFixed(2);
 }
 
-function seedVariance(seedText: string, offset: number) {
-  const seed = seedText.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) + offset * 17;
-  return ((seed % 23) - 11) / 11;
-}
-
-function roundTo(value: number, digits: number) {
-  const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
-}
-
 export async function getStocks(): Promise<Stock[]> {
-  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
-  if (dashboardData?.stocks?.length) return dashboardData.stocks.map(normalizeStock);
-
   const data = await fetchJson<BackendStock[]>("/stocks");
-  if (!data?.length) return fallbackStocks;
+  if (!data?.length) return [];
   return data.map(normalizeStock);
 }
 
@@ -1095,12 +1016,11 @@ export async function getDashboardData(): Promise<{
 }> {
   const data = await fetchJson<BackendDashboardData>("/dashboard-data");
   if (!data) {
-    const fallbackStocksWithMeta = fallbackStocks;
     return {
-      indexes: fallbackIndexes,
-      stocks: fallbackStocksWithMeta,
-      marketTable: buildFallbackMarketTable(fallbackStocksWithMeta),
-      news: fallbackNews,
+      indexes: [],
+      stocks: [],
+      marketTable: [],
+      news: [],
       sources: [
         {
           id: "fallback",
@@ -1116,10 +1036,10 @@ export async function getDashboardData(): Promise<{
   }
 
   return {
-    indexes: data.market?.length ? data.market.map(normalizeMarketAsset) : fallbackIndexes,
-    stocks: data.stocks?.length ? data.stocks.map(normalizeStock) : fallbackStocks,
-    marketTable: await resolveMarketTableRows(data),
-    news: data.news?.length ? data.news.map(normalizeNewsItem) : fallbackNews,
+    indexes: data.market?.length ? data.market.map(normalizeMarketAsset) : [],
+    stocks: data.stocks?.length ? data.stocks.map(normalizeStock) : [],
+    marketTable: (fetchMarketTableSource(data) ?? []).map(normalizeMarketTableRow),
+    news: data.news?.length ? data.news.map(normalizeNewsItem) : [],
     sources: data.sources?.length ? data.sources.map(normalizeSource) : [],
     fxRates: ((data.fxRates?.length ? data.fxRates : data.fx_rates) ?? []).map(normalizeFxRate),
     macro: normalizeMacroBlock(data.macro),
@@ -1127,18 +1047,12 @@ export async function getDashboardData(): Promise<{
 }
 
 export async function getMarket(): Promise<MarketIndex[]> {
-  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
-  if (dashboardData?.market?.length) return dashboardData.market.map(normalizeMarketAsset);
-
   const data = await fetchJson<BackendMarketAsset[]>("/market");
-  if (!data?.length) return fallbackIndexes;
+  if (!data?.length) return [];
   return data.map(normalizeMarketAsset);
 }
 
 export async function getSources(): Promise<MarketDataSource[]> {
-  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
-  if (dashboardData?.sources?.length) return dashboardData.sources.map(normalizeSource);
-
   const data = await fetchJson<BackendSource[]>("/sources");
   if (!data?.length) {
     return [
@@ -1276,10 +1190,7 @@ function normalizeStockScopeScreenerRow(row: BackendStockScopeScreenerRow): Stoc
 }
 
 export async function getNews(): Promise<NewsItem[]> {
-  const dashboardData = await fetchJson<BackendDashboardData>("/dashboard-data");
-  if (dashboardData?.news?.length) return dashboardData.news.map(normalizeNewsItem);
-
   const data = await fetchJson<BackendNewsItem[]>("/news");
-  if (!data?.length) return fallbackNews;
+  if (!data?.length) return [];
   return data.map(normalizeNewsItem);
 }

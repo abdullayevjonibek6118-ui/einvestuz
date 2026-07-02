@@ -14,7 +14,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams?: P
 
   return (
     <>
-      <PageHeader title="Виртуальный портфель" subtitle="Добавляйте акции без реальных денег и отслеживайте доходность." />
+      <PageHeader title="Виртуальный портфель" subtitle="Локальная симуляция без реальных денег: позиции сохраняются только в этом браузере." />
       <PortfolioClient stocks={stocks} initialTicker={selectedTicker} />
     </>
   );

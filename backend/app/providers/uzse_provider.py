@@ -374,7 +374,7 @@ class UzseProvider:
             },
         )
         try:
-            with urlopen(request, timeout=20) as response:
+            with urlopen(request, timeout=8) as response:
                 return response.read().decode("utf-8", "replace")
         except (urllib.error.HTTPError, urllib.error.URLError, OSError):
             return ""

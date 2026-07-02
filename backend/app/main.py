@@ -1,7 +1,6 @@
 import asyncio
 import os
 import re
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, time as clock_time, timezone
 from typing import Any, Literal
@@ -111,10 +110,10 @@ class MarketTableRow(BaseModel):
     branding: MarketTableBrand
     name: str
     ticker: str
-    price: float
-    change_1h: float
-    change_24h: float
-    change_7d: float
+    price: float | None = None
+    change_1h: float | None = None
+    change_24h: float | None = None
+    change_7d: float | None = None
     market_cap: str
     volume_24h: str
     circulating_supply: str
@@ -277,22 +276,6 @@ class NewsItem(BaseModel):
     source_status: Literal["live", "delayed", "fallback", "needs_license", "offline"] = "fallback"
 
 
-class PositionCreate(BaseModel):
-    user_id: str = Field(default="demo-user")
-    ticker: str
-    quantity: float = Field(gt=0)
-    buy_price: float = Field(gt=0)
-
-
-class Position(PositionCreate):
-    id: int
-
-
-class RemovePosition(BaseModel):
-    user_id: str = Field(default="demo-user")
-    ticker: str
-
-
 class ChatHistoryMessage(BaseModel):
     role: Literal["user", "assistant"]
     text: str = Field(min_length=1, max_length=2000)
@@ -317,14 +300,6 @@ NEWS = [
     NewsItem(id=4, title="Спрос на дивидендные ETF растет среди долгосрочных инвесторов", source="ETF.com", category="ETF", published_at=datetime.now(timezone.utc)),
 ]
 
-POSITIONS_LOCK = threading.Lock()
-NEWSLETTER_LOCK = threading.Lock()
-
-POSITIONS: list[Position] = [
-    Position(id=1, user_id="demo-user", ticker="NVDA", quantity=4, buy_price=126.3),
-    Position(id=2, user_id="demo-user", ticker="MSFT", quantity=3, buy_price=431.1),
-]
-
 ACADEMY = [
     {"level": "Beginner", "title": "Акции, ETF и дивиденды", "duration_minutes": 22, "source": "Материалы сайта"},
     {"level": "Beginner", "title": "Определение отрасли и рынка", "duration_minutes": 28, "source": "Lecture 1.pdf"},
@@ -337,7 +312,6 @@ ACADEMY = [
     {"level": "Advanced", "title": "Риск-менеджмент через отраслевой анализ", "duration_minutes": 27, "source": "Лекции и материалы сайта"},
 ]
 
-NEWSLETTER_SUBSCRIBERS: list[str] = []
 UZSE_PROVIDER = UzseProvider()
 STOCKSCOPE_PROVIDER = StockScopeProvider()
 
@@ -425,7 +399,6 @@ def dashboard_data() -> dict:
     fx_future = _EXECUTOR.submit(fetch_fx_rates)
     macro_future = _EXECUTOR.submit(fetch_macro_summary)
     news_future = _EXECUTOR.submit(fetch_news)
-    market_table_future = _EXECUTOR.submit(fetch_market_table)
 
     market_assets = [_market_response(asset).model_dump(mode="json") for asset in market_future.result()]
     stocks = [_stock_response(stock).model_dump(mode="json") for stock in stocks_future.result()]
@@ -433,11 +406,10 @@ def dashboard_data() -> dict:
     fx_rates = [_fx_response(rate).model_dump(mode="json") for rate in fx_future.result()]
     macro = _macro_response(macro_future.result()).model_dump(mode="json")
     news = [_news_response(item).model_dump(mode="json") for item in news_future.result()]
-    market_table = [_market_table_row_response(row).model_dump(mode="json") for row in _dashboard_market_table_rows(market_table_future.result())]
     return {
         "market": market_assets,
         "stocks": stocks,
-        "market_table": market_table,
+        "market_table": [],
         "news": news,
         "sources": sources,
         "fx_rates": fx_rates,
@@ -538,7 +510,7 @@ def uzse_quotes() -> list[dict[str, Any]]:
             "as_of": row.get("as_of"),
             "note": "Fallback snapshot: UZSE trade table did not return rows.",
         }
-        for row in _uzse_market_table_rows()
+        for row in _stockscope_market_table_rows()
         if row.get("price")
     ]
 
@@ -666,45 +638,12 @@ def macro_summary() -> MacroSummaryResponse:
     return _macro_response(fetch_macro_summary())
 
 
-@app.post("/portfolio/add", response_model=Position)
-def add_position(payload: PositionCreate) -> Position:
-    with POSITIONS_LOCK:
-        for position in POSITIONS:
-            if position.user_id == payload.user_id and position.ticker.lower() == payload.ticker.lower():
-                total_quantity = position.quantity + payload.quantity
-                position.buy_price = (
-                    (position.buy_price * position.quantity + payload.buy_price * payload.quantity) / total_quantity
-                )
-                position.quantity = total_quantity
-                position.ticker = payload.ticker.upper()
-                return position
-        next_id = max((position.id for position in POSITIONS), default=0) + 1
-        position = Position(id=next_id, **{**payload.model_dump(), "ticker": payload.ticker.upper()})
-        POSITIONS.append(position)
-        return position
-
-
-@app.post("/portfolio/remove")
-def remove_position(payload: RemovePosition) -> dict[str, bool]:
-    with POSITIONS_LOCK:
-        before = len(POSITIONS)
-        POSITIONS[:] = [
-            position
-            for position in POSITIONS
-            if not (position.user_id == payload.user_id and position.ticker.lower() == payload.ticker.lower())
-        ]
-        return {"removed": len(POSITIONS) < before}
-
-
 @app.post("/newsletter")
 def newsletter(payload: NewsletterRequest) -> dict[str, bool | str]:
     email = payload.email.strip().lower()
     if "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(status_code=422, detail="Некорректный email")
-    with NEWSLETTER_LOCK:
-        if email not in NEWSLETTER_SUBSCRIBERS:
-            NEWSLETTER_SUBSCRIBERS.append(email)
-    return {"ok": True, "message": "Вы подписаны на обновления Einvestuz."}
+    raise HTTPException(status_code=501, detail="Хранилище подписок пока не подключено")
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -1435,10 +1374,10 @@ def _market_table_row_response(row: dict[str, Any]) -> MarketTableRow:
         branding=MarketTableBrand(**(row.get("branding") or {})),
         name=str(row.get("name") or ""),
         ticker=str(row.get("ticker") or ""),
-        price=float(row.get("price") or 0.0),
-        change_1h=float(row.get("change_1h") or 0.0),
-        change_24h=float(row.get("change_24h") or 0.0),
-        change_7d=float(row.get("change_7d") or 0.0),
+        price=_optional_float(row.get("price")),
+        change_1h=_optional_float(row.get("change_1h")),
+        change_24h=_optional_float(row.get("change_24h")),
+        change_7d=_optional_float(row.get("change_7d")),
         market_cap=str(row.get("market_cap") or "N/A"),
         volume_24h=str(row.get("volume_24h") or "N/A"),
         circulating_supply=str(row.get("circulating_supply") or "N/A"),
@@ -1463,13 +1402,66 @@ def _market_table_row_response(row: dict[str, Any]) -> MarketTableRow:
 def _dashboard_market_table_rows(base_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = [*base_rows]
     try:
-        rows.extend(_uzse_market_table_rows())
+        rows.extend(_stockscope_market_table_rows())
     except Exception:
         pass
 
+    deduplicated: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        ticker = str(row.get("ticker") or "").upper()
+        if not ticker or _optional_float(row.get("price")) in (None, 0):
+            continue
+        existing = deduplicated.get(ticker)
+        if existing is None or _market_table_source_priority(row) < _market_table_source_priority(existing):
+            deduplicated[ticker] = row
+    rows = list(deduplicated.values())
     rows.sort(key=lambda row: (_market_table_source_priority(row), -_parse_compact_value(row.get("market_cap")), str(row.get("name") or "")))
     for index, row in enumerate(rows, start=1):
         row["rank"] = index
+    return rows
+
+
+def _stockscope_market_table_rows() -> list[dict[str, Any]]:
+    screened = STOCKSCOPE_PROVIDER.screen_listings(limit=200, sort_by="market_cap", sort_dir="desc")
+    generated_at = str(STOCKSCOPE_PROVIDER.get_listing_details_coverage().get("generated_at") or "")
+    try:
+        snapshot_as_of = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+    except ValueError:
+        snapshot_as_of = datetime.now(timezone.utc)
+    rows: list[dict[str, Any]] = []
+    for item in screened.get("items", []):
+        ticker = str(item.get("ticker") or "").upper()
+        price = _optional_float(item.get("current_price"))
+        if not ticker or price in (None, 0):
+            continue
+        market_cap = _optional_float(item.get("market_cap"))
+        rows.append(
+            {
+                "rank": 0,
+                "branding": {"logo_url": None, "monogram": _monogram_for_label(ticker, str(item.get("name") or ticker)), "monogram_color": "#0f766e"},
+                "name": str(item.get("name") or ticker),
+                "ticker": ticker,
+                "price": price,
+                "change_1h": None,
+                "change_24h": None,
+                "change_7d": None,
+                "market_cap": _format_uzs_value(market_cap) if market_cap else "N/A",
+                "volume_24h": "N/A",
+                "circulating_supply": "N/A",
+                "sparkline_7d": [],
+                "source": "stockscope.uz",
+                "status": "delayed",
+                "as_of": snapshot_as_of,
+                "market": "uzbekistan",
+                "currency": "UZS",
+                "isin": item.get("isin"),
+                "openinfo_id": item.get("openinfo_id"),
+                "market_cap_value": market_cap,
+                "volume_24h_value": None,
+                "circulating_supply_value": None,
+                "volume_period": None,
+            }
+        )
     return rows
 
 

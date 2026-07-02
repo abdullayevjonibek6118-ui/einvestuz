@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { ChangeBadge, Panel } from "@/components/ui";
 import { formatCurrency, type Stock } from "@/lib/data";
-import { getApiUrl } from "@/lib/live-market";
 
 type Position = {
   ticker: string;
@@ -99,12 +98,10 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
           : position,
       );
     });
-    void syncPortfolioAdd(normalizedTicker, quantity, buyPrice);
   }
 
   function removePosition(positionTicker: string) {
     setPositions((current) => current.filter((position) => position.ticker !== positionTicker));
-    void syncPortfolioRemove(positionTicker);
   }
 
   return (
@@ -213,30 +210,6 @@ function safePositive(value?: number) {
 function safePercent(delta: number, base: number) {
   if (!Number.isFinite(delta) || !Number.isFinite(base) || base <= 0) return 0;
   return (delta / base) * 100;
-}
-
-async function syncPortfolioAdd(ticker: string, quantity: number, buyPrice: number) {
-  try {
-    await fetch(getApiUrl("/portfolio/add"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: "demo-user", ticker, quantity, buy_price: buyPrice }),
-    });
-  } catch {
-    // LocalStorage remains the source of truth for the MVP client.
-  }
-}
-
-async function syncPortfolioRemove(ticker: string) {
-  try {
-    await fetch(getApiUrl("/portfolio/remove"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: "demo-user", ticker }),
-    });
-  } catch {
-    // LocalStorage remains the source of truth for the MVP client.
-  }
 }
 
 function Summary({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" }) {
