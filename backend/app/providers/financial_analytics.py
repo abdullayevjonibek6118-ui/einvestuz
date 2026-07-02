@@ -343,31 +343,46 @@ def compute_financial_ratios(stockscope_data: dict[str, Any]) -> FinancialRatios
                     indicator_map[key] = val
 
     # Try to extract revenue, earnings, equity, debt from indicators
-    revenue = indicator_map.get("revenue") or indicator_map.get("totalRevenue")
-    net_income = indicator_map.get("netIncome") or indicator_map.get("earnings")
-    total_equity = indicator_map.get("totalEquity") or indicator_map.get("equity")
-    total_debt = indicator_map.get("totalDebt") or indicator_map.get("debt")
-    total_assets = indicator_map.get("totalAssets") or indicator_map.get("assets")
+    def _first(*keys: str) -> float | None:
+        return next((indicator_map[key] for key in keys if key in indicator_map), None)
+
+    revenue = _first("revenue", "totalRevenue")
+    net_income = _first("netIncome", "earnings")
+    total_equity = _first("totalEquity", "equity")
+    prior_equity = _first("priorTotalEquity", "priorEquity")
+    total_debt = _first("totalDebt", "debt", "totalLiabilities")
+    total_assets = _first("totalAssets", "assets")
+    prior_assets = _first("priorTotalAssets", "priorAssets")
     current_assets = indicator_map.get("currentAssets")
     current_liabilities = indicator_map.get("currentLiabilities")
     ebitda = indicator_map.get("ebitda")
     interest_expense = indicator_map.get("interestExpense")
     operating_income = indicator_map.get("operatingIncome") or indicator_map.get("ebit")
-    market_cap = stockscope_data.get("marketCap") or stockscope_data.get("currentPrice", 0) * stockscope_data.get("noOfShares", 0)
-    shares = stockscope_data.get("noOfShares")
+    shares = _safe_float(stockscope_data.get("noOfShares"))
+    market_cap = _safe_float(stockscope_data.get("marketCap"))
+    if market_cap is None:
+        price = _safe_float(stockscope_data.get("currentPrice"))
+        market_cap = price * shares if price is not None and shares is not None else None
 
     # Compute ratios
-    current_ratio = (current_assets / current_liabilities) if current_assets and current_liabilities and current_liabilities > 0 else None
+    current_ratio = (current_assets / current_liabilities) if current_assets is not None and current_liabilities and current_liabilities > 0 else None
     quick_ratio = None  # Inventory data is unavailable; do not invent a value.
     debt_to_equity = (total_debt / total_equity) if total_debt and total_equity and total_equity > 0 else None
     debt_to_assets = (total_debt / total_assets) if total_debt and total_assets and total_assets > 0 else None
     interest_coverage = (operating_income / interest_expense) if operating_income and interest_expense and interest_expense > 0 else None
 
-    gross_margin = indicator_map.get("grossMargin")
-    operating_margin = (operating_income / revenue) if operating_income and revenue and revenue > 0 else None
-    net_margin = (net_income / revenue) if net_income and revenue and revenue > 0 else None
+    average_equity = (total_equity + prior_equity) / 2 if total_equity is not None and prior_equity is not None else total_equity
+    average_assets = (total_assets + prior_assets) / 2 if total_assets is not None and prior_assets is not None else total_assets
+    roe = roe if roe is not None else ((net_income / average_equity) * 100 if net_income is not None and average_equity and average_equity > 0 else None)
+    roa = roa if roa is not None else ((net_income / average_assets) * 100 if net_income is not None and average_assets and average_assets > 0 else None)
+
+    gross_margin = _first("grossMargin", "grossProfitMargin")
+    operating_margin = (operating_income / revenue * 100) if operating_income is not None and revenue and revenue > 0 else None
+    net_margin = (net_income / revenue * 100) if net_income is not None and revenue and revenue > 0 else None
 
     ps = (market_cap / revenue) if market_cap and revenue and revenue > 0 else None
+    pe = pe if pe is not None else ((market_cap / net_income) if market_cap and net_income and net_income > 0 else None)
+    pb = pb if pb is not None else ((market_cap / total_equity) if market_cap and total_equity and total_equity > 0 else None)
     ev_ebitda = None  # Cash is unavailable, therefore net debt cannot be computed reliably.
 
     eps = (net_income / shares) if net_income and shares and shares > 0 else None
