@@ -220,10 +220,10 @@ export type StockDecisionSourceMeta = {
 export type MarketTableRow = {
   ticker: string;
   name: string;
-  price: number;
-  change1h: number;
-  change24h: number;
-  change7d: number;
+  price?: number;
+  change1h?: number;
+  change24h?: number;
+  change7d?: number;
   marketCap: string;
   volume24h: string;
   circulatingSupply: string;

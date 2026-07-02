@@ -133,8 +133,8 @@ class CBUMacroProvider:
 
         # Static indicators from known data
         verified = [
-            MacroIndicator("Инфляция (г/г)", 8.7, "%", "stat.uz", "2026-05-01", "delayed"),
-            MacroIndicator("ВВП (г/г)", 6.5, "%", "stat.uz", "2026-03-01", "delayed"),
+            MacroIndicator("Инфляция (г/г)", 5.5, "%", "cbu.uz", "2026-05-01", "delayed"),
+            MacroIndicator("ВВП (г/г)", 8.7, "%", "stat.uz", "2026-03-31", "delayed"),
         ]
         indicators.extend(verified)
 

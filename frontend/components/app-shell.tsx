@@ -22,7 +22,7 @@ const primaryNav = [
   { href: "/", label: "Рынок", icon: LayoutDashboard },
   { href: "/screener", label: "Скринер", icon: SlidersHorizontal },
   { href: "/compare", label: "Сравнение", icon: GitCompareArrows },
-  { href: "/ai", label: "AI-анализ", icon: Bot },
+  { href: "/ai", label: "Помощник", icon: Bot },
   { href: "/portfolio", label: "Портфель", icon: BriefcaseBusiness },
 ];
 
@@ -98,7 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {primaryNav.map((item) => {
           const Icon = item.icon;
           const active = item.href === "/" ? pathname === "/" || pathname === "/dashboard" : pathname.startsWith(item.href);
-          return <Link key={item.href} href={item.href} className={active ? "active" : ""} onClick={() => setMobileOpen(false)}><Icon size={19} /><span>{item.label.replace("AI-анализ", "AI")}</span></Link>;
+          return <Link key={item.href} href={item.href} className={active ? "active" : ""} onClick={() => setMobileOpen(false)}><Icon size={19} /><span>{item.label}</span></Link>;
         })}
       </nav>
     </div>

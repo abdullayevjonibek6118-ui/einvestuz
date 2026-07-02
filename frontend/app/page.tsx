@@ -95,8 +95,8 @@ export default async function MarketOverview() {
 
 const fallbackMacro = [
   { label: "Ставка ЦБ", value: "14,0%", source: "ЦБ Узбекистана" },
-  { label: "Инфляция", value: "8,7%", source: "Stat.uz" },
-  { label: "ВВП", value: "+6,5%", source: "Stat.uz" },
+  { label: "Инфляция", value: "5,5%", source: "ЦБ Узбекистана" },
+  { label: "ВВП", value: "+8,7%", source: "Stat.uz" },
   { label: "Резервы", value: "$41,2B", source: "ЦБ Узбекистана" },
 ];
 const fallbackRows = [

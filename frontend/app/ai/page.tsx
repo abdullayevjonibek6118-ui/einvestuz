@@ -10,7 +10,7 @@ export default async function AIPage() {
 
   return (
     <>
-      <PageHeader title="AI Чат" subtitle="Инвестиционный помощник с контекстом цен, новостей и фундаментальных показателей." />
+      <PageHeader title="Учебный помощник" subtitle="Правиловый MVP-помощник объясняет доступные показатели; генеративная AI-модель пока не подключена." />
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <Panel>
