@@ -30,6 +30,7 @@ from .market_data import get_stock as fetch_stock
 from .market_data import get_stocks as fetch_stocks
 from .providers.stockscope_provider import StockScopeProvider
 from .providers.uzse_provider import UzseProvider
+from .providers.siat_provider import DATASETS as SIAT_DATASETS, SiatProvider
 from .providers.financial_analytics import (
     get_macro_indicators,
     get_technical_indicators,
@@ -314,6 +315,7 @@ ACADEMY = [
 
 UZSE_PROVIDER = UzseProvider()
 STOCKSCOPE_PROVIDER = StockScopeProvider()
+SIAT_PROVIDER = SiatProvider()
 
 SECTOR_BY_TICKER = {
     "AAPL": "Технологии",
@@ -686,6 +688,17 @@ def analytics_macro() -> list[dict[str, Any]]:
         }
         for ind in indicators
     ]
+
+
+@app.get("/analytics/statistics/{dataset}")
+def analytics_statistics(dataset: str) -> dict[str, Any]:
+    """Official SIAT rows with source metadata and no synthetic fallback."""
+    if dataset not in SIAT_DATASETS:
+        raise HTTPException(status_code=404, detail=f"Unknown dataset: {dataset}")
+    try:
+        return SIAT_PROVIDER.get_dataset(dataset)
+    except (OSError, TimeoutError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="SIAT source is temporarily unavailable") from exc
 
 
 @app.get("/analytics/technical/{ticker}")

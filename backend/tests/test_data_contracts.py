@@ -1,6 +1,7 @@
 from backend.app import main
 from backend.app.market_data import SymbolSpec, _empty_quote, get_macro_summary
 from backend.app.providers.financial_analytics import compute_financial_ratios
+from backend.app.providers.siat_provider import SiatProvider
 
 
 def test_official_macro_values_are_current_and_dated() -> None:
@@ -56,3 +57,32 @@ def test_server_portfolio_mutation_routes_are_not_exposed() -> None:
 
     assert "/portfolio/add" not in paths
     assert "/portfolio/remove" not in paths
+
+
+def test_siat_provider_follows_official_download_descriptor() -> None:
+    calls: list[str] = []
+
+    def fetch(url: str, timeout: int):
+        calls.append(url)
+        if "table/download" in url:
+            return {"file": "https://api.siat.stat.uz/media/data.json", "updated_at": "2026-06-05"}
+        return [{"metadata": [{"name_en": "Unit", "value_en": "Percent"}], "data": [{"2026-M05": 100.2}]}]
+
+    result = SiatProvider(fetch_json=fetch).get_dataset("cpi_monthly")
+    assert result["data"] == [{"2026-M05": 100.2}]
+    assert result["license"] == "CC BY 4.0"
+    assert len(calls) == 2
+
+
+def test_ratios_are_calculated_from_raw_financial_rows() -> None:
+    ratios = compute_financial_ratios({"currentPrice": "20", "noOfShares": "10", "indicators": [
+        {"key": "netIncome", "value": 20}, {"key": "revenue", "value": 200},
+        {"key": "totalEquity", "value": 120}, {"key": "priorEquity", "value": 80},
+        {"key": "totalAssets", "value": 300}, {"key": "priorAssets", "value": 200},
+    ]})
+    assert ratios.roe == 20.0
+    assert ratios.roa == 8.0
+    assert ratios.net_margin == 10.0
+    assert ratios.ps == 1.0
+    assert ratios.pe == 10.0
+    assert ratios.pb == 200 / 120
