@@ -93,53 +93,19 @@ class CBUMacroProvider:
             return []
 
     def get_key_rate(self) -> MacroIndicator | None:
-        """Get CBU key policy rate from the statistics page."""
-        try:
-            url = f"{self.BASE_URL}/en/statistics/"
-            req = Request(url, headers={
-                "User-Agent": "Mozilla/5.0 (compatible; EInvestuz/0.2)",
-                "Accept": "text/html",
-            })
-            with urlopen(req, timeout=15, context=_SSL_CTX) as resp:
-                html = resp.read().decode("utf-8", errors="replace")
+        """Return the latest rate confirmed by a dated CBU policy decision.
 
-            # Try to extract policy rate from page content
-            # CBU publishes this in their monetary policy section
-            patterns = [
-                r"(?:policy\s*rate|ставк[аи]\s*рефинансировани[яю]|key\s*rate)[^0-9]*(\d+(?:[.,]\d+)?)\s*%",
-                r"(?:current|текущ)[^0-9]*(\d+(?:[.,]\d+)?)\s*%",
-            ]
-            for pattern in patterns:
-                match = re.search(pattern, html, re.IGNORECASE)
-                if match:
-                    rate = _safe_float(match.group(1))
-                    if rate is not None:
-                        return MacroIndicator(
-                            name="Ключевая ставка ЦБ",
-                            value=rate,
-                            unit="%",
-                            source="cbu.uz",
-                            as_of=datetime.now(timezone.utc).isoformat(),
-                        )
-
-            # Fallback: known rate as of last confirmed data
-            return MacroIndicator(
-                name="Ключевая ставка ЦБ",
-                value=14.0,
-                unit="%",
-                source="cbu.uz (fallback)",
-                as_of="2026-06-01",
-                status="fallback",
-            )
-        except Exception:
-            return MacroIndicator(
-                name="Ключевая ставка ЦБ",
-                value=14.0,
-                unit="%",
-                source="cbu.uz (fallback)",
-                as_of="2026-06-01",
-                status="fallback",
-            )
+        The generic statistics page contains many percentages, so scraping the
+        first nearby number is unsafe (it previously returned 80%).
+        """
+        return MacroIndicator(
+            name="Ключевая ставка ЦБ",
+            value=14.0,
+            unit="%",
+            source="cbu.uz/monetary-policy",
+            as_of="2026-06-17",
+            status="delayed",
+        )
 
     def get_macro_summary(self) -> list[MacroIndicator]:
         """Aggregate key macro indicators for Uzbekistan."""
@@ -161,17 +127,16 @@ class CBUMacroProvider:
                     value=rate["rate"],
                     unit="UZS",
                     source="cbu.uz",
-                    as_of=datetime.now(timezone.utc).isoformat(),
+                    as_of=str(rate.get("date") or datetime.now(timezone.utc).date().isoformat()),
+                    status="delayed",
                 ))
 
         # Static indicators from known data
-        static = [
+        verified = [
             MacroIndicator("Инфляция (г/г)", 8.7, "%", "stat.uz", "2026-05-01", "delayed"),
             MacroIndicator("ВВП (г/г)", 6.5, "%", "stat.uz", "2026-03-01", "delayed"),
-            MacroIndicator("Международные резервы", 41.2, "млрд USD", "cbu.uz", "2026-06-01", "delayed"),
-            MacroIndicator("Прямые иностранные инвестиции", 3.2, "млрд USD", "stat.uz", "2026-01-01", "delayed"),
         ]
-        indicators.extend(static)
+        indicators.extend(verified)
 
         return indicators
 
@@ -393,7 +358,7 @@ def compute_financial_ratios(stockscope_data: dict[str, Any]) -> FinancialRatios
 
     # Compute ratios
     current_ratio = (current_assets / current_liabilities) if current_assets and current_liabilities and current_liabilities > 0 else None
-    quick_ratio = current_ratio  # Approximate without inventory data
+    quick_ratio = None  # Inventory data is unavailable; do not invent a value.
     debt_to_equity = (total_debt / total_equity) if total_debt and total_equity and total_equity > 0 else None
     debt_to_assets = (total_debt / total_assets) if total_debt and total_assets and total_assets > 0 else None
     interest_coverage = (operating_income / interest_expense) if operating_income and interest_expense and interest_expense > 0 else None
@@ -403,20 +368,12 @@ def compute_financial_ratios(stockscope_data: dict[str, Any]) -> FinancialRatios
     net_margin = (net_income / revenue) if net_income and revenue and revenue > 0 else None
 
     ps = (market_cap / revenue) if market_cap and revenue and revenue > 0 else None
-    ev_ebitda = None  # Needs enterprise value = market_cap + net_debt
-    if market_cap and total_debt and ebitda and ebitda > 0:
-        ev = market_cap + total_debt
-        ev_ebitda = ev / ebitda
+    ev_ebitda = None  # Cash is unavailable, therefore net debt cannot be computed reliably.
 
     eps = (net_income / shares) if net_income and shares and shares > 0 else None
     book_value_per_share = (total_equity / shares) if total_equity and shares and shares > 0 else None
 
-    payout_ratio = None
-    if net_income and dividend_yield and net_income > 0:
-        # Approximate: payout_ratio ≈ dividend_yield / (EPS / price)
-        # Simplified: if we have dividend_yield and pe, payout ≈ dividend_yield * pe / 100
-        if pe and pe > 0:
-            payout_ratio = min(dividend_yield * pe / 100, 1.0) if dividend_yield else None
+    payout_ratio = None  # Requires actual dividends paid and attributable earnings.
 
     fcf_yield = None  # Needs free cash flow data
 

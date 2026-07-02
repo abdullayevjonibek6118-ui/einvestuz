@@ -12,6 +12,7 @@ export default async function MarketOverview() {
   ]);
   const rows = screener.items.length ? screener.items : fallbackRows;
   const indexItems = dashboard.indexes.slice(0, 5);
+  const marketIsLive = indexItems.length > 0 && indexItems.every((item) => item.sourceStatus === "live");
 
   return (
     <div className="market-overview">
@@ -32,7 +33,7 @@ export default async function MarketOverview() {
 
       <div className="overview-grid">
         <section className="panel market-pulse">
-          <div className="panel-header"><h2>Пульс рынка</h2><span className="badge live"><i /> LIVE DATA</span></div>
+          <div className="panel-header"><h2>Пульс рынка</h2><span className={marketIsLive ? "badge live" : "badge"}><i /> {marketIsLive ? "LIVE DATA" : "DELAYED DATA"}</span></div>
           <div className="pulse-grid">
             {indexItems.length ? indexItems.map((item) => (
               <div className="pulse-item" key={item.ticker}>
@@ -46,8 +47,8 @@ export default async function MarketOverview() {
         <section className="panel ai-brief">
           <div className="panel-header"><h2>AI market brief</h2><Bot size={16} /></div>
           <div className="panel-body">
-            <span className="brief-signal"><TrendingUp size={13} /> НЕЙТРАЛЬНО-ПОЗИТИВНЫЙ ФОН</span>
-            <h2>Ликвидность сосредоточена в нескольких выпусках</h2>
+            <span className="brief-signal"><TrendingUp size={13} /> ОБРАЗОВАТЕЛЬНЫЙ ОБЗОР</span>
+            <h2>Проверяйте ликвидность каждого выпуска</h2>
             <p>Перед покупкой проверяйте глубину торгов, динамику прибыли и качество раскрытия. Высокая доходность без объёма может быть трудна для реализации.</p>
             <Link href="/ai">Открыть полный разбор <ChevronRight size={14} /></Link>
           </div>
