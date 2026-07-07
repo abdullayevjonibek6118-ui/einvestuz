@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://frontend-beta-orcin-92.vercel.app").replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://einvestuz.com").replace(/\/$/, "");
 export const SITE_NAME = "EInvest";
 export const DEFAULT_DESCRIPTION = "Финансовая отчётность, торговая статистика, мультипликаторы и AI-анализ публичных компаний Узбекистана.";
 

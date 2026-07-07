@@ -16,7 +16,6 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
 
   useEffect(() => {
     if (!uniqueSymbols.length) {
-      setConnection("offline");
       return;
     }
 
@@ -88,15 +87,16 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
 
   const latestQuotes = Object.values(quotes).slice(0, 4);
   const activeSources = sources.filter((source) => source.status === "live" || source.status === "delayed").length;
-  const connectionLabel = connection === "live" ? "Обновляется" : connection === "connecting" ? "Подключение" : "Ожидание API";
-  const ConnectionIcon = connection === "offline" ? WifiOff : Radio;
+  const effectiveConnection: ConnectionState = uniqueSymbols.length ? connection : "offline";
+  const connectionLabel = effectiveConnection === "live" ? "Обновляется" : effectiveConnection === "connecting" ? "Подключение" : "Ожидание API";
+  const ConnectionIcon = effectiveConnection === "offline" ? WifiOff : Radio;
 
   return (
     <section className="mb-4 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex h-8 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 text-xs font-semibold text-[var(--text)]">
-            <ConnectionIcon size={15} className={connection === "live" ? "text-[var(--accent)]" : "text-[var(--muted)]"} />
+            <ConnectionIcon size={15} className={effectiveConnection === "live" ? "text-[var(--accent)]" : "text-[var(--muted)]"} />
             {connectionLabel}
           </div>
           <div className="inline-flex h-8 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-3 text-xs font-medium text-[var(--muted)]">

@@ -429,10 +429,10 @@ const categoryLabels: Record<string, string> = {
 async function fetchJson<T>(path: string): Promise<T | null> {
   if (!API_URL) return null;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const response = await fetch(`${API_URL}${path}`, { cache: "no-store", signal: controller.signal });
+    const response = await fetch(`${API_URL}${path}`, { next: { revalidate: 60 }, signal: controller.signal });
     if (!response.ok) return null;
     return (await response.json()) as T;
   } catch {

@@ -1,7 +1,7 @@
 import asyncio
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, time as clock_time, timezone
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
@@ -401,13 +401,19 @@ def dashboard_data() -> dict:
     fx_future = _EXECUTOR.submit(fetch_fx_rates)
     macro_future = _EXECUTOR.submit(fetch_macro_summary)
     news_future = _EXECUTOR.submit(fetch_news)
+    wait([market_future, stocks_future, sources_future, fx_future, macro_future, news_future], timeout=1.0)
 
-    market_assets = [_market_response(asset).model_dump(mode="json") for asset in market_future.result()]
-    stocks = [_stock_response(stock).model_dump(mode="json") for stock in stocks_future.result()]
-    sources = [_source_response(source).model_dump(mode="json") for source in sources_future.result()]
-    fx_rates = [_fx_response(rate).model_dump(mode="json") for rate in fx_future.result()]
-    macro = _macro_response(macro_future.result()).model_dump(mode="json")
-    news = [_news_response(item).model_dump(mode="json") for item in news_future.result()]
+    market_assets = [_market_response(asset).model_dump(mode="json") for asset in _future_result(market_future, [])]
+    stocks = [_stock_response(stock).model_dump(mode="json") for stock in _future_result(stocks_future, [])]
+    sources = [_source_response(source).model_dump(mode="json") for source in _future_result(sources_future, [])]
+    fx_rates = [_fx_response(rate).model_dump(mode="json") for rate in _future_result(fx_future, [])]
+    macro_summary = _future_result(macro_future, None)
+    macro = (
+        _macro_response(macro_summary)
+        if macro_summary is not None
+        else MacroSummaryResponse(status="fallback", summary="Макроданные временно недоступны.", sources=[], indicators=[], as_of=datetime.now(timezone.utc))
+    ).model_dump(mode="json")
+    news = [_news_response(item).model_dump(mode="json") for item in _future_result(news_future, [])]
     return {
         "market": market_assets,
         "stocks": stocks,
@@ -872,9 +878,13 @@ def _stock_response(stock) -> Stock:
 
 def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
     ticker = str(item.get("ticker") or "").upper()
-    price = _coerce_numeric(item.get("currentPrice"))
+    price = _coerce_numeric(item.get("currentPrice") or item.get("current_price"))
     market_cap_value = _stockscope_market_cap(item)
     as_of = _stockscope_as_of(item)
+    listing_category = item.get("listingCategory") or item.get("listing_category")
+    stock_type = item.get("stockType") or item.get("stock_type")
+    openinfo_id = item.get("openinfoId") or item.get("openinfo_id")
+    dividend_yield = _optional_float(item.get("dividendYield") or item.get("dividend_yield"))
     decision_room = _build_stock_decision_room(
         ticker=ticker,
         name=str(item.get("name") or item.get("uzseName") or ticker),
@@ -883,8 +893,8 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         currency="UZS",
         market="uzbekistan",
         sector=str(item.get("sector") or "Рынок Узбекистана"),
-        listing_category=str(item.get("listingCategory") or "") or None,
-        stock_type=str(item.get("stockType") or "") or None,
+        listing_category=str(listing_category or "") or None,
+        stock_type=str(stock_type or "") or None,
         source="stockscope.uz",
         source_status="delayed",
         as_of=as_of,
@@ -893,8 +903,8 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
                 str(item.get("uzseName") or item.get("name") or ticker),
                 "локальная акция Узбекистана из StockScope screener.",
                 *(
-                    [f"Категория листинга: {item.get('listingCategory')}."]
-                    if item.get("listingCategory")
+                    [f"Категория листинга: {listing_category}."]
+                    if listing_category
                     else []
                 ),
                 *([f"ISIN: {item.get('isin')}." ] if item.get("isin") else []),
@@ -908,8 +918,8 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         str(item.get("uzseName") or item.get("name") or ticker),
         "локальная акция Узбекистана из StockScope screener.",
     ]
-    if item.get("listingCategory"):
-        description_parts.append(f"Категория листинга: {item.get('listingCategory')}.")
+    if listing_category:
+        description_parts.append(f"Категория листинга: {listing_category}.")
     if item.get("isin"):
         description_parts.append(f"ISIN: {item.get('isin')}.")
     return Stock(
@@ -919,7 +929,7 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         change=_stockscope_change(item, "yesterday"),
         market_cap=_format_uzs_value(market_cap_value) if market_cap_value else "N/A",
         pe=_coerce_numeric(item.get("pe", 0)) or 0.0,
-        dividend=f"{item.get('dividendYield', 0) or 0:.1f}%" if item.get("dividendYield") else "N/A",
+        dividend=f"{dividend_yield or 0:.1f}%" if dividend_yield else "N/A",
         sector=str(item.get("sector") or "Рынок Узбекистана"),
         description=" ".join(description_parts),
         source="stockscope.uz",
@@ -928,15 +938,14 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         currency="UZS",
         market="uzbekistan",
         isin=str(item.get("isin") or "") or None,
-        listing_category=str(item.get("listingCategory") or "") or None,
-        stock_type=str(item.get("stockType") or "") or None,
-        openinfo_id=item.get("openinfoId"),
+        listing_category=str(listing_category or "") or None,
+        stock_type=str(stock_type or "") or None,
+        openinfo_id=openinfo_id,
         website=str(item.get("website") or "") or None,
         insight=decision_room["insight"],
         risk_factors=decision_room["risk_factors"],
         decision_summary=decision_room["decision_summary"],
         source_meta=decision_room["source_meta"],
-        stockscope=STOCKSCOPE_PROVIDER.get_listing_details(ticker),
     )
 
 
@@ -1368,17 +1377,27 @@ def market_strip() -> dict[str, Any]:
     """Small, cache-friendly payload for the global market header."""
     fx_future = _EXECUTOR.submit(fetch_fx_rates)
     market_future = _EXECUTOR.submit(fetch_market)
+    wait([fx_future, market_future], timeout=1.0)
     fx_rates = [
         _fx_response(rate).model_dump(mode="json")
-        for rate in fx_future.result()
+        for rate in _future_result(fx_future, [])
         if rate.ccy == "USD"
     ]
     market = [
         _market_response(asset).model_dump(mode="json")
-        for asset in market_future.result()
+        for asset in _future_result(market_future, [])
         if asset.ticker in {"XAU", "WTI"}
     ]
     return {"market_status": _market_status(), "fx_rates": fx_rates, "market": market}
+
+
+def _future_result(future, fallback):
+    if not future.done():
+        return fallback
+    try:
+        return future.result()
+    except Exception:
+        return fallback
 
 
 def _market_table_row_response(row: dict[str, Any]) -> MarketTableRow:
@@ -1605,16 +1624,16 @@ def _stockscope_volume(item: dict[str, Any]) -> float:
 
 
 def _stockscope_market_cap(item: dict[str, Any]) -> float:
-    explicit = _coerce_numeric(item.get("marketCap"))
+    explicit = _coerce_numeric(item.get("marketCap") or item.get("market_cap"))
     if explicit:
         return explicit
-    price = _coerce_numeric(item.get("currentPrice"))
-    shares = _coerce_numeric(item.get("noOfShares"))
+    price = _coerce_numeric(item.get("currentPrice") or item.get("current_price"))
+    shares = _coerce_numeric(item.get("noOfShares") or item.get("no_of_shares"))
     return price * shares if price and shares else 0.0
 
 
 def _stockscope_change(item: dict[str, Any], field: str) -> float:
-    price = _coerce_numeric(item.get("currentPrice"))
+    price = _coerce_numeric(item.get("currentPrice") or item.get("current_price"))
     past_prices = item.get("pastPrices") if isinstance(item.get("pastPrices"), dict) else {}
     past = _coerce_numeric(past_prices.get(field))
     if not price or not past:
@@ -1623,7 +1642,7 @@ def _stockscope_change(item: dict[str, Any], field: str) -> float:
 
 
 def _stockscope_sparkline(item: dict[str, Any]) -> list[float]:
-    price = _coerce_numeric(item.get("currentPrice"))
+    price = _coerce_numeric(item.get("currentPrice") or item.get("current_price"))
     past_prices = item.get("pastPrices") if isinstance(item.get("pastPrices"), dict) else {}
     values = [
         _coerce_numeric(past_prices.get("lastWeek")),
@@ -1638,11 +1657,22 @@ def _stockscope_as_of(item: dict[str, Any]) -> datetime:
     seconds = _coerce_numeric(timestamp.get("seconds"))
     if seconds:
         return datetime.fromtimestamp(seconds, tz=timezone.utc)
+    latest_period = item.get("latest_period")
+    if latest_period:
+        try:
+            return datetime.fromisoformat(str(latest_period).replace("Z", "+00:00"))
+        except ValueError:
+            pass
     return datetime.now(timezone.utc)
 
 
 def _stockscope_listing_for_ticker(ticker: str) -> dict[str, Any] | None:
     normalized = ticker.upper().strip()
+    screened = STOCKSCOPE_PROVIDER.screen_listings(q=normalized, limit=1)
+    items = screened.get("items") if isinstance(screened, dict) else []
+    match = next((item for item in items if str(item.get("ticker") or "").upper() == normalized), None)
+    if match:
+        return match
     return next((item for item in STOCKSCOPE_PROVIDER.get_listings() if str(item.get("ticker") or "").upper() == normalized), None)
 
 

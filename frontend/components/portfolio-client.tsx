@@ -30,19 +30,16 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setPositions(loadPositions());
-    setLoaded(true);
+    const timer = window.setTimeout(() => {
+      setPositions(loadPositions());
+      setLoaded(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (loaded) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
   }, [loaded, positions]);
-
-  useEffect(() => {
-    const selectedStock = stocks.find((stock) => stock.ticker.toLowerCase() === ticker.toLowerCase());
-    const price = safePositive(selectedStock?.price);
-    if (price) setBuyPrice(price);
-  }, [stocks, ticker]);
 
   const rows = useMemo(
     () =>
@@ -100,6 +97,13 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
     });
   }
 
+  function selectTicker(nextTicker: string) {
+    setTicker(nextTicker);
+    const selectedStock = stocks.find((stock) => stock.ticker.toLowerCase() === nextTicker.toLowerCase());
+    const price = safePositive(selectedStock?.price);
+    if (price) setBuyPrice(price);
+  }
+
   function removePosition(positionTicker: string) {
     setPositions((current) => current.filter((position) => position.ticker !== positionTicker));
   }
@@ -110,7 +114,7 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
         <form onSubmit={addPosition} className="grid gap-3">
           <label className="text-sm font-medium text-[var(--text)]">
             Тикер
-            <select value={ticker} onChange={(event) => setTicker(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-3 text-[var(--text)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]">
+            <select value={ticker} onChange={(event) => selectTicker(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-3 text-[var(--text)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]">
               {stocks.map((stock) => (
                 <option key={stock.ticker}>{stock.ticker}</option>
               ))}

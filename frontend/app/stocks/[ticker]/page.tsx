@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight, Banknote, Bot, ChartNoAxesCombined, FileText, Globe2, Newspaper, Plus, ShieldAlert, Star, TriangleAlert, type LucideIcon } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
-import { getDashboardData, getNews, getStock, getStockScopeScreener } from "@/lib/api";
-import { type MarketTableRow, type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockSourceMeta } from "@/lib/data";
+import { getNews, getStock, getStockScopeScreener } from "@/lib/api";
+import { type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockSourceMeta } from "@/lib/data";
 import { pageMetadata, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
 
 export default async function StockPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await params;
-  const [initialStock, news, dashboardData] = await Promise.all([getStock(ticker), getNews(), getDashboardData()]);
+  const [initialStock, news] = await Promise.all([getStock(ticker), getNews()]);
   let stock = initialStock;
   if (!stock) {
     const screener = await getStockScopeScreener({ q: ticker, limit: 1 });
@@ -53,7 +53,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const earnings = stock.earnings ?? [];
   const sources = stock.sources?.length ? stock.sources : resolveSources(stock);
   const companyNews = stock.news?.length ? stock.news : news.slice(0, 3);
-  const peerRows = pickPeers(stock, dashboardData.marketTable);
+  const peerRows: Array<{ ticker: string; market?: string; currency?: string }> = [];
   const isLocal = stock.market === "uzbekistan" || stock.currency === "UZS" || (stock.source ?? "").toLowerCase().includes("stockscope");
   const riskTone = resolveRiskTone(fundamentals, stock);
   const insight = stock.insight;
@@ -61,7 +61,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const riskFactors = stock.riskFactors?.length ? stock.riskFactors : fallbackRiskFactors(stock, fundamentals, riskTone);
   const primaryRisk = riskFactors[0]?.detail ?? buildRiskLine(stock, fundamentals, riskTone);
   const pricingLine = insight?.headline ?? insight?.signals?.[0] ?? buildValuationLine(stock, fundamentals);
-  const nextAction = decision?.nextStep ?? "Open documents, compare peers, or ask AI to stress-test the thesis.";
+  const nextAction = decision?.nextStep ?? "Откройте документы, сравните похожие компании и проверьте тезис через учебного помощника.";
   const companySchema = {
     "@context": "https://schema.org",
     "@type": "Corporation",
@@ -78,11 +78,11 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(companySchema).replace(/</g, "\\u003c") }} />
       <PageHeader
         title={`${stock.name} (${stock.ticker})`}
-        subtitle="Decision room: identity, price, risk, sources and peer comparison stay within a few scrolls."
+        subtitle="Карточка исследования: профиль, цена, риски, источники и сравнение с похожими компаниями в одном экране."
       />
 
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <Panel title="Identity / price block" action={<SourceStatusBadge source={stock.source} status={stock.sourceStatus} />}>
+        <Panel title="Профиль и цена" action={<SourceStatusBadge source={stock.source} status={stock.sourceStatus} />}>
           <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -97,21 +97,21 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Metric label="ISIN" value={stock.isin ?? "N/A"} detail={stock.openinfoId ? `OpenInfo ID ${stock.openinfoId}` : undefined} />
-                <Metric label="Website" value={stock.website ?? "N/A"} detail={stock.website ? "official site" : "not provided"} />
+                <Metric label="Сайт" value={stock.website ?? "N/A"} detail={stock.website ? "официальный сайт" : "не указан"} />
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href={`/compare?tickers=${encodeURIComponent([stock.ticker, ...peerRows.slice(0, 2).map((peer) => peer.ticker)].join(","))}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
-                  Compare company
+                  Сравнить компанию
                   <ChartNoAxesCombined size={16} />
                 </Link>
-                <Link href={`/ai?question=Give%20me%20a%20quick%20thesis%20on%20${encodeURIComponent(stock.ticker)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
-                  Ask AI
+                <Link href={`/ai?question=${encodeURIComponent(`Дай краткий учебный тезис по ${stock.ticker}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
+                  Спросить помощника
                   <Bot size={16} />
                 </Link>
                 {stock.website ? (
                   <a href={stock.website} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-[#f8fafc] px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-white">
-                    Open website
+                    Открыть сайт
                     <ArrowRight size={16} />
                   </a>
                 ) : null}
@@ -119,7 +119,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
             </div>
 
             <div className="rounded-[18px] border border-[#dbe4ef] bg-[#08111f] p-5 text-white shadow-[0_18px_55px_rgba(8,17,31,0.16)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#93a4ba]">Price block</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#93a4ba]">Цена и рынок</p>
               <div className="mt-3 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-4xl font-semibold">{formatStockPrice(stock)}</p>
@@ -131,39 +131,39 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <StatPill label="Market cap" value={fundamentals.marketCap ?? stock.marketCap} />
+                <StatPill label="Капитализация" value={fundamentals.marketCap ?? stock.marketCap} />
                 <StatPill label="P/E" value={formatNumber(fundamentals.pe)} />
-                <StatPill label="Dividend" value={fundamentals.dividendYield ?? stock.dividend} />
+                <StatPill label="Дивиденды" value={fundamentals.dividendYield ?? stock.dividend} />
                 <StatPill label="Beta" value={formatNumber(fundamentals.beta)} />
               </div>
 
               <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#93a4ba]">Research receipt</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#93a4ba]">Контрольный чек</p>
                 <p className="mt-2 text-sm leading-6 text-[#e2e8f0]">
-                  Open the source chain, check the risk fingerprint, then compare the stock with peers before you commit to a thesis.
+                  Проверьте цепочку источников, качество раскрытия и ликвидность, затем сравните компанию с похожими эмитентами.
                 </p>
               </div>
             </div>
           </div>
         </Panel>
 
-        <Panel title="AI summary" action={<Bot size={18} className="text-[#1e40af]" />}>
+        <Panel title="Учебное резюме" action={<Bot size={18} className="text-[#1e40af]" />}>
           <div className="space-y-3">
             <p className="text-sm leading-6 text-[#334155]">
               {insight?.summary ?? decision?.bottomLine ?? buildAisummary(stock, riskTone)}
             </p>
             <div className="rounded-[16px] border border-[#c7d2fe] bg-[#eef2ff] p-4 text-sm leading-6 text-[#1e40af]">
-              Signal: {insight?.orientation ?? buildSignal(stock)}. {decision?.timeHorizon ?? "Use this card as a quick filter, not as a final answer."}
+              Сигнал: {insight?.orientation ?? buildSignal(stock)}. {decision?.timeHorizon ?? "Используйте карточку как быстрый фильтр, а не как итоговую рекомендацию."}
             </div>
             <div className="space-y-2">
-              <ThesisLine icon={ChartNoAxesCombined} title="What the market is pricing" text={pricingLine} />
-              <ThesisLine icon={TriangleAlert} title="Risk fingerprint" text={primaryRisk} />
-              <ThesisLine icon={FileText} title="Next action" text={nextAction} />
+              <ThesisLine icon={ChartNoAxesCombined} title="Что отражено в цене" text={pricingLine} />
+              <ThesisLine icon={TriangleAlert} title="Профиль риска" text={primaryRisk} />
+              <ThesisLine icon={FileText} title="Следующий шаг" text={nextAction} />
             </div>
             {decision?.whoItMightFit?.length || decision?.whoItMightNotFit?.length ? (
               <div className="grid gap-2 sm:grid-cols-2">
-                <DecisionList title="Fits" items={decision.whoItMightFit} />
-                <DecisionList title="Doesn't fit" items={decision.whoItMightNotFit} />
+                <DecisionList title="Кому подходит" items={decision.whoItMightFit} />
+                <DecisionList title="Кому не подходит" items={decision.whoItMightNotFit} />
               </div>
             ) : null}
           </div>
@@ -171,18 +171,18 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_0.75fr]">
-        <Panel title="Risk fingerprint" action={<ShieldAlert size={18} className={riskTone === "high" ? "text-[#dc2626]" : riskTone === "medium" ? "text-[#d97706]" : "text-[#16a34a]"} />}>
+        <Panel title="Профиль риска" action={<ShieldAlert size={18} className={riskTone === "high" ? "text-[#dc2626]" : riskTone === "medium" ? "text-[#d97706]" : "text-[#16a34a]"} />}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Metric label="Market" value={formatMarketLabel(stock)} detail={stock.market ?? "global"} />
-            <Metric label="Currency" value={stock.currency ?? "USD"} detail={isLocal ? "local market" : "cross-listed"} />
-            <Metric label="Listing" value={stock.listingCategory ?? "N/A"} detail={stock.stockType ?? "instrument"} />
-            <Metric label="OpenInfo" value={stock.openinfoId ? String(stock.openinfoId) : "N/A"} detail="document anchor" />
+            <Metric label="Рынок" value={formatMarketLabel(stock)} detail={stock.market ?? "global"} />
+            <Metric label="Валюта" value={stock.currency ?? "USD"} detail={isLocal ? "локальный рынок" : "глобальный инструмент"} />
+            <Metric label="Листинг" value={stock.listingCategory ?? "N/A"} detail={stock.stockType ?? "инструмент"} />
+            <Metric label="OpenInfo" value={stock.openinfoId ? String(stock.openinfoId) : "N/A"} detail="якорь документов" />
           </div>
 
           <div className="mt-4 rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#64748b]">
               <ShieldAlert size={14} />
-              Risk cues
+              Факторы риска
             </div>
             <p className="mt-3 text-sm leading-6 text-[#475569]">{primaryRisk}</p>
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -193,31 +193,31 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
           </div>
         </Panel>
 
-        <Panel title="Compare / ask AI" action={<ChartNoAxesCombined size={18} className="text-[#1e40af]" />}>
+        <Panel title="Сравнение и помощник" action={<ChartNoAxesCombined size={18} className="text-[#1e40af]" />}>
           <div className="space-y-3">
             <p className="text-sm leading-6 text-[#334155]">
-              Peer comparison stays close to the stock so the user can decide quickly, then move to the AI question layer if needed.
+              Сравнение с похожими компаниями держится рядом с тезисом, чтобы быстро перейти к метрикам или задать уточняющий вопрос.
             </p>
             <div className="flex flex-wrap gap-2">
                 {peerRows.length ? (
                   peerRows.map((peer) => (
                     <Link key={peer.ticker} href={`/stocks/${encodeURIComponent(peer.ticker)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-3 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
                       {peer.ticker}
-                      <span className="text-[11px] text-[#64748b]">{peer.market === "uzbekistan" || peer.currency === "UZS" ? "Uzbekistan" : "Global"}</span>
+                      <span className="text-[11px] text-[#64748b]">{peer.market === "uzbekistan" || peer.currency === "UZS" ? "Узбекистан" : "Глобальный"}</span>
                     </Link>
                   ))
               ) : (
-                <span className="text-sm text-[#64748b]">Peers появятся, когда market table вернет сопоставимые компании.</span>
+                <span className="text-sm text-[#64748b]">Похожие компании появятся, когда рыночная таблица вернет сопоставимые эмитенты.</span>
               )}
             </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
               <Link href={`/compare?tickers=${encodeURIComponent([stock.ticker, ...peerRows.slice(0, 2).map((peer) => peer.ticker)].join(","))}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
-                Compare metrics
+                Сравнить метрики
                 <ArrowRight size={16} />
               </Link>
-              <Link href={`/ai?question=Stress%20test%20${encodeURIComponent(stock.ticker)}%20for%20risk%20and%20sources`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
-                Ask AI
+              <Link href={`/ai?question=${encodeURIComponent(`Проверь риски и источники по ${stock.ticker}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
+                Спросить помощника
                 <Bot size={16} />
               </Link>
             </div>
@@ -227,14 +227,14 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
 
       {stock.stockscope ? (
         <section className="grid gap-4">
-          <Panel title="StockScope data room" action={<SourceStatusBadge source="stockscope.uz" status="delayed" />}>
+          <Panel title="Данные StockScope" action={<SourceStatusBadge source="stockscope.uz" status="delayed" />}>
             <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
               <ChartPanel chart={stock.stockscope.charts?.price} />
               <div className="grid gap-3 sm:grid-cols-2">
-                <Metric label="Reports" value={`${stock.stockscope.reports?.length ?? 0}`} detail="OpenInfo / issuer filings" />
-                <Metric label="Price points" value={`${stock.stockscope.priceHistory?.points?.length ?? 0}`} detail={stock.stockscope.priceHistory?.lastUpdateAt ? `updated ${formatStamp(stock.stockscope.priceHistory.lastUpdateAt)}` : "history"} />
-                <Metric label="Dividends" value={`${stock.stockscope.dividends?.length ?? 0}`} detail="approved facts" />
-                <Metric label="Trading rows" value={`${stock.stockscope.tradingStats?.daily?.length ?? 0}`} detail="daily volume and price" />
+                <Metric label="Отчёты" value={`${stock.stockscope.reports?.length ?? 0}`} detail="OpenInfo / раскрытие эмитента" />
+                <Metric label="Точек цены" value={`${stock.stockscope.priceHistory?.points?.length ?? 0}`} detail={stock.stockscope.priceHistory?.lastUpdateAt ? `обновлено ${formatStamp(stock.stockscope.priceHistory.lastUpdateAt)}` : "история"} />
+                <Metric label="Дивиденды" value={`${stock.stockscope.dividends?.length ?? 0}`} detail="утвержденные факты" />
+                <Metric label="Строк торгов" value={`${stock.stockscope.tradingStats?.daily?.length ?? 0}`} detail="дневной объём и цена" />
               </div>
             </div>
 
@@ -254,26 +254,26 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Panel title="Fundamentals" action={<Banknote size={18} className="text-[#1e40af]" />}>
+        <Panel title="Фундаментальные показатели" action={<Banknote size={18} className="text-[#1e40af]" />}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Metric label="Market cap" value={fundamentals.marketCap ?? "N/A"} detail={fundamentals.asOf ? `as of ${formatStamp(fundamentals.asOf)}` : undefined} />
+            <Metric label="Капитализация" value={fundamentals.marketCap ?? "N/A"} detail={fundamentals.asOf ? `на ${formatStamp(fundamentals.asOf)}` : undefined} />
             <Metric label="P/E" value={formatNumber(fundamentals.pe)} />
             <Metric label="EPS" value={formatNumber(fundamentals.eps)} detail="TTM / reported" />
-            <Metric label="Dividend yield" value={fundamentals.dividendYield ?? "N/A"} />
-            <Metric label="Gross margin" value={fundamentals.grossMargin ?? "N/A"} />
-            <Metric label="Operating margin" value={fundamentals.operatingMargin ?? "N/A"} />
-            <Metric label="Debt / equity" value={fundamentals.debtToEquity ?? "N/A"} />
+            <Metric label="Див. доходность" value={fundamentals.dividendYield ?? "N/A"} />
+            <Metric label="Валовая маржа" value={fundamentals.grossMargin ?? "N/A"} />
+            <Metric label="Опер. маржа" value={fundamentals.operatingMargin ?? "N/A"} />
+            <Metric label="Долг / капитал" value={fundamentals.debtToEquity ?? "N/A"} />
             <Metric label="Beta" value={formatNumber(fundamentals.beta)} />
           </div>
         </Panel>
 
-        <Panel title="News / events" action={<Newspaper size={18} className="text-[#1e40af]" />}>
+        <Panel title="Новости и события" action={<Newspaper size={18} className="text-[#1e40af]" />}>
           <div className="space-y-3">
             {earnings.length ? (
               <div className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#64748b]">
                   <ChartNoAxesCombined size={14} />
-                  Earnings
+                  Финансовые результаты
                 </div>
                 <div className="mt-3 space-y-2">
                   {earnings.slice(0, 4).map((item) => (
@@ -290,10 +290,10 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#64748b]">
                         {item.revenueActual || item.revenueEstimate ? (
                           <span>
-                            Revenue {item.revenueActual ?? "N/A"} / {item.revenueEstimate ?? "N/A"}
+                            Выручка {item.revenueActual ?? "N/A"} / {item.revenueEstimate ?? "N/A"}
                           </span>
                         ) : null}
-                        {item.asOf ? <span>updated {formatStamp(item.asOf)}</span> : null}
+                        {item.asOf ? <span>обновлено {formatStamp(item.asOf)}</span> : null}
                         <SourceStatusBadge source={item.source} status={item.sourceStatus} />
                       </div>
                     </div>
@@ -317,7 +317,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Panel title="Sources / documents" action={<Globe2 size={18} className="text-[#1e40af]" />}>
+        <Panel title="Источники и документы" action={<Globe2 size={18} className="text-[#1e40af]" />}>
           <div className="space-y-2">
             {sources.length ? (
               sources.map((source) => (
@@ -328,7 +328,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-[#64748b]">
                     {source.market ? <span>{source.market}</span> : null}
-                    {source.asOf ? <span>updated {formatStamp(source.asOf)}</span> : null}
+                    {source.asOf ? <span>обновлено {formatStamp(source.asOf)}</span> : null}
                   </div>
                   {source.detail ? <p className="mt-2 text-sm text-[#475569]">{source.detail}</p> : null}
                   {source.notes ? <p className="mt-1 text-xs text-[#64748b]">{source.notes}</p> : null}
@@ -340,24 +340,24 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
           </div>
         </Panel>
 
-        <Panel title="Compare notes" action={<Star size={18} className="text-[#1e40af]" />}>
+        <Panel title="Заметки для сравнения" action={<Star size={18} className="text-[#1e40af]" />}>
           <div className="space-y-3">
             <p className="text-sm leading-6 text-[#334155]">
-              Этот блок помогает держать сравнение рядом с тезисом, чтобы пользователь быстро уходил либо к peer pages, либо обратно в AI.
+              Этот блок помогает держать сравнение рядом с тезисом, чтобы быстро перейти к похожим компаниям, источникам или портфелю.
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
-              <Metric label="Identity" value={stock.ticker} detail={stock.name} />
-              <Metric label="User path" value="search → stock → risk" detail="then sources and compare" />
-              {stock.sourceMeta?.freshnessBand ? <Metric label="Freshness" value={stock.sourceMeta.freshnessBand} detail={stock.sourceMeta.freshnessRisk} /> : null}
-              {stock.sourceMeta?.changeBasis ? <Metric label="Change basis" value={stock.sourceMeta.changeBasis} detail={stock.sourceMeta.source} /> : null}
+              <Metric label="Идентификатор" value={stock.ticker} detail={stock.name} />
+              <Metric label="Путь пользователя" value="поиск -> акция -> риск" detail="затем источники и сравнение" />
+              {stock.sourceMeta?.freshnessBand ? <Metric label="Свежесть" value={stock.sourceMeta.freshnessBand} detail={stock.sourceMeta.freshnessRisk} /> : null}
+              {stock.sourceMeta?.changeBasis ? <Metric label="База изменения" value={stock.sourceMeta.changeBasis} detail={stock.sourceMeta.source} /> : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href="/dashboard" className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
-                Back to desk
+                Вернуться к рынку
                 <ArrowRight size={16} />
               </Link>
               <Link href={`/portfolio?ticker=${encodeURIComponent(stock.ticker)}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
-                Add to portfolio
+                Добавить в портфель
                 <Plus size={16} />
               </Link>
             </div>
@@ -402,12 +402,6 @@ function resolveSources(stock: Stock) {
   return [];
 }
 
-function pickPeers(stock: Stock, rows: MarketTableRow[]) {
-  const sectorMatches = rows.filter((row) => row.sector && stock.sector && row.sector.toLowerCase() === stock.sector.toLowerCase() && row.ticker !== stock.ticker);
-  const marketMatches = rows.filter((row) => row.market && stock.market && row.market.toLowerCase() === stock.market.toLowerCase() && row.ticker !== stock.ticker);
-  return (sectorMatches.length ? sectorMatches : marketMatches).slice(0, 4);
-}
-
 function resolveRiskTone(fundamentals: ReturnType<typeof resolveFundamentals>, stock: Stock) {
   if ((fundamentals.beta ?? 0) >= 1.5 || Math.abs(stock.change) >= 3) return "high";
   if ((fundamentals.beta ?? 0) >= 1 || Math.abs(stock.change) >= 1.2) return "medium";
@@ -415,41 +409,41 @@ function resolveRiskTone(fundamentals: ReturnType<typeof resolveFundamentals>, s
 }
 
 function buildAisummary(stock: Stock, riskTone: string) {
-  const toneWord = riskTone === "high" ? "more volatile" : riskTone === "medium" ? "balanced" : "defensive";
-  return `${stock.name} reads as a ${toneWord} setup. Price, margin profile and source quality should be checked before a thesis becomes a trade.`;
+  const toneWord = riskTone === "high" ? "более волатильная" : riskTone === "medium" ? "сбалансированная" : "защитная";
+  return `${stock.name} выглядит как ${toneWord} идея для предварительного исследования. Перед выводом проверьте цену, маржинальность и качество источников.`;
 }
 
 function buildSignal(stock: Stock) {
-  return stock.change >= 0 ? "positive momentum" : "defensive / under pressure";
+  return stock.change >= 0 ? "позитивный импульс" : "под давлением";
 }
 
 function buildValuationLine(stock: Stock, fundamentals: ReturnType<typeof resolveFundamentals>) {
-  return `${stock.ticker} trades around ${fundamentals.pe ? `P/E ${formatNumber(fundamentals.pe)}` : "a valuation placeholder"} with ${fundamentals.dividendYield ?? "no yield"} on the income side.`;
+  return `${stock.ticker}: ${fundamentals.pe ? `P/E ${formatNumber(fundamentals.pe)}` : "оценка требует уточнения"}, дивидендная доходность: ${fundamentals.dividendYield ?? "нет данных"}.`;
 }
 
 function buildRiskLine(stock: Stock, fundamentals: ReturnType<typeof resolveFundamentals>, riskTone: string) {
-  return `${riskTone.toUpperCase()} risk profile: ${stock.market ?? "market"} / ${stock.currency ?? "currency"} / ${fundamentals.debtToEquity ?? "debt metrics pending"}.`;
+  return `Профиль риска: ${riskTone.toUpperCase()}. Рынок: ${stock.market ?? "не указан"}, валюта: ${stock.currency ?? "не указана"}, долг / капитал: ${fundamentals.debtToEquity ?? "нет данных"}.`;
 }
 
 function fallbackRiskFactors(stock: Stock, fundamentals: ReturnType<typeof resolveFundamentals>, riskTone: string): StockRiskFactor[] {
   return [
     {
       code: "liquidity",
-      label: "Liquidity",
+      label: "Ликвидность",
       severity: stock.change >= 0 ? "medium" : "high",
-      detail: stock.change >= 0 ? "Liquidity needs a quote and volume check before sizing." : "Weak price action makes liquidity and spread checks more important.",
+      detail: stock.change >= 0 ? "Перед выбором размера позиции нужно проверить объём торгов и спред." : "Слабая динамика цены усиливает важность проверки ликвидности и спреда.",
     },
     {
       code: "disclosure",
-      label: "Disclosure",
+      label: "Раскрытие",
       severity: stock.sourceStatus === "live" ? "low" : "medium",
-      detail: stock.source ? `Primary source: ${stock.source}.` : "Documents and issuer disclosure should be checked before a thesis.",
+      detail: stock.source ? `Основной источник: ${stock.source}.` : "Документы и раскрытие эмитента нужно проверить до инвестиционного тезиса.",
     },
     {
       code: "balance-sheet",
-      label: "Balance sheet",
+      label: "Баланс",
       severity: riskTone,
-      detail: `Debt / equity: ${fundamentals.debtToEquity ?? "pending"}.`,
+      detail: `Долг / капитал: ${fundamentals.debtToEquity ?? "нет данных"}.`,
     },
   ];
 }
@@ -480,7 +474,7 @@ function formatCompactValue(value?: number | null) {
 }
 
 function formatPercentValue(value?: number | null) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "yield n/a";
+  if (typeof value !== "number" || !Number.isFinite(value)) return "нет данных";
   return `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
 }
 
@@ -502,7 +496,7 @@ function formatStamp(value: string) {
 }
 
 function formatMarketLabel(stock: Stock) {
-  return stock.market === "uzbekistan" || stock.currency === "UZS" ? "Uzbekistan" : "Global";
+  return stock.market === "uzbekistan" || stock.currency === "UZS" ? "Узбекистан" : "Глобальный";
 }
 
 function ThesisLine({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
@@ -528,7 +522,7 @@ function DecisionList({ title, items }: { title: string; items?: string[] }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-[#64748b]">No clear match yet.</p>
+        <p className="mt-2 text-sm text-[#64748b]">Пока нет явного совпадения.</p>
       )}
     </div>
   );
@@ -539,8 +533,8 @@ function ChartPanel({ chart }: { chart?: StockScopeChart }) {
   if (!series.length) {
     return (
       <div className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
-        <p className="text-sm font-semibold text-[#0f172a]">{chart?.title ?? "Chart"}</p>
-        <p className="mt-3 text-sm text-[#64748b]">No chart points yet.</p>
+        <p className="text-sm font-semibold text-[#0f172a]">{chart?.title ?? "График"}</p>
+        <p className="mt-3 text-sm text-[#64748b]">Точек для графика пока нет.</p>
       </div>
     );
   }
@@ -548,7 +542,7 @@ function ChartPanel({ chart }: { chart?: StockScopeChart }) {
   return (
     <div className="rounded-[16px] border border-[#dbe4ef] bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-[#0f172a]">{chart?.title ?? "Chart"}</p>
+        <p className="text-sm font-semibold text-[#0f172a]">{chart?.title ?? "График"}</p>
         <div className="flex flex-wrap gap-2">
           {series.slice(0, 3).map((item) => (
             <span key={item.name} className="rounded-full bg-[#eef2ff] px-2 py-1 text-[11px] font-semibold text-[#1e40af]">{item.name}</span>
@@ -603,8 +597,8 @@ function IndicatorGrid({ indicators }: { indicators?: StockScopeIndicatorPeriod[
 
   return (
     <div className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
-      <p className="text-sm font-semibold text-[#0f172a]">Performance indicators</p>
-      <p className="mt-1 text-xs text-[#64748b]">{latest?.period ?? "Latest period"} · ROE, ROA and StockScope ratios</p>
+      <p className="text-sm font-semibold text-[#0f172a]">Показатели эффективности</p>
+      <p className="mt-1 text-xs text-[#64748b]">{latest?.period ?? "Последний период"} · ROE, ROA и коэффициенты StockScope</p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {keys.map((key) => (
           <MetricChip key={key} label={key} value={formatKpiValue(key, values[key])} />
@@ -622,11 +616,11 @@ function StockScopeTables({ stock }: { stock: Stock }) {
 
   return (
     <div className="grid gap-3">
-      <MiniFinancialTable title="Earnings rows" rows={earningsRows.slice(0, 10)} />
-      <MiniFinancialTable title="Balance sheet rows" rows={balanceRows.slice(0, 10)} />
+      <MiniFinancialTable title="Строки отчёта о прибылях" rows={earningsRows.slice(0, 10)} />
+      <MiniFinancialTable title="Строки баланса" rows={balanceRows.slice(0, 10)} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <FactsList title="Reports" items={reports.slice(0, 5).map((item) => `${item.period ?? item.type ?? "Report"} · ${item.date ? formatStamp(item.date) : "date n/a"}`)} />
-        <FactsList title="Dividends" items={dividends.slice(0, 5).map((item) => `${formatCompactValue(item.commonDividend)} UZS · ${formatPercentValue(item.commonYield)}`)} />
+        <FactsList title="Отчёты" items={reports.slice(0, 5).map((item) => `${item.period ?? item.type ?? "Отчёт"} · ${item.date ? formatStamp(item.date) : "дата не указана"}`)} />
+        <FactsList title="Дивиденды" items={dividends.slice(0, 5).map((item) => `${formatCompactValue(item.commonDividend)} UZS · ${formatPercentValue(item.commonYield)}`)} />
       </div>
     </div>
   );
@@ -661,7 +655,7 @@ function FactsList({ title, items }: { title: string; items: string[] }) {
     <div className="rounded-[16px] border border-[#dbe4ef] bg-white p-4">
       <p className="text-sm font-semibold text-[#0f172a]">{title}</p>
       <div className="mt-2 space-y-1">
-        {items.length ? items.map((item) => <p key={item} className="text-sm text-[#475569]">{item}</p>) : <p className="text-sm text-[#64748b]">No data yet.</p>}
+        {items.length ? items.map((item) => <p key={item} className="text-sm text-[#475569]">{item}</p>) : <p className="text-sm text-[#64748b]">Данных пока нет.</p>}
       </div>
     </div>
   );
