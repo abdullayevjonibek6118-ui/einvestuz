@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
+import fs from "node:fs";
 import path from "node:path";
 
+const workspaceRoot = path.join(process.cwd(), "..");
+const hasWorkspaceNext = fs.existsSync(path.join(workspaceRoot, "node_modules", "next", "package.json"));
+const projectRoot = hasWorkspaceNext ? workspaceRoot : process.cwd();
+
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: process.env.CI ? process.cwd() : path.join(process.cwd(), ".."),
+  outputFileTracingRoot: projectRoot,
   turbopack: {
-    root: process.env.CI ? process.cwd() : path.join(process.cwd(), ".."),
+    root: projectRoot,
   },
   experimental: {
     optimizePackageImports: ["lucide-react"],
