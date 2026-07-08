@@ -253,6 +253,7 @@ class StockScopeProvider:
 
     def _fetch_listing_details_coverage(self) -> dict[str, Any]:
         listings = self.get_listings()
+        generated_at = self._now_iso()
         catalog = {
             str(item.get("ticker") or "").upper(): item
             for item in listings
@@ -271,6 +272,9 @@ class StockScopeProvider:
         rows = [rows_by_ticker[ticker] for ticker in catalog]
         return {
             "total": len(rows),
+            "generated_at": generated_at,
+            "source_name": "StockScope",
+            "source_url": f"{self.base_url}{STOCKSCOPE_SCREENER_PATH}",
             "with_reports": sum(1 for row in rows if row["reports_count"] > 0),
             "with_indicators": sum(1 for row in rows if row["indicators_count"] > 0),
             "with_dividends": sum(1 for row in rows if row["dividends_count"] > 0),
@@ -284,6 +288,8 @@ class StockScopeProvider:
         except (OSError, json.JSONDecodeError):
             return self._fetch_listing_details_coverage()
         if isinstance(snapshot, dict) and isinstance(snapshot.get("items"), list):
+            snapshot = dict(snapshot)
+            snapshot["items"] = self._with_source_metadata(snapshot)
             return snapshot
         return self._fetch_listing_details_coverage()
 
@@ -371,6 +377,7 @@ class StockScopeProvider:
             "listing": listing,
             "source": "stockscope.uz",
             "source_url": f"{self.base_url}/ru/listings/{ticker}/general",
+            "fetched_at": self._now_iso(),
             "company_type": company_type,
             "price_history": {
                 "points": price_points,
@@ -420,6 +427,7 @@ class StockScopeProvider:
             "name": listing.get("name") or listing.get("uzseName") or ticker,
             "isin": listing.get("isin"),
             "openinfo_id": listing.get("openinfoId"),
+            "sector": listing.get("sector") or None,
             "current_price": current_price,
             "market_cap": market_cap,
             "price_points_count": len(price_points),
@@ -432,7 +440,40 @@ class StockScopeProvider:
             "pe": self._ratio(market_cap, earnings_uzs),
             "pb": self._ratio(market_cap, equity_uzs),
             "dividend_yield": self._ratio(common_dividend, current_price, 100),
+            "source_name": "StockScope",
+            "source_url": detail.get("source_url") or self._stockscope_listing_url(ticker),
+            "fetched_at": detail.get("fetched_at") or self._now_iso(),
         }
+
+    def _with_source_metadata(self, snapshot: dict[str, Any]) -> list[dict[str, Any]]:
+        generated_at = str(snapshot.get("generated_at") or "").strip() or self._snapshot_file_timestamp()
+        sectors = self.get_sectors()
+        rows: list[dict[str, Any]] = []
+        for item in snapshot.get("items") or []:
+            if not isinstance(item, dict):
+                continue
+            row = dict(item)
+            ticker = str(row.get("ticker") or "").strip().upper()
+            if ticker:
+                row["ticker"] = ticker
+                row["source_url"] = row.get("source_url") or self._stockscope_listing_url(ticker)
+                row["sector"] = row.get("sector") or sectors.get(ticker)
+            row["source_name"] = row.get("source_name") or "StockScope"
+            row["fetched_at"] = row.get("fetched_at") or generated_at
+            rows.append(row)
+        return rows
+
+    def _stockscope_listing_url(self, ticker: str) -> str:
+        return f"{self.base_url}/ru/listings/{ticker}/general"
+
+    def _snapshot_file_timestamp(self) -> str:
+        try:
+            return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(STOCKSCOPE_SNAPSHOT_PATH.stat().st_mtime))
+        except OSError:
+            return self._now_iso()
+
+    def _now_iso(self) -> str:
+        return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     def _extract_nuxt_payload(self, html: str) -> list[Any]:
         match = re.search(r'<script type="application/json" id="__NUXT_DATA__"[^>]*>(.*?)</script>', html, re.S)

@@ -22,7 +22,7 @@
       "group": "uzbekistan_companies",
       "name": "UZSE listed securities",
       "base_url": "https://uzse.uz",
-      "status": "verified",
+      "status": "verified_conditional_406_on_2026-07-08",
       "priority": 5,
       "access": "public_json",
       "refresh": "daily",
@@ -40,7 +40,7 @@
             "ticker",
             "issuer_name"
           ],
-          "verified_result": "121 stock-market rows returned on 2026-06-26"
+          "verified_result": "121 stock-market rows returned on 2026-06-26; current recheck on 2026-07-08 returned HTTP 406 even with XMLHttpRequest headers, so use HTML fallback or updated request contract before trusting daily ingestion."
         },
         {
           "method": "GET",

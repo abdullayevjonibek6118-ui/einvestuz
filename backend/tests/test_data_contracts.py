@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from backend.app import main
 from backend.app.market_data import SymbolSpec, _empty_quote, get_macro_summary
 from backend.app.providers.financial_analytics import compute_financial_ratios
@@ -86,3 +89,14 @@ def test_ratios_are_calculated_from_raw_financial_rows() -> None:
     assert ratios.ps == 1.0
     assert ratios.pe == 10.0
     assert ratios.pb == 200 / 120
+
+
+def test_stockscope_snapshot_rows_are_auditable() -> None:
+    path = Path("backend/app/data/stockscope_screener.json")
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    rows = snapshot["items"]
+
+    assert rows
+    assert all(row.get("source_name") == "StockScope" for row in rows)
+    assert all(str(row.get("source_url") or "").startswith("https://stockscope.uz/ru/listings/") for row in rows)
+    assert all(row.get("fetched_at") for row in rows)

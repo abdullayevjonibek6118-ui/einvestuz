@@ -21,7 +21,11 @@
       "roa": 2.8195,
       "pe": 7.9192,
       "pb": 0.7421,
-      "dividend_yield": 6.1856
+      "dividend_yield": 6.1856,
+      "source_url": "https://stockscope.uz/ru/listings/A011030/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "A016990",
@@ -39,7 +43,11 @@
       "roa": 0.6273,
       "pe": 61.2314,
       "pb": 0.6583,
-      "dividend_yield": 5.3822
+      "dividend_yield": 5.3822,
+      "source_url": "https://stockscope.uz/ru/listings/A016990/general",
+      "sector": "Healthcare",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "A028090",
@@ -57,7 +65,11 @@
       "roa": 0.4512,
       "pe": 100.5456,
       "pb": 0.808,
-      "dividend_yield": 10.9937
+      "dividend_yield": 10.9937,
+      "source_url": "https://stockscope.uz/ru/listings/A028090/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "A035340",
@@ -75,7 +87,11 @@
       "roa": 0.4266,
       "pe": 122.0696,
       "pb": 0.7818,
-      "dividend_yield": 1.9998
+      "dividend_yield": 1.9998,
+      "source_url": "https://stockscope.uz/ru/listings/A035340/general",
+      "sector": "Communication",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ABKZ",
@@ -93,7 +109,11 @@
       "roa": 1.523,
       "pe": 17.8741,
       "pb": 0.401,
-      "dividend_yield": 14.0987
+      "dividend_yield": 14.0987,
+      "source_url": "https://stockscope.uz/ru/listings/ABKZ/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "AEMK",
@@ -111,7 +131,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/AEMK/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "AEMK1",
@@ -129,7 +153,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/AEMK1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "AGB1",
@@ -147,7 +175,11 @@
       "roa": 0.0344,
       "pe": 0.1272,
       "pb": 0.0003,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/AGB1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "AGBA",
@@ -165,7 +197,11 @@
       "roa": 0.0344,
       "pe": 129.4191,
       "pb": 0.3376,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/AGBA/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "AGM1",
@@ -183,7 +219,11 @@
       "roa": 4.9598,
       "pe": 0.0314,
       "pb": 0.0038,
-      "dividend_yield": 45.1561
+      "dividend_yield": 45.1561,
+      "source_url": "https://stockscope.uz/ru/listings/AGM1/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "AGMK",
@@ -201,7 +241,11 @@
       "roa": 4.9598,
       "pe": 0.5021,
       "pb": 0.0602,
-      "dividend_yield": 190.3615
+      "dividend_yield": 190.3615,
+      "source_url": "https://stockscope.uz/ru/listings/AGMK/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ALK1",
@@ -219,7 +263,11 @@
       "roa": 0.3742,
       "pe": 0.0005,
       "pb": 0.0,
-      "dividend_yield": 147.1125
+      "dividend_yield": 147.1125,
+      "source_url": "https://stockscope.uz/ru/listings/ALK1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ALKB",
@@ -237,7 +285,11 @@
       "roa": 0.3742,
       "pe": 0.0841,
       "pb": 0.0026,
-      "dividend_yield": 543.8202
+      "dividend_yield": 543.8202,
+      "source_url": "https://stockscope.uz/ru/listings/ALKB/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ALS1",
@@ -255,7 +307,11 @@
       "roa": null,
       "pe": -0.187,
       "pb": 0.0027,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/ALS1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ALSM",
@@ -273,7 +329,11 @@
       "roa": null,
       "pe": -11.047,
       "pb": 0.1605,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/ALSM/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ATS1",
@@ -291,7 +351,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/ATS1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ATSZ",
@@ -309,7 +373,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/ATSZ/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BCSK",
@@ -327,7 +395,11 @@
       "roa": -1.2711,
       "pe": -0.4178,
       "pb": 0.0993,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BCSK/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BECM",
@@ -345,7 +417,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BECM/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BECMP",
@@ -363,7 +439,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BECMP/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BGPT",
@@ -381,7 +461,11 @@
       "roa": -2.2113,
       "pe": -451.3104,
       "pb": 895.492,
-      "dividend_yield": 7.4992
+      "dividend_yield": 7.4992,
+      "source_url": "https://stockscope.uz/ru/listings/BGPT/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BGPTP",
@@ -399,7 +483,11 @@
       "roa": -2.2113,
       "pe": -0.2885,
       "pb": 0.5725,
-      "dividend_yield": 163.1795
+      "dividend_yield": 163.1795,
+      "source_url": "https://stockscope.uz/ru/listings/BGPTP/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BIOK",
@@ -417,7 +505,11 @@
       "roa": 3.3587,
       "pe": 19.2038,
       "pb": 0.7054,
-      "dividend_yield": 15.7895
+      "dividend_yield": 15.7895,
+      "source_url": "https://stockscope.uz/ru/listings/BIOK/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BMAG",
@@ -435,7 +527,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BMAG/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BNGA",
@@ -453,7 +549,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BNGA/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BNGA1",
@@ -471,7 +571,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BNGA1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BTM1",
@@ -489,7 +593,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BTM1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BTMZ",
@@ -507,7 +615,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/BTMZ/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "BUPD",
@@ -525,7 +637,11 @@
       "roa": -2.6934,
       "pe": -29.0963,
       "pb": 2.5808,
-      "dividend_yield": 0.2811
+      "dividend_yield": 0.2811,
+      "source_url": "https://stockscope.uz/ru/listings/BUPD/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "CBSK",
@@ -543,7 +659,11 @@
       "roa": 20.6455,
       "pe": 3.2018,
       "pb": 0.7234,
-      "dividend_yield": 13.0822
+      "dividend_yield": 13.0822,
+      "source_url": "https://stockscope.uz/ru/listings/CBSK/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "DORI",
@@ -561,7 +681,11 @@
       "roa": -1.3205,
       "pe": -18.7534,
       "pb": 0.732,
-      "dividend_yield": 4.0414
+      "dividend_yield": 4.0414,
+      "source_url": "https://stockscope.uz/ru/listings/DORI/general",
+      "sector": "Healthcare",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "EQQU",
@@ -579,7 +703,11 @@
       "roa": 0.6616,
       "pe": 20.3905,
       "pb": 0.3979,
-      "dividend_yield": 55.0091
+      "dividend_yield": 55.0091,
+      "source_url": "https://stockscope.uz/ru/listings/EQQU/general",
+      "sector": "Industrials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "FAY1",
@@ -597,7 +725,11 @@
       "roa": -7.055,
       "pe": -0.047,
       "pb": 0.0157,
-      "dividend_yield": 0.0271
+      "dividend_yield": 0.0271,
+      "source_url": "https://stockscope.uz/ru/listings/FAY1/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "FAYM",
@@ -615,7 +747,11 @@
       "roa": -7.055,
       "pe": -5.8225,
       "pb": 1.944,
-      "dividend_yield": 0.0333
+      "dividend_yield": 0.0333,
+      "source_url": "https://stockscope.uz/ru/listings/FAYM/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "FRAZ",
@@ -633,7 +769,11 @@
       "roa": 3.6666,
       "pe": 1.0841,
       "pb": 0.0508,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/FRAZ/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "FRAZP",
@@ -651,7 +791,11 @@
       "roa": 3.6666,
       "pe": 0.1905,
       "pb": 0.0089,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/FRAZP/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "GRBK",
@@ -669,7 +813,11 @@
       "roa": 0.2488,
       "pe": 200.8127,
       "pb": 3.9444,
-      "dividend_yield": 0.1392
+      "dividend_yield": 0.1392,
+      "source_url": "https://stockscope.uz/ru/listings/GRBK/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "GRBK1",
@@ -687,7 +835,11 @@
       "roa": 0.2488,
       "pe": 0.0277,
       "pb": 0.0005,
-      "dividend_yield": 1.32
+      "dividend_yield": 1.32,
+      "source_url": "https://stockscope.uz/ru/listings/GRBK1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "HMKB",
@@ -705,7 +857,11 @@
       "roa": 1.5806,
       "pe": 8.9746,
       "pb": 0.7556,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/HMKB/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "HMKB1",
@@ -723,7 +879,11 @@
       "roa": 1.5806,
       "pe": 0.324,
       "pb": 0.0273,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/HMKB1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "IPK1",
@@ -741,7 +901,11 @@
       "roa": null,
       "pe": 0.0001,
       "pb": null,
-      "dividend_yield": 12.2877
+      "dividend_yield": 12.2877,
+      "source_url": "https://stockscope.uz/ru/listings/IPK1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "IPKY",
@@ -759,7 +923,11 @@
       "roa": null,
       "pe": 38.8179,
       "pb": null,
-      "dividend_yield": 0.8143
+      "dividend_yield": 0.8143,
+      "source_url": "https://stockscope.uz/ru/listings/IPKY/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "IPTB",
@@ -777,7 +945,11 @@
       "roa": 1.6705,
       "pe": 10.814,
       "pb": 1.2307,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/IPTB/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "IPTB1",
@@ -795,7 +967,11 @@
       "roa": 1.6705,
       "pe": 0.0761,
       "pb": 0.0087,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/IPTB1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "JASM",
@@ -813,7 +989,11 @@
       "roa": 0.834,
       "pe": 51.661,
       "pb": 1.3903,
-      "dividend_yield": 0.2496
+      "dividend_yield": 0.2496,
+      "source_url": "https://stockscope.uz/ru/listings/JASM/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "JIPL",
@@ -831,7 +1011,11 @@
       "roa": 0.0488,
       "pe": 542.9788,
       "pb": 0.4498,
-      "dividend_yield": 0.4786
+      "dividend_yield": 0.4786,
+      "source_url": "https://stockscope.uz/ru/listings/JIPL/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KAS1",
@@ -849,7 +1033,11 @@
       "roa": null,
       "pe": 82.6441,
       "pb": 0.8084,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KAS1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KASU",
@@ -867,7 +1055,11 @@
       "roa": null,
       "pe": 18.3654,
       "pb": 0.1797,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KASU/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KAYM",
@@ -885,7 +1077,11 @@
       "roa": -8.0232,
       "pe": -24.8685,
       "pb": -7.0597,
-      "dividend_yield": 2.9918
+      "dividend_yield": 2.9918,
+      "source_url": "https://stockscope.uz/ru/listings/KAYM/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KAYM1",
@@ -903,7 +1099,11 @@
       "roa": -8.0232,
       "pe": -0.0412,
       "pb": -0.0117,
-      "dividend_yield": 4.8617
+      "dividend_yield": 4.8617,
+      "source_url": "https://stockscope.uz/ru/listings/KAYM1/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KFLT",
@@ -921,7 +1121,11 @@
       "roa": null,
       "pe": 442.6353,
       "pb": 17.754,
-      "dividend_yield": 0.0494
+      "dividend_yield": 0.0494,
+      "source_url": "https://stockscope.uz/ru/listings/KFLT/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KFLT1",
@@ -939,7 +1143,11 @@
       "roa": null,
       "pe": 0.926,
       "pb": 0.0371,
-      "dividend_yield": 0.0051
+      "dividend_yield": 0.0051,
+      "source_url": "https://stockscope.uz/ru/listings/KFLT1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KKB1",
@@ -957,7 +1165,11 @@
       "roa": 0.402,
       "pe": 0.0218,
       "pb": 0.0006,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KKB1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KKBN",
@@ -975,7 +1187,11 @@
       "roa": 0.402,
       "pe": 11.6547,
       "pb": 0.3349,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KKBN/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KNVN",
@@ -993,7 +1209,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/KNVN/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KNVNP",
@@ -1011,7 +1231,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/KNVNP/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KPBA",
@@ -1029,7 +1253,11 @@
       "roa": 0.5691,
       "pe": 1.3596,
       "pb": 0.0629,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KPBA/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KSC1",
@@ -1047,7 +1275,11 @@
       "roa": 0.0573,
       "pe": 0.1952,
       "pb": 0.0002,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KSC1/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KSCM",
@@ -1065,7 +1297,11 @@
       "roa": 0.0573,
       "pe": 122.9662,
       "pb": 0.1167,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KSCM/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KUMZ",
@@ -1083,7 +1319,11 @@
       "roa": 1.8306,
       "pe": 11.4861,
       "pb": 0.2711,
-      "dividend_yield": 3.4868
+      "dividend_yield": 3.4868,
+      "source_url": "https://stockscope.uz/ru/listings/KUMZ/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KUYM",
@@ -1101,7 +1341,11 @@
       "roa": -30.9874,
       "pe": -1.098,
       "pb": -5.2412,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KUYM/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KUYM1",
@@ -1119,7 +1363,11 @@
       "roa": -30.9874,
       "pe": -0.0009,
       "pb": -0.0044,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/KUYM1/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KVTS",
@@ -1137,7 +1385,11 @@
       "roa": 0.4487,
       "pe": 91.8639,
       "pb": 0.9026,
-      "dividend_yield": 10.8396
+      "dividend_yield": 10.8396,
+      "source_url": "https://stockscope.uz/ru/listings/KVTS/general",
+      "sector": "Industrials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KYE1",
@@ -1155,7 +1407,11 @@
       "roa": -1.9557,
       "pe": -0.2216,
       "pb": 0.0081,
-      "dividend_yield": 0.6429
+      "dividend_yield": 0.6429,
+      "source_url": "https://stockscope.uz/ru/listings/KYE1/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "KYEZ",
@@ -1173,7 +1429,11 @@
       "roa": -1.9557,
       "pe": -54.1677,
       "pb": 1.9806,
-      "dividend_yield": 0.45
+      "dividend_yield": 0.45,
+      "source_url": "https://stockscope.uz/ru/listings/KYEZ/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MATA",
@@ -1191,7 +1451,11 @@
       "roa": 5.6863,
       "pe": 5.4131,
       "pb": 0.3958,
-      "dividend_yield": 2.5
+      "dividend_yield": 2.5,
+      "source_url": "https://stockscope.uz/ru/listings/MATA/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MCB1",
@@ -1209,7 +1473,11 @@
       "roa": 0.0628,
       "pe": 0.0819,
       "pb": 0.0003,
-      "dividend_yield": 1.9596
+      "dividend_yield": 1.9596,
+      "source_url": "https://stockscope.uz/ru/listings/MCB1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MCBA",
@@ -1227,7 +1495,11 @@
       "roa": 0.0628,
       "pe": 193.8261,
       "pb": 0.6143,
-      "dividend_yield": 20.3622
+      "dividend_yield": 20.3622,
+      "source_url": "https://stockscope.uz/ru/listings/MCBA/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "METQ",
@@ -1245,7 +1517,11 @@
       "roa": 2.5955,
       "pe": 8.3931,
       "pb": 0.9595,
-      "dividend_yield": 0.313
+      "dividend_yield": 0.313,
+      "source_url": "https://stockscope.uz/ru/listings/METQ/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MIQE",
@@ -1263,7 +1539,11 @@
       "roa": 0.1246,
       "pe": 435.1289,
       "pb": 0.8237,
-      "dividend_yield": 1.9059
+      "dividend_yield": 1.9059,
+      "source_url": "https://stockscope.uz/ru/listings/MIQE/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MKPT",
@@ -1281,7 +1561,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/MKPT/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MNGM",
@@ -1299,7 +1583,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/MNGM/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MSTN",
@@ -1317,7 +1605,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/MSTN/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "MSTNP",
@@ -1335,7 +1627,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/MSTNP/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "NASK",
@@ -1353,7 +1649,11 @@
       "roa": 1.1736,
       "pe": 62.4017,
       "pb": 0.9084,
-      "dividend_yield": 2.5901
+      "dividend_yield": 2.5901,
+      "source_url": "https://stockscope.uz/ru/listings/NASK/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "NETA",
@@ -1371,7 +1671,11 @@
       "roa": -3.0197,
       "pe": -1.9824,
       "pb": 0.1099,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/NETA/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "NGDD",
@@ -1389,7 +1693,11 @@
       "roa": -2.0453,
       "pe": -80.6878,
       "pb": -6.0643,
-      "dividend_yield": 0.4667
+      "dividend_yield": 0.4667,
+      "source_url": "https://stockscope.uz/ru/listings/NGDD/general",
+      "sector": "Healthcare",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "NGIT",
@@ -1407,7 +1715,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/NGIT/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "NGQS",
@@ -1425,7 +1737,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/NGQS/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "OHDN",
@@ -1443,7 +1759,11 @@
       "roa": -3.6123,
       "pe": -5.2355,
       "pb": 0.5176,
-      "dividend_yield": 39.3657
+      "dividend_yield": 39.3657,
+      "source_url": "https://stockscope.uz/ru/listings/OHDN/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "OHSM",
@@ -1461,7 +1781,11 @@
       "roa": -11.3493,
       "pe": -8.4556,
       "pb": 1.2741,
-      "dividend_yield": 10.0
+      "dividend_yield": 10.0,
+      "source_url": "https://stockscope.uz/ru/listings/OHSM/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "OHSM1",
@@ -1479,7 +1803,11 @@
       "roa": -11.3493,
       "pe": -0.0068,
       "pb": 0.001,
-      "dividend_yield": 9.6941
+      "dividend_yield": 9.6941,
+      "source_url": "https://stockscope.uz/ru/listings/OHSM1/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ORFI",
@@ -1497,7 +1825,11 @@
       "roa": 1.2674,
       "pe": 2.5402,
       "pb": 0.1688,
-      "dividend_yield": 84.8785
+      "dividend_yield": 84.8785,
+      "source_url": "https://stockscope.uz/ru/listings/ORFI/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ORFI1",
@@ -1515,7 +1847,11 @@
       "roa": 1.2674,
       "pe": 0.0023,
       "pb": 0.0002,
-      "dividend_yield": 32.4771
+      "dividend_yield": 32.4771,
+      "source_url": "https://stockscope.uz/ru/listings/ORFI1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "ORST",
@@ -1533,7 +1869,11 @@
       "roa": 3.0303,
       "pe": 14.0785,
       "pb": 1.5584,
-      "dividend_yield": 5.7078
+      "dividend_yield": 5.7078,
+      "source_url": "https://stockscope.uz/ru/listings/ORST/general",
+      "sector": "Logistics",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "PDMK",
@@ -1551,7 +1891,11 @@
       "roa": -1.2865,
       "pe": -410.802,
       "pb": 11.9064,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/PDMK/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "PFIS",
@@ -1569,7 +1913,11 @@
       "roa": null,
       "pe": 27.6008,
       "pb": 0.6566,
-      "dividend_yield": 0.6566
+      "dividend_yield": 0.6566,
+      "source_url": "https://stockscope.uz/ru/listings/PFIS/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "QAPI",
@@ -1587,7 +1935,11 @@
       "roa": -8.6469,
       "pe": -1.829,
       "pb": 0.3798,
-      "dividend_yield": 0.1325
+      "dividend_yield": 0.1325,
+      "source_url": "https://stockscope.uz/ru/listings/QAPI/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "QATT",
@@ -1605,7 +1957,11 @@
       "roa": -17.9621,
       "pe": -3.7833,
       "pb": 1.0358,
-      "dividend_yield": 1.6259
+      "dividend_yield": 1.6259,
+      "source_url": "https://stockscope.uz/ru/listings/QATT/general",
+      "sector": "Logistics",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "QATT1",
@@ -1623,7 +1979,11 @@
       "roa": -17.9621,
       "pe": -0.0112,
       "pb": 0.0031,
-      "dividend_yield": 4.1415
+      "dividend_yield": 4.1415,
+      "source_url": "https://stockscope.uz/ru/listings/QATT1/general",
+      "sector": "Logistics",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "QNGK",
@@ -1641,7 +2001,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/QNGK/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "QNGK1",
@@ -1659,7 +2023,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/QNGK1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "QZSM",
@@ -1677,7 +2045,11 @@
       "roa": -0.4047,
       "pe": -31.7959,
       "pb": 0.1698,
-      "dividend_yield": 86.7544
+      "dividend_yield": 86.7544,
+      "source_url": "https://stockscope.uz/ru/listings/QZSM/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "RBQB",
@@ -1695,7 +2067,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/RBQB/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SANE",
@@ -1713,7 +2089,11 @@
       "roa": 1.6465,
       "pe": 301.4281,
       "pb": 5.1677,
-      "dividend_yield": 0.1584
+      "dividend_yield": 0.1584,
+      "source_url": "https://stockscope.uz/ru/listings/SANE/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SBMA",
@@ -1731,7 +2111,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/SBMA/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SBMAP",
@@ -1749,7 +2133,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/SBMAP/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SOLA",
@@ -1767,7 +2155,11 @@
       "roa": 13.1867,
       "pe": 0.003,
       "pb": 0.0004,
-      "dividend_yield": 0.1033
+      "dividend_yield": 0.1033,
+      "source_url": "https://stockscope.uz/ru/listings/SOLA/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SQB1",
@@ -1785,7 +2177,11 @@
       "roa": 0.5266,
       "pe": 0.0599,
       "pb": 0.0027,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/SQB1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SQBN",
@@ -1803,7 +2199,11 @@
       "roa": 0.5266,
       "pe": 14.829,
       "pb": 0.6589,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/SQBN/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SRVI",
@@ -1821,7 +2221,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/SRVI/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SRVI1",
@@ -1839,7 +2243,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/SRVI1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SUPI",
@@ -1857,7 +2265,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/SUPI/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "SUPI1",
@@ -1875,7 +2287,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/SUPI1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TAPA",
@@ -1893,7 +2309,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/TAPA/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TBMZ",
@@ -1911,7 +2331,11 @@
       "roa": -1.9298,
       "pe": -11.6797,
       "pb": 0.2618,
-      "dividend_yield": 9.6154
+      "dividend_yield": 9.6154,
+      "source_url": "https://stockscope.uz/ru/listings/TBMZ/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TMYS",
@@ -1929,7 +2353,11 @@
       "roa": null,
       "pe": 10.6593,
       "pb": 0.2405,
-      "dividend_yield": 12.0075
+      "dividend_yield": 12.0075,
+      "source_url": "https://stockscope.uz/ru/listings/TMYS/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TNB1",
@@ -1947,7 +2375,11 @@
       "roa": 0.0343,
       "pe": 2.3385,
       "pb": 0.0083,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/TNB1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TNBN",
@@ -1965,7 +2397,11 @@
       "roa": 0.0343,
       "pe": 139.4026,
       "pb": 0.4975,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/TNBN/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TNGK",
@@ -1983,7 +2419,11 @@
       "roa": 0.1288,
       "pe": 267.2871,
       "pb": 0.6511,
-      "dividend_yield": 5.7936
+      "dividend_yield": 5.7936,
+      "source_url": "https://stockscope.uz/ru/listings/TNGK/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TRNJ",
@@ -2001,7 +2441,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/TRNJ/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TRS1",
@@ -2019,7 +2463,11 @@
       "roa": null,
       "pe": 0.0188,
       "pb": null,
-      "dividend_yield": 0.0332
+      "dividend_yield": 0.0332,
+      "source_url": "https://stockscope.uz/ru/listings/TRS1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TRSB",
@@ -2037,7 +2485,11 @@
       "roa": null,
       "pe": 45.1239,
       "pb": null,
-      "dividend_yield": 0.6001
+      "dividend_yield": 0.6001,
+      "source_url": "https://stockscope.uz/ru/listings/TRSB/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TYMK",
@@ -2055,7 +2507,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/TYMK/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "TYMK1",
@@ -2073,7 +2529,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/TYMK1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UGSR",
@@ -2091,7 +2551,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UGSR/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UGSRP",
@@ -2109,7 +2573,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UGSRP/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UGYM",
@@ -2127,7 +2595,11 @@
       "roa": -9.1042,
       "pe": -20.1542,
       "pb": 2.3093,
-      "dividend_yield": 1.2683
+      "dividend_yield": 1.2683,
+      "source_url": "https://stockscope.uz/ru/listings/UGYM/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UIRM",
@@ -2145,7 +2617,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UIRM/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UNGI",
@@ -2163,7 +2639,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UNGI/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UNPL",
@@ -2181,7 +2661,11 @@
       "roa": null,
       "pe": 9836.9503,
       "pb": 264.455,
-      "dividend_yield": 0.2328
+      "dividend_yield": 0.2328,
+      "source_url": "https://stockscope.uz/ru/listings/UNPL/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UNVB",
@@ -2199,7 +2683,11 @@
       "roa": 1.7031,
       "pe": 13.8835,
       "pb": null,
-      "dividend_yield": 4.9778
+      "dividend_yield": 4.9778,
+      "source_url": "https://stockscope.uz/ru/listings/UNVB/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UPAT",
@@ -2217,7 +2705,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UPAT/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UPAT1",
@@ -2235,7 +2727,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UPAT1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UPOS",
@@ -2253,7 +2749,11 @@
       "roa": 0.1367,
       "pe": 330.8686,
       "pb": 1.1327,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/UPOS/general",
+      "sector": "Logistics",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UPOSP",
@@ -2271,7 +2771,11 @@
       "roa": 0.1367,
       "pe": 12.1178,
       "pb": 0.0415,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/UPOSP/general",
+      "sector": "Logistics",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UQEQ",
@@ -2289,7 +2793,11 @@
       "roa": 3.3727,
       "pe": 5.6861,
       "pb": 0.536,
-      "dividend_yield": 0.12
+      "dividend_yield": 0.12,
+      "source_url": "https://stockscope.uz/ru/listings/UQEQ/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "URGK",
@@ -2307,7 +2815,11 @@
       "roa": 26.8114,
       "pe": 0.3471,
       "pb": 0.2109,
-      "dividend_yield": 0.9581
+      "dividend_yield": 0.9581,
+      "source_url": "https://stockscope.uz/ru/listings/URGK/general",
+      "sector": "Industrials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "URGK1",
@@ -2325,7 +2837,11 @@
       "roa": 26.8114,
       "pe": 0.0049,
       "pb": 0.003,
-      "dividend_yield": 7.6037
+      "dividend_yield": 7.6037,
+      "source_url": "https://stockscope.uz/ru/listings/URGK1/general",
+      "sector": "Industrials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "URTS",
@@ -2343,7 +2859,11 @@
       "roa": 1.9841,
       "pe": 5.1455,
       "pb": 1.4409,
-      "dividend_yield": 31.0263
+      "dividend_yield": 31.0263,
+      "source_url": "https://stockscope.uz/ru/listings/URTS/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UTG1",
@@ -2361,7 +2881,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UTG1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UTGA",
@@ -2379,7 +2903,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UTGA/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UTYK",
@@ -2397,7 +2925,11 @@
       "roa": 8.2635,
       "pe": 42.0069,
       "pb": 5.1093,
-      "dividend_yield": 10.4156
+      "dividend_yield": 10.4156,
+      "source_url": "https://stockscope.uz/ru/listings/UTYK/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UYGM1",
@@ -2415,7 +2947,11 @@
       "roa": -9.1042,
       "pe": -0.0166,
       "pb": 0.0019,
-      "dividend_yield": 4.0768
+      "dividend_yield": 4.0768,
+      "source_url": "https://stockscope.uz/ru/listings/UYGM1/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZA1",
@@ -2433,7 +2969,11 @@
       "roa": null,
       "pe": 0.0082,
       "pb": 0.0014,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/UZA1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZAL",
@@ -2451,7 +2991,11 @@
       "roa": null,
       "pe": 36.9527,
       "pb": 0.3597,
-      "dividend_yield": 2.1125
+      "dividend_yield": 2.1125,
+      "source_url": "https://stockscope.uz/ru/listings/UZAL/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZAL1",
@@ -2469,7 +3013,11 @@
       "roa": null,
       "pe": 0.0047,
       "pb": 0.0,
-      "dividend_yield": 2.0
+      "dividend_yield": 2.0,
+      "source_url": "https://stockscope.uz/ru/listings/UZAL1/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZAS",
@@ -2487,7 +3035,11 @@
       "roa": null,
       "pe": 41.6729,
       "pb": 6.9532,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/UZAS/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZET",
@@ -2505,7 +3057,11 @@
       "roa": 0.8062,
       "pe": 2025.0237,
       "pb": 21.4344,
-      "dividend_yield": 0.0454
+      "dividend_yield": 0.0454,
+      "source_url": "https://stockscope.uz/ru/listings/UZET/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZET1",
@@ -2523,7 +3079,11 @@
       "roa": 0.8062,
       "pe": 110.5755,
       "pb": 1.1704,
-      "dividend_yield": 0.0545
+      "dividend_yield": 0.0545,
+      "source_url": "https://stockscope.uz/ru/listings/UZET1/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZG1",
@@ -2541,7 +3101,11 @@
       "roa": 0.3807,
       "pe": 7.6131,
       "pb": 0.0335,
-      "dividend_yield": 1.7363
+      "dividend_yield": 1.7363,
+      "source_url": "https://stockscope.uz/ru/listings/UZG1/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZGF",
@@ -2559,7 +3123,11 @@
       "roa": 0.3807,
       "pe": 81.9598,
       "pb": 0.3607,
-      "dividend_yield": 5.5245
+      "dividend_yield": 5.5245,
+      "source_url": "https://stockscope.uz/ru/listings/UZGF/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZHM",
@@ -2577,7 +3145,11 @@
       "roa": -1.2895,
       "pe": -16.8954,
       "pb": 1.135,
-      "dividend_yield": 0.5
+      "dividend_yield": 0.5,
+      "source_url": "https://stockscope.uz/ru/listings/UZHM/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZIR",
@@ -2595,7 +3167,11 @@
       "roa": 0.0078,
       "pe": 9652.6507,
       "pb": 2.3588,
-      "dividend_yield": 1.3519
+      "dividend_yield": 1.3519,
+      "source_url": "https://stockscope.uz/ru/listings/UZIR/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZIR1",
@@ -2613,7 +3189,11 @@
       "roa": 0.0078,
       "pe": 82.9712,
       "pb": 0.0203,
-      "dividend_yield": 1.2553
+      "dividend_yield": 1.2553,
+      "source_url": "https://stockscope.uz/ru/listings/UZIR1/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZM1",
@@ -2631,7 +3211,11 @@
       "roa": 1.436,
       "pe": 3.0478,
       "pb": 0.0965,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/UZM1/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZMK",
@@ -2649,7 +3233,11 @@
       "roa": 1.436,
       "pe": 18.467,
       "pb": 0.585,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/UZMK/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZML",
@@ -2667,7 +3255,11 @@
       "roa": -9.0341,
       "pe": -150.3039,
       "pb": 13.5816,
-      "dividend_yield": 0.0992
+      "dividend_yield": 0.0992,
+      "source_url": "https://stockscope.uz/ru/listings/UZML/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZMT",
@@ -2685,7 +3277,11 @@
       "roa": 8.3859,
       "pe": 5.5135,
       "pb": 0.9863,
-      "dividend_yield": 1.155
+      "dividend_yield": 1.155,
+      "source_url": "https://stockscope.uz/ru/listings/UZMT/general",
+      "sector": "Industrials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZNG",
@@ -2703,7 +3299,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": 9.182
+      "dividend_yield": 9.182,
+      "source_url": "https://stockscope.uz/ru/listings/UZNG/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZNGP",
@@ -2721,7 +3321,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": 1.7004
+      "dividend_yield": 1.7004,
+      "source_url": "https://stockscope.uz/ru/listings/UZNGP/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZPN",
@@ -2739,7 +3343,11 @@
       "roa": 10.1596,
       "pe": 0.1992,
       "pb": 0.0264,
-      "dividend_yield": 82.5868
+      "dividend_yield": 82.5868,
+      "source_url": "https://stockscope.uz/ru/listings/UZPN/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZPT",
@@ -2757,7 +3365,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UZPT/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZPT1",
@@ -2775,7 +3387,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UZPT1/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZSA",
@@ -2793,7 +3409,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/UZSA/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZTL",
@@ -2811,7 +3431,11 @@
       "roa": 2.4196,
       "pe": 4.038,
       "pb": 0.485,
-      "dividend_yield": 0.7758
+      "dividend_yield": 0.7758,
+      "source_url": "https://stockscope.uz/ru/listings/UZTL/general",
+      "sector": "Communication",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "UZTL1",
@@ -2829,7 +3453,11 @@
       "roa": 2.4196,
       "pe": 0.0986,
       "pb": 0.0118,
-      "dividend_yield": 1.1299
+      "dividend_yield": 1.1299,
+      "source_url": "https://stockscope.uz/ru/listings/UZTL1/general",
+      "sector": "Communication",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "XKBK",
@@ -2847,7 +3475,11 @@
       "roa": 0.6018,
       "pe": 22.5425,
       "pb": 0.6712,
-      "dividend_yield": 1.239
+      "dividend_yield": 1.239,
+      "source_url": "https://stockscope.uz/ru/listings/XKBK/general",
+      "sector": "Financials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "XOSQ",
@@ -2865,7 +3497,11 @@
       "roa": 4.8254,
       "pe": 1.2547,
       "pb": 0.0913,
-      "dividend_yield": 21.8
+      "dividend_yield": 21.8,
+      "source_url": "https://stockscope.uz/ru/listings/XOSQ/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "XTTB",
@@ -2883,7 +3519,11 @@
       "roa": null,
       "pe": null,
       "pb": null,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/XTTB/general",
+      "sector": null,
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "YAPT",
@@ -2901,7 +3541,11 @@
       "roa": -2.0916,
       "pe": -5.2138,
       "pb": -0.6177,
-      "dividend_yield": null
+      "dividend_yield": null,
+      "source_url": "https://stockscope.uz/ru/listings/YAPT/general",
+      "sector": "Materials",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "YGGR",
@@ -2919,7 +3563,11 @@
       "roa": 0.002,
       "pe": 9631.1139,
       "pb": 1.9229,
-      "dividend_yield": 0.3087
+      "dividend_yield": 0.3087,
+      "source_url": "https://stockscope.uz/ru/listings/YGGR/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "YGGR1",
@@ -2937,7 +3585,11 @@
       "roa": 0.002,
       "pe": 0.3558,
       "pb": 0.0001,
-      "dividend_yield": 0.3087
+      "dividend_yield": 0.3087,
+      "source_url": "https://stockscope.uz/ru/listings/YGGR1/general",
+      "sector": "",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "YGSY",
@@ -2955,7 +3607,11 @@
       "roa": 0.1436,
       "pe": 102.9948,
       "pb": 0.529,
-      "dividend_yield": 0.4051
+      "dividend_yield": 0.4051,
+      "source_url": "https://stockscope.uz/ru/listings/YGSY/general",
+      "sector": "Energy",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "YGY1",
@@ -2973,7 +3629,11 @@
       "roa": -17.039,
       "pe": -0.0382,
       "pb": 0.0161,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/YGY1/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     },
     {
       "ticker": "YGYM",
@@ -2991,8 +3651,14 @@
       "roa": -17.039,
       "pe": -2.6561,
       "pb": 1.1204,
-      "dividend_yield": 0.0
+      "dividend_yield": 0.0,
+      "source_url": "https://stockscope.uz/ru/listings/YGYM/general",
+      "sector": "Consumer",
+      "source_name": "StockScope",
+      "fetched_at": "2026-06-26T21:02:59Z"
     }
   ],
-  "generated_at": "2026-06-26T21:02:59.734568+00:00"
+  "generated_at": "2026-06-26T21:02:59.734568+00:00",
+  "source_name": "StockScope",
+  "source_url": "https://stockscope.uz/ru/screener"
 }
