@@ -424,10 +424,9 @@ def get_fx_rates() -> list[FxRate]:
     payload = _fetch_json("https://cbu.uz/en/arkhiv-kursov-valyut/json/", timeout=8)
     rates: list[FxRate] = []
     if isinstance(payload, list):
-        wanted = {"USD", "EUR", "RUB"}
         for item in payload:
             ccy = str(item.get("Ccy") or "").upper()
-            if ccy not in wanted:
+            if not ccy:
                 continue
             rates.append(
                 FxRate(
@@ -443,6 +442,8 @@ def get_fx_rates() -> list[FxRate]:
                     as_of=datetime.now(timezone.utc),
                 )
             )
+        preferred = {"USD": 0, "EUR": 1, "RUB": 2}
+        rates.sort(key=lambda rate: (preferred.get(rate.ccy, 100), rate.ccy))
     if not rates:
         rates = _fallback_fx_rates()
     _DETAIL_CACHE.set("fx:rates", rates)

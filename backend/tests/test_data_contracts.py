@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from backend.app import main
+from backend.app import market_data
 from backend.app.market_data import SymbolSpec, _empty_quote, get_macro_summary
 from backend.app.providers.financial_analytics import compute_financial_ratios
 from backend.app.providers.siat_provider import SiatProvider
@@ -100,3 +101,22 @@ def test_stockscope_snapshot_rows_are_auditable() -> None:
     assert all(row.get("source_name") == "StockScope" for row in rows)
     assert all(str(row.get("source_url") or "").startswith("https://stockscope.uz/ru/listings/") for row in rows)
     assert all(row.get("fetched_at") for row in rows)
+
+
+def test_cbu_fx_rates_keep_all_official_currencies(monkeypatch) -> None:
+    market_data._DETAIL_CACHE.set("fx:rates", None)
+
+    def fake_fetch_json(url: str, timeout: int):
+        assert "cbu.uz" in url
+        return [
+            {"Ccy": "GBP", "Rate": "16085.73", "Diff": "27.66", "Date": "08.07.2026", "Nominal": "1", "CcyNm_EN": "Pound Sterling"},
+            {"Ccy": "USD", "Rate": "12021.32", "Diff": "-20.73", "Date": "08.07.2026", "Nominal": "1", "CcyNm_EN": "US Dollar"},
+            {"Ccy": "RUB", "Rate": "157.64", "Diff": "2.61", "Date": "08.07.2026", "Nominal": "1", "CcyNm_EN": "Russian Ruble"},
+            {"Ccy": "EUR", "Rate": "13734.36", "Diff": "-10.44", "Date": "08.07.2026", "Nominal": "1", "CcyNm_EN": "Euro"},
+        ]
+
+    monkeypatch.setattr(market_data, "_fetch_json", fake_fetch_json)
+    rates = market_data.get_fx_rates()
+
+    assert [rate.ccy for rate in rates] == ["USD", "EUR", "RUB", "GBP"]
+    assert rates[3].rate == 16085.73
