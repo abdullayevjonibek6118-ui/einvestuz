@@ -108,8 +108,25 @@ type BackendStockScopeScreenerRow = {
   isin?: string;
   openinfo_id?: number | string;
   openinfoId?: number | string;
+  listing_category?: string;
+  listingCategory?: string;
+  sector?: string;
+  market?: string;
+  currency?: string;
   current_price?: number | null;
   market_cap?: number | null;
+  volume_1d?: number | null;
+  volume1d?: number | null;
+  volume_7d?: number | null;
+  volume7d?: number | null;
+  volume_30d?: number | null;
+  volume30d?: number | null;
+  change_1d?: number | null;
+  change1d?: number | null;
+  change_7d?: number | null;
+  change7d?: number | null;
+  change_30d?: number | null;
+  change30d?: number | null;
   price_points_count?: number;
   reports_count?: number;
   indicators_count?: number;
@@ -120,6 +137,14 @@ type BackendStockScopeScreenerRow = {
   pe?: number | null;
   pb?: number | null;
   dividend_yield?: number | null;
+  has_fresh_report?: boolean;
+  hasFreshReport?: boolean;
+  source_name?: string;
+  sourceName?: string;
+  source_url?: string;
+  sourceUrl?: string;
+  fetched_at?: string;
+  fetchedAt?: string;
 };
 
 type BackendStockScopeScreenerResponse = {
@@ -487,6 +512,8 @@ function normalizeStockScopeDetails(source?: BackendStockScopeDetails | StockSco
   const fundamentals = isRecord(raw.fundamentals) ? raw.fundamentals : undefined;
 
   return {
+    ticker: stringValue(raw.ticker),
+    source: stringValue(raw.source),
     sourceUrl: stringValue(raw.sourceUrl ?? raw.source_url),
     companyType: stringValue(raw.companyType ?? raw.company_type),
     priceHistory: normalizeStockScopePriceHistory(raw.priceHistory ?? raw.price_history),
@@ -1174,8 +1201,18 @@ function normalizeStockScopeScreenerRow(row: BackendStockScopeScreenerRow): Stoc
     name: row.name ?? row.ticker ?? "Unknown company",
     isin: row.isin,
     openinfoId: row.openinfoId ?? row.openinfo_id,
+    listingCategory: row.listingCategory ?? row.listing_category,
+    sector: row.sector,
+    market: row.market,
+    currency: row.currency,
     currentPrice: row.current_price,
     marketCap: row.market_cap,
+    volume1d: row.volume1d ?? row.volume_1d,
+    volume7d: row.volume7d ?? row.volume_7d,
+    volume30d: row.volume30d ?? row.volume_30d,
+    change1d: row.change1d ?? row.change_1d,
+    change7d: row.change7d ?? row.change_7d,
+    change30d: row.change30d ?? row.change_30d,
     pricePointsCount: row.price_points_count ?? 0,
     reportsCount: row.reports_count ?? 0,
     indicatorsCount: row.indicators_count ?? 0,
@@ -1186,6 +1223,10 @@ function normalizeStockScopeScreenerRow(row: BackendStockScopeScreenerRow): Stoc
     pe: row.pe,
     pb: row.pb,
     dividendYield: row.dividend_yield,
+    hasFreshReport: row.hasFreshReport ?? row.has_fresh_report,
+    sourceName: row.sourceName ?? row.source_name,
+    sourceUrl: row.sourceUrl ?? row.source_url,
+    fetchedAt: row.fetchedAt ?? row.fetched_at,
   };
 }
 

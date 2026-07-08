@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight, Banknote, Bot, ChartNoAxesCombined, FileText, Globe2, Newspaper, Plus, ShieldAlert, Star, TriangleAlert, type LucideIcon } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
-import { getNews, getStock, getStockScopeScreener } from "@/lib/api";
-import { type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockSourceMeta } from "@/lib/data";
+import { getNews, getStock, getStockScopeBatchDetails, getStockScopeScreener } from "@/lib/api";
+import { type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockScopeTradingRow, type StockSourceMeta } from "@/lib/data";
 import { pageMetadata, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +49,17 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   }
   if (!stock) notFound();
 
+  const resolvedStock = stock;
+  const stockscopeBatch = await getStockScopeBatchDetails([resolvedStock.ticker]);
+  const stockscopeDetails = resolvedStock.stockscope ?? stockscopeBatch.items.find((item) => item.ticker?.toUpperCase() === resolvedStock.ticker.toUpperCase()) ?? stockscopeBatch.items[0];
+  if (stockscopeDetails) {
+    stock = { ...resolvedStock, stockscope: stockscopeDetails };
+  } else {
+    stock = resolvedStock;
+  }
+
   const fundamentals = resolveFundamentals(stock);
+  const companyMetrics = resolveCompanyMetrics(stock, fundamentals);
   const earnings = stock.earnings ?? [];
   const sources = stock.sources?.length ? stock.sources : resolveSources(stock);
   const companyNews = stock.news?.length ? stock.news : news.slice(0, 3);
@@ -225,6 +235,25 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
         </Panel>
       </section>
 
+      <section className="grid gap-4">
+        <Panel title="Ключевые показатели" action={<SourceStatusBadge source="UZSE / OpenInfo" status="delayed" />}>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label="Цена" value={companyMetrics.price} detail={companyMetrics.priceDetail} />
+            <Metric label="Изм. за день" value={companyMetrics.dayChange} detail="по последней котировке" />
+            <Metric label="Market cap" value={companyMetrics.marketCap} detail="расчёт у нас / источник" />
+            <Metric label="Объём 1D" value={companyMetrics.volume1d} detail="UZSE trades" />
+            <Metric label="Объём 7D" value={companyMetrics.volume7d} detail="сумма дневных торгов" />
+            <Metric label="Объём 30D" value={companyMetrics.volume30d} detail="сумма дневных торгов" />
+            <Metric label="P/E" value={companyMetrics.pe} detail="market cap / net profit" />
+            <Metric label="P/B" value={companyMetrics.pb} detail="market cap / equity" />
+            <Metric label="ROE" value={companyMetrics.roe} detail="net profit / equity" />
+            <Metric label="ROA" value={companyMetrics.roa} detail="net profit / assets" />
+            <Metric label="Дивиденды" value={companyMetrics.dividendYield} detail={companyMetrics.dividendDetail} />
+            <Metric label="Отчётность" value={companyMetrics.reports} detail={companyMetrics.reportDetail} />
+          </div>
+        </Panel>
+      </section>
+
       {stock.stockscope ? (
         <section className="grid gap-4">
           <Panel title="Данные StockScope" action={<SourceStatusBadge source="stockscope.uz" status="delayed" />}>
@@ -252,6 +281,19 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
           </Panel>
         </section>
       ) : null}
+
+      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <Panel title="История сделок" action={<SourceStatusBadge source="UZSE / StockScope" status="delayed" />}>
+          <TradeHistory rows={stock.stockscope?.tradingStats?.daily ?? []} />
+        </Panel>
+        <Panel title="AI summary: что важно знать" action={<Bot size={18} className="text-[#1e40af]" />}>
+          <div className="space-y-3">
+            {buildCompanyBrief(stock, companyMetrics).map((item) => (
+              <ThesisLine key={item.title} icon={item.icon} title={item.title} text={item.text} />
+            ))}
+          </div>
+        </Panel>
+      </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Panel title="Фундаментальные показатели" action={<Banknote size={18} className="text-[#1e40af]" />}>
@@ -319,6 +361,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Panel title="Источники и документы" action={<Globe2 size={18} className="text-[#1e40af]" />}>
           <div className="space-y-2">
+            <SourcePriorityTable stock={stock} />
             {sources.length ? (
               sources.map((source) => (
                 <div key={`${source.source}-${source.asOf ?? "na"}`} className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4">
@@ -383,6 +426,66 @@ function resolveFundamentals(stock: Stock) {
     source: stock.fundamentals?.source ?? stock.source,
     sourceStatus: stock.fundamentals?.sourceStatus ?? stock.sourceStatus,
   };
+}
+
+function resolveCompanyMetrics(stock: Stock, fundamentals: ReturnType<typeof resolveFundamentals>) {
+  const dailyRows = stock.stockscope?.tradingStats?.daily ?? [];
+  const indicators = stock.stockscope?.indicators?.[0]?.values ?? {};
+  const dividends = stock.stockscope?.dividends ?? [];
+  const latestDividend = dividends[0];
+  const latestTrade = dailyRows[0];
+  const price = latestTrade?.price ?? stock.price;
+
+  return {
+    price: price && Number.isFinite(price) ? `${price.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} ${stock.currency ?? "UZS"}` : "N/A",
+    priceDetail: latestTrade?.date ? `сделка ${latestTrade.date}` : stock.asOf ? `обновлено ${formatStamp(stock.asOf)}` : undefined,
+    dayChange: `${stock.change >= 0 ? "+" : ""}${stock.change.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}%`,
+    marketCap: fundamentals.marketCap ?? stock.marketCap ?? "N/A",
+    volume1d: formatUzbekMoney(sumTradingVolume(dailyRows, 1)),
+    volume7d: formatUzbekMoney(sumTradingVolume(dailyRows, 7)),
+    volume30d: formatUzbekMoney(sumTradingVolume(dailyRows, 30)),
+    pe: formatNumber(fundamentals.pe),
+    pb: formatNumber(indicators.PB ?? indicators.PtoB ?? indicators.PriceToBook),
+    roe: formatPercentValue(indicators.ROE),
+    roa: formatPercentValue(indicators.ROA),
+    dividendYield: fundamentals.dividendYield ?? formatPercentValue(latestDividend?.commonYield),
+    dividendDetail: latestDividend?.publishedDate ? `опубликовано ${formatStamp(latestDividend.publishedDate)}` : `${dividends.length} записей`,
+    reports: String(stock.stockscope?.reports?.length ?? 0),
+    reportDetail: stock.stockscope?.reports?.[0]?.period ?? "openinfo / issuer disclosure",
+  };
+}
+
+function sumTradingVolume(rows: StockScopeTradingRow[], count: number) {
+  const value = rows.slice(0, count).reduce((sum, row) => sum + (row.volumeUzs ?? 0), 0);
+  return value || null;
+}
+
+function formatUzbekMoney(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "нет данных";
+  return `${value.toLocaleString("ru-RU", { notation: "compact", maximumFractionDigits: 1 })} UZS`;
+}
+
+function buildCompanyBrief(stock: Stock, metrics: ReturnType<typeof resolveCompanyMetrics>) {
+  const reportsCount = stock.stockscope?.reports?.length ?? 0;
+  const tradeRows = stock.stockscope?.tradingStats?.daily?.length ?? 0;
+  const dividendsCount = stock.stockscope?.dividends?.length ?? 0;
+  return [
+    {
+      icon: ChartNoAxesCombined,
+      title: "Ликвидность",
+      text: tradeRows ? `Есть ${tradeRows} дневных строк торгов; 30D объём: ${metrics.volume30d}. Перед сделкой всё равно проверьте стакан и последние сделки.` : "История торгов пока не загружена из UZSE/StockScope, поэтому ликвидность нельзя подтвердить численно.",
+    },
+    {
+      icon: Banknote,
+      title: "Оценка и прибыльность",
+      text: `P/E: ${metrics.pe}, P/B: ${metrics.pb}, ROE: ${metrics.roe}, ROA: ${metrics.roa}. Если показатель пустой, в отчётности нет нормализованной строки для расчёта.`,
+    },
+    {
+      icon: FileText,
+      title: "Раскрытие",
+      text: reportsCount ? `Найдено ${reportsCount} отчётов; последний период: ${metrics.reportDetail}. Дивидендных записей: ${dividendsCount}.` : "Свежая отчётность не подтверждена в текущем snapshot, нужен парсер openinfo.uz или документы эмитента.",
+    },
+  ];
 }
 
 function resolveSources(stock: Stock) {
@@ -478,7 +581,7 @@ function formatPercentValue(value?: number | null) {
   return `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
 }
 
-function formatNumber(value?: number) {
+function formatNumber(value?: number | null) {
   if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
   return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
@@ -657,6 +760,60 @@ function FactsList({ title, items }: { title: string; items: string[] }) {
       <div className="mt-2 space-y-1">
         {items.length ? items.map((item) => <p key={item} className="text-sm text-[#475569]">{item}</p>) : <p className="text-sm text-[#64748b]">Данных пока нет.</p>}
       </div>
+    </div>
+  );
+}
+
+function TradeHistory({ rows }: { rows: StockScopeTradingRow[] }) {
+  const visibleRows = rows.slice(0, 12);
+  if (!visibleRows.length) {
+    return <p className="text-sm text-[#64748b]">История сделок появится после ежедневной загрузки UZSE: цена, объём в UZS и количество бумаг.</p>;
+  }
+
+  return (
+    <div className="data-table-wrap">
+      <table className="data-table">
+        <thead><tr><th>Дата</th><th>Цена</th><th>Объём, UZS</th><th>Бумаги</th></tr></thead>
+        <tbody>
+          {visibleRows.map((row) => (
+            <tr key={`${row.date}-${row.price ?? "na"}-${row.volumeUzs ?? "na"}`}>
+              <td>{row.date}</td>
+              <td>{row.price == null ? "—" : row.price.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}</td>
+              <td>{row.volumeUzs == null ? "—" : row.volumeUzs.toLocaleString("ru-RU", { notation: "compact", maximumFractionDigits: 1 })}</td>
+              <td>{row.volumePcs == null ? "—" : row.volumePcs.toLocaleString("ru-RU", { maximumFractionDigits: 0 })}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SourcePriorityTable({ stock }: { stock: Stock }) {
+  const rows = [
+    { priority: 1, source: "UZSE", purpose: "цены, сделки, листинг, торговая статистика", status: stock.stockscope?.tradingStats?.daily?.length ? "delayed" : "fallback" },
+    { priority: 2, source: "openinfo.uz", purpose: "финансовая отчётность эмитентов", status: stock.stockscope?.reports?.length ? "delayed" : "fallback" },
+    { priority: 3, source: "CBU", purpose: "курс валют, ставка ЦБ", status: "delayed" },
+    { priority: 4, source: "stat.uz", purpose: "инфляция, ВВП, макро", status: "delayed" },
+    { priority: 5, source: "StockScope", purpose: "UX-референс, KPI, проверка логики", status: stock.stockscope ? "delayed" : "fallback" },
+    { priority: 6, source: "Новости / сайты эмитентов", purpose: "события и раскрытие информации", status: stock.news?.length ? "delayed" : "fallback" },
+  ] as const;
+
+  return (
+    <div className="mb-3 overflow-hidden rounded-[16px] border border-[#dbe4ef] bg-white">
+      <div className="border-b border-[#e2e8f0] px-4 py-3 text-sm font-semibold text-[#0f172a]">Приоритет источников</div>
+      <table className="min-w-full text-sm">
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.source} className="border-b border-[#f1f5f9] last:border-0">
+              <td className="px-4 py-2 text-xs font-semibold text-[#64748b]">{row.priority}</td>
+              <td className="px-3 py-2 font-semibold text-[#0f172a]">{row.source}</td>
+              <td className="px-3 py-2 text-[#475569]">{row.purpose}</td>
+              <td className="px-4 py-2"><SourceStatusBadge source={row.source} status={row.status} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

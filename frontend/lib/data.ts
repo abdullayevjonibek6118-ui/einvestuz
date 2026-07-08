@@ -131,8 +131,18 @@ export type StockScopeScreenerRow = {
   name: string;
   isin?: string;
   openinfoId?: number | string;
+  listingCategory?: string;
+  sector?: string;
+  market?: string;
+  currency?: string;
   currentPrice?: number | null;
   marketCap?: number | null;
+  volume1d?: number | null;
+  volume7d?: number | null;
+  volume30d?: number | null;
+  change1d?: number | null;
+  change7d?: number | null;
+  change30d?: number | null;
   pricePointsCount: number;
   reportsCount: number;
   indicatorsCount: number;
@@ -143,6 +153,10 @@ export type StockScopeScreenerRow = {
   pe?: number | null;
   pb?: number | null;
   dividendYield?: number | null;
+  hasFreshReport?: boolean;
+  sourceName?: string;
+  sourceUrl?: string;
+  fetchedAt?: string;
 };
 
 export type StockScopeScreenerResponse = {

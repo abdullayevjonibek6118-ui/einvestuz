@@ -151,6 +151,16 @@ class StockScopeProvider:
         limit: int = 50,
         min_roe: float | None = None,
         min_roa: float | None = None,
+        listing_category: str | None = None,
+        sector: str | None = None,
+        min_market_cap: float | None = None,
+        max_market_cap: float | None = None,
+        min_dividend_yield: float | None = None,
+        min_volume: float | None = None,
+        min_change_1d: float | None = None,
+        min_change_7d: float | None = None,
+        min_change_30d: float | None = None,
+        fresh_reports: bool | None = None,
         max_pe: float | None = None,
         max_pb: float | None = None,
         min_reports: int | None = None,
@@ -172,6 +182,21 @@ class StockScopeProvider:
             ]
         rows = [row for row in rows if self._passes_min(row.get("roe"), min_roe)]
         rows = [row for row in rows if self._passes_min(row.get("roa"), min_roa)]
+        rows = [row for row in rows if self._passes_equal_text(row.get("listing_category") or row.get("listingCategory"), listing_category)]
+        rows = [row for row in rows if self._passes_equal_text(row.get("sector"), sector)]
+        rows = [row for row in rows if self._passes_min(row.get("market_cap"), min_market_cap)]
+        rows = [row for row in rows if self._passes_max(row.get("market_cap"), max_market_cap)]
+        rows = [row for row in rows if self._passes_min(row.get("dividend_yield"), min_dividend_yield)]
+        rows = [
+            row
+            for row in rows
+            if self._passes_min(row.get("volume_30d") or row.get("volume_7d") or row.get("volume_1d"), min_volume)
+        ]
+        rows = [row for row in rows if self._passes_min(row.get("change_1d"), min_change_1d)]
+        rows = [row for row in rows if self._passes_min(row.get("change_7d"), min_change_7d)]
+        rows = [row for row in rows if self._passes_min(row.get("change_30d"), min_change_30d)]
+        if fresh_reports is not None:
+            rows = [row for row in rows if self._passes_fresh_report(row, fresh_reports)]
         rows = [row for row in rows if self._passes_max(row.get("pe"), max_pe)]
         rows = [row for row in rows if self._passes_max(row.get("pb"), max_pb)]
         rows = [row for row in rows if self._passes_min(row.get("reports_count"), min_reports)]
@@ -184,6 +209,12 @@ class StockScopeProvider:
             "indicators_count",
             "dividends_count",
             "price_points_count",
+            "volume_1d",
+            "volume_7d",
+            "volume_30d",
+            "change_1d",
+            "change_7d",
+            "change_30d",
             "roe",
             "roa",
             "pe",
@@ -680,6 +711,21 @@ class StockScopeProvider:
             return True
         numeric = self._number(value)
         return numeric is not None and numeric <= maximum
+
+    def _passes_equal_text(self, value: Any, expected: str | None) -> bool:
+        normalized = str(expected or "").strip().lower()
+        if not normalized:
+            return True
+        return str(value or "").strip().lower() == normalized
+
+    def _passes_fresh_report(self, row: dict[str, Any], expected: bool) -> bool:
+        explicit = row.get("has_fresh_report") if "has_fresh_report" in row else row.get("hasFreshReport")
+        if explicit is not None:
+            return bool(explicit) is expected
+        if expected:
+            reports_count = self._number(row.get("reports_count"))
+            return reports_count is not None and reports_count > 0
+        return True
 
     def _sort_value(self, value: Any) -> tuple[int, Any]:
         numeric = self._number(value)

@@ -23,6 +23,17 @@ News RSS is available for Gazeta.uz, Kun.uz, Spot.uz, and UZA. Daryo needs a sec
 
 OpenInfo remains the biggest blocker. The public `/api/v1/reports/` candidate returned 404 and the `test.openinfo.uz` API candidate failed TLS handshake on 2026-06-26. Treat it as high-priority, but do not build around it until access is confirmed or an HTML/document fallback is implemented.
 
+## Source Priority
+
+| Priority | Source | Primary use |
+| --- | --- | --- |
+| 1 | UZSE | prices, trades, listing category, securities catalog, market and issuer trading statistics |
+| 2 | openinfo.uz | issuer financial statements, report metadata, corporate disclosures |
+| 3 | CBU | FX rates, central bank policy rate, monetary context |
+| 4 | stat.uz | inflation, GDP, macro indicators |
+| 5 | StockScope | UX reference, KPI structure, cross-checking normalized ratios and coverage |
+| 6 | News / issuer sites | issuer events, material facts, public disclosure context |
+
 ## PostgreSQL Tables
 
 Minimum normalized schema:
@@ -47,13 +58,15 @@ Minimum normalized schema:
 
 ## Connector Order
 
-1. Extend the existing UZSE provider into a scheduled ingestion job that upserts `companies`, `securities`, `quotes_latest`, `trades`, `market_indices`, and `index_history`.
-2. Add RSS ingestion for `gazeta_uz_rss`, `kun_uz_rss`, `spot_uz_rss`, and `uza_uz_rss`; dedupe by canonical URL and title hash.
-3. Add AI enrichment after RSS ingestion: entity match against `companies` and `security_aliases`, then sentiment, market impact, summary, and confidence.
-4. Add macro jobs for CBU FX and `api.stat.uz` national accounts. Expand `api.stat.uz` dataset IDs for inflation, exports, imports, and GDP components.
-5. Implement OpenInfo discovery as a separate spike: confirm authenticated/public API or build an HTML/document crawler.
-6. Add IPO calendar from UZSE/NAPP/Spot/OpenInfo once corporate-event ingestion exists.
-7. Keep Finnhub as the default global-company API through `FINNHUB_API_KEY`; add ROIC AI or Finazon only after product requirements require their extra coverage.
+1. Run a daily UZSE parser that upserts the listing catalog, current prices, daily trades, trade totals, listing categories, UCI/market index history, new listings, and trading statistics for day/7 days/30 days.
+2. Run an OpenInfo parser keyed by ISIN, issuer name, and tax identifier where available. Store report links, period, publication date, document type, and the raw source snapshot.
+3. Normalize financial statements into canonical rows: `assets`, `equity`, `revenue`, `gross_profit`, `operating_profit`, `net_profit`, `liabilities`, `cash`, `debt`, and dividend facts.
+4. Calculate local metrics after ingestion: market cap, P/E, P/B, ROE, ROA, dividend yield, price change for 1D/7D/30D, trading volume for 1D/7D/30D, and fresh-report flags.
+5. Add RSS ingestion for `gazeta_uz_rss`, `kun_uz_rss`, `spot_uz_rss`, and `uza_uz_rss`; dedupe by canonical URL and title hash.
+6. Add AI enrichment after reports, trades, and RSS ingestion: entity match against `companies` and `security_aliases`, then market brief, issuer summary, liquidity/profitability/disclosure risk, sentiment, impact, and confidence.
+7. Add macro jobs for CBU FX and `api.stat.uz` national accounts. Expand `api.stat.uz` dataset IDs for inflation, exports, imports, and GDP components.
+8. Add IPO/new-listing calendar from UZSE/NAPP/Spot/OpenInfo once corporate-event ingestion exists.
+9. Keep Finnhub as the default global-company API through `FINNHUB_API_KEY`; add ROIC AI or Finazon only after product requirements require their extra coverage.
 
 ## Normalization Rules
 
@@ -63,7 +76,11 @@ Store issuer names exactly as sourced and separately maintain a cleaned display 
 
 Every row from an external source should include `source_id`, `source_url`, `fetched_at`, and, when available, `published_at` or `as_of_date`.
 
+Every user-facing number should be auditable back to source metadata. API payloads should carry `source_name`, `source_url`, `fetched_at`, and calculation metadata for derived values. For derived ratios, store both the normalized inputs and the formula version, for example `pe = market_cap / net_profit`.
+
 Financial metrics should be period-based and auditable. Keep raw document links and parsed values; do not overwrite historical reported values when a later corrected filing appears. Insert a new version and mark the latest version.
+
+AI summaries must be generated from stored normalized facts only. The prompt context should include latest report period, revenue/net profit trend, ROE/ROA, P/E/P/B, dividend history, 1D/7D/30D trading volume, price changes, missing fields, and source freshness. The output should explain what matters in plain language and explicitly call out unavailable or stale data.
 
 ## Immediate Backend Tasks
 

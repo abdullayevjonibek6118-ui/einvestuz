@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Bot, ChevronRight, CircleAlert, Database, Search, TrendingUp } from "lucide-react";
 import { getDashboardData, getStockScopeScreener } from "@/lib/api";
+import type { StockScopeScreenerRow } from "@/lib/data";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({ title: "Аналитика фондового рынка Узбекистана", description: "Котировки, финансовые показатели, отчётность, дивиденды и новости публичных компаний Узбекистана в едином инвестиционном терминале.", path: "/" });
@@ -10,8 +11,14 @@ export default async function MarketOverview() {
     getDashboardData(),
     getStockScopeScreener({ limit: 10, sort_by: "market_cap", sort_dir: "desc" }),
   ]);
-  const rows = screener.items.length ? screener.items : fallbackRows;
+  const rows: StockScopeScreenerRow[] = screener.items.length ? screener.items : fallbackRows;
   const indexItems = dashboard.indexes.slice(0, 5);
+  const uci = indexItems.find((item) => item.ticker.toLowerCase().includes("uci") || item.name.toLowerCase().includes("uci")) ?? indexItems[0];
+  const topTurnover = sortedBy(rows, (row) => row.volume30d ?? row.volume7d ?? row.volume1d ?? row.marketCap).slice(0, 5);
+  const topGrowth = sortedBy(rows, (row) => row.change1d ?? row.roe).slice(0, 5);
+  const topDecline = sortedBy(rows, (row) => row.change1d ?? row.roe, "asc").slice(0, 5);
+  const latestReports = [...rows].sort((a, b) => String(b.latestPeriod ?? "").localeCompare(String(a.latestPeriod ?? ""))).slice(0, 5);
+  const latestTrades = rows.filter((row) => row.currentPrice != null).slice(0, 5);
   const marketIsLive = indexItems.length > 0 && indexItems.every((item) => item.sourceStatus === "live");
 
   return (
@@ -52,6 +59,32 @@ export default async function MarketOverview() {
             <p>Перед покупкой проверяйте глубину торгов, динамику прибыли и качество раскрытия. Высокая доходность без объёма может быть трудна для реализации.</p>
             <Link href="/ai">Открыть полный разбор <ChevronRight size={14} /></Link>
           </div>
+        </section>
+      </div>
+
+      <div className="insight-grid">
+        <section className="panel">
+          <div className="panel-header"><h2>UCI / индекс рынка</h2><span className="badge">UZSE</span></div>
+          {uci ? (
+            <div className="pulse-item">
+              <span>{uci.name}</span>
+              <b>{uci.value}</b>
+              <em className={uci.change >= 0 ? "positive" : "negative"}>{uci.change >= 0 ? "+" : ""}{uci.change.toFixed(2)}%</em>
+            </div>
+          ) : <EmptyInline text="Индекс рынка временно недоступен" />}
+        </section>
+        <MarketMiniList title="Топ по обороту" rows={topTurnover} metric={(row) => formatCompact(row.volume30d ?? row.volume7d ?? row.volume1d ?? row.marketCap)} note="объём UZSE / fallback market cap" />
+        <MarketMiniList title="Топ роста" rows={topGrowth} metric={(row) => formatPercent(row.change1d ?? row.roe)} note="1D / fallback ROE" />
+        <MarketMiniList title="Топ падения" rows={topDecline} metric={(row) => formatPercent(row.change1d ?? row.roe)} note="1D / fallback ROE" />
+      </div>
+
+      <div className="insight-grid">
+        <MarketMiniList title="Новые листинги" rows={latestReports} metric={(row) => row.listingCategory ?? row.latestPeriod ?? "—"} note="категория / свежий период" />
+        <MarketMiniList title="Последние сделки" rows={latestTrades} metric={(row) => formatMoney(row.currentPrice)} note="последняя цена" />
+        <MarketMiniList title="Последние отчёты компаний" rows={latestReports} metric={(row) => row.latestPeriod ?? `${row.reportsCount} отч.`} note="OpenInfo / disclosure" />
+        <section className="panel">
+          <div className="panel-header"><h2>AI market brief</h2><Bot size={16} /></div>
+          <p className="text-sm leading-6 text-[#475569]">Рынок нужно читать через три слоя: UZSE показывает цену и оборот, OpenInfo подтверждает прибыль и капитал, CBU/stat.uz задают макрофон. Если объёма нет, даже сильные мультипликаторы стоит считать предварительным сигналом.</p>
         </section>
       </div>
 
@@ -99,7 +132,7 @@ const fallbackMacro = [
   { label: "ВВП", value: "+8,7%", source: "Stat.uz" },
   { label: "Резервы", value: "$41,2B", source: "ЦБ Узбекистана" },
 ];
-const fallbackRows = [
+const fallbackRows: StockScopeScreenerRow[] = [
   { ticker: "A011030", name: "O'zlitineftgaz aksiyadorlik jamiyati", currentPrice: 242500, marketCap: 47312962500, roe: 9.371, roa: 2.8195, pe: 7.9192, pb: 0.7421, dividendYield: 6.1856, reportsCount: 37, indicatorsCount: 37, dividendsCount: 11, pricePointsCount: 813 },
 ];
 function formatMoney(value?: number | null) { return value == null ? "—" : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value)} UZS`; }
@@ -108,3 +141,28 @@ function formatPercent(value?: number | null) { return value == null ? "—" : `
 function formatRatio(value?: number | null) { return value == null ? "—" : value.toFixed(2); }
 function tone(value?: number | null) { return value == null ? "" : value > 0 ? "positive" : value < 0 ? "negative" : ""; }
 function EmptyInline({ text }: { text: string }) { return <div className="pulse-item"><span>{text}</span><b>—</b><em>OFFLINE</em></div>; }
+function sortedBy<T>(items: T[], pick: (item: T) => number | null | undefined, direction: "asc" | "desc" = "desc") {
+  return [...items].sort((a, b) => {
+    const av = pick(a);
+    const bv = pick(b);
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return direction === "asc" ? av - bv : bv - av;
+  });
+}
+function MarketMiniList({ title, rows, metric, note }: { title: string; rows: StockScopeScreenerRow[]; metric: (row: StockScopeScreenerRow) => string; note: string }) {
+  return (
+    <section className="panel">
+      <div className="panel-header"><h2>{title}</h2><span>{note}</span></div>
+      <div className="space-y-2">
+        {rows.map((row) => (
+          <Link key={`${title}-${row.ticker}`} href={`/stocks/${row.ticker}`} className="flex items-center justify-between gap-3 rounded-[14px] border border-[#dbe4ef] bg-[#f8fafc] p-3 text-sm transition hover:bg-white">
+            <span><strong className="text-[#0f172a]">{row.ticker}</strong><small className="block text-[#64748b]">{row.name}</small></span>
+            <b className={tone(row.change1d ?? row.roe)}>{metric(row)}</b>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
