@@ -36,8 +36,10 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .topbar { position: sticky; top: 0; z-index: 50; background: rgba(8,11,16,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(18px); }
 .topbar-inner { height: 62px; max-width: 1600px; margin: auto; padding: 0 24px; display: flex; align-items: center; gap: 28px; }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 160px; }
-.brand-logo { position: relative; width: 34px; height: 34px; flex: 0 0 34px; overflow: hidden; border-radius: 3px; background: #000; }
-.brand-logo img { position: absolute; width: 82px; height: 82px; max-width: none; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.brand-logo { position: relative; width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; overflow: hidden; border-radius: 3px; background: #020403; }
+.brand-logo::before { content: ""; position: absolute; inset: 6px; border: 2px solid var(--accent); transform: rotate(45deg); }
+.brand-logo::after { content: ""; position: absolute; width: 9px; height: 9px; border-radius: 1px; background: var(--accent); transform: rotate(45deg); }
+.brand-logo span { position: absolute; width: 20px; height: 2px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 80%, white); }
 .brand-copy { display: flex; flex-direction: column; letter-spacing: 0; }
 .brand-copy strong { font-size: 14px; line-height: 1.1; }
 .brand-copy small { margin-top: 3px; font-size: 8px; letter-spacing: .12em; color: var(--muted); }

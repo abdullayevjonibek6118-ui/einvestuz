@@ -6,13 +6,15 @@ import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin", "cyrillic"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-sans",
+  display: "swap",
 });
 const firaCode = Fira_Code({
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500"],
   variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

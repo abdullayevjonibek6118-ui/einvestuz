@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { getApiUrl } from "@/lib/live-market";
@@ -59,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="topbar">
         <div className="topbar-inner">
           <Link href="/" className="brand" aria-label="EInvest, главная">
-            <span className="brand-logo"><Image src="/brand/einvest-logo.svg" alt="" width={82} height={82} priority unoptimized /></span>
+            <span className="brand-logo" aria-hidden="true"><span /></span>
             <span className="brand-copy"><strong>EINVEST</strong><small>UZBEKISTAN MARKETS</small></span>
           </Link>
 
@@ -116,6 +115,9 @@ function MarketStrip() {
 
   useEffect(() => {
     let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let idleId: number | undefined;
+    const isMobile = window.matchMedia("(max-width: 720px)").matches;
     const load = async () => {
       try {
         const response = await fetch(getApiUrl("/market-strip"), { cache: "no-store" });
@@ -126,9 +128,21 @@ function MarketStrip() {
         // Keep explicit unavailable placeholders when the API cannot be reached.
       }
     };
-    void load();
-    const timer = window.setInterval(load, 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    if (isMobile) {
+      if (typeof window.requestIdleCallback === "function") {
+        idleId = window.requestIdleCallback(() => { void load(); }, { timeout: 2_500 });
+      } else {
+        timer = setTimeout(() => { void load(); }, 1_200);
+      }
+    } else {
+      void load();
+      timer = setInterval(load, 60_000);
+    }
+    return () => {
+      active = false;
+      if (timer) clearInterval(timer);
+      if (idleId && typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(idleId);
+    };
   }, []);
 
   const usd = data?.fx_rates?.find((item) => item.ccy === "USD");
