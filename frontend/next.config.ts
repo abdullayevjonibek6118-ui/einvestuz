@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 import path from "node:path";
 
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: path.join(process.cwd(), ".."),
+  outputFileTracingRoot: process.env.CI ? process.cwd() : path.join(process.cwd(), ".."),
+  turbopack: {
+    root: process.env.CI ? process.cwd() : path.join(process.cwd(), ".."),
+  },
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
