@@ -345,97 +345,6 @@ export type NewsItem = {
   related?: string;
 };
 
-export const indexes: MarketIndex[] = [
-  { name: "S&P 500", ticker: "SPX", value: "7 380.00", change: -0.4 },
-  { name: "Nasdaq", ticker: "IXIC", value: "25 680.00", change: -0.5 },
-  { name: "Dow Jones", ticker: "DJI", value: "51 690.00", change: -0.2 },
-  { name: "Bitcoin", ticker: "BTC", value: "$62 200", change: -0.6 },
-  { name: "Gold", ticker: "XAU", value: "$4 145", change: 0.1 },
-  { name: "Oil", ticker: "WTI", value: "$73.00", change: -0.2 },
-];
-
-export const stocks: Stock[] = [
-  {
-    ticker: "AAPL",
-    name: "Apple",
-    price: 298,
-    change: 0.4,
-    marketCap: "$3.2T",
-    pe: 33.1,
-    dividend: "0.45%",
-    sector: "Technology",
-    description:
-      "Apple designs consumer devices, software, services, and an expanding ecosystem around iPhone, Mac, iPad, wearables, and subscriptions.",
-  },
-  {
-    ticker: "NVDA",
-    name: "Nvidia",
-    price: 201,
-    change: -1.2,
-    marketCap: "$3.5T",
-    pe: 52.7,
-    dividend: "0.03%",
-    sector: "Semiconductors",
-    description:
-      "Nvidia builds GPUs, AI accelerators, networking products, and software platforms used in data centers, gaming, professional visualization, and automotive markets.",
-  },
-  {
-    ticker: "MSFT",
-    name: "Microsoft",
-    price: 373,
-    change: -0.6,
-    marketCap: "$3.4T",
-    pe: 36.8,
-    dividend: "0.71%",
-    sector: "Software",
-    description:
-      "Microsoft provides cloud infrastructure, productivity software, operating systems, business applications, gaming, and AI services.",
-  },
-  {
-    ticker: "TSLA",
-    name: "Tesla",
-    price: 383,
-    change: -1.4,
-    marketCap: "$1.0T",
-    pe: 84.2,
-    dividend: "0%",
-    sector: "Automotive",
-    description:
-      "Tesla makes electric vehicles, energy storage systems, solar products, charging infrastructure, and autonomous driving software.",
-  },
-  {
-    ticker: "AMZN",
-    name: "Amazon",
-    price: 234,
-    change: -0.5,
-    marketCap: "$2.1T",
-    pe: 42.5,
-    dividend: "0%",
-    sector: "E-commerce",
-    description:
-      "Amazon operates online retail marketplaces, logistics, advertising, subscriptions, devices, and AWS cloud infrastructure.",
-  },
-  {
-    ticker: "META",
-    name: "Meta",
-    price: 563,
-    change: -0.8,
-    marketCap: "$1.5T",
-    pe: 29.4,
-    dividend: "0.32%",
-    sector: "Social Platforms",
-    description:
-      "Meta operates Facebook, Instagram, WhatsApp, Messenger, advertising tools, AI products, and Reality Labs initiatives.",
-  },
-];
-
-export const news: NewsItem[] = [
-  { id: 1, title: "Nvidia expands AI server partnerships across cloud providers", source: "Market Watch", category: "Технологии", time: "12 мин" },
-  { id: 2, title: "US indexes edge higher as investors watch inflation data", source: "Reuters", category: "США", time: "38 мин" },
-  { id: 3, title: "Spot Bitcoin ETF inflows recover after volatile week", source: "CoinDesk", category: "Крипта", time: "1 ч" },
-  { id: 4, title: "Dividend ETF demand rises among long-term investors", source: "ETF.com", category: "ETF", time: "2 ч" },
-];
-
 export type AcademyLesson = {
   level: "Beginner" | "Intermediate" | "Advanced";
   title: string;
@@ -548,16 +457,6 @@ export const lessons: AcademyLesson[] = [
     practice: "Сравните Nvidia и Apple: у какой компании выше отраслевой риск, а у какой выше риск оценки?",
   },
 ];
-
-export const positions = [
-  { ticker: "NVDA", quantity: 4, buyPrice: 126.3 },
-  { ticker: "MSFT", quantity: 3, buyPrice: 431.1 },
-  { ticker: "AAPL", quantity: 5, buyPrice: 203.7 },
-];
-
-export function getStock(ticker: string) {
-  return stocks.find((stock) => stock.ticker.toLowerCase() === ticker.toLowerCase());
-}
 
 export function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {

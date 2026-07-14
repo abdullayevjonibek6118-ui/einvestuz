@@ -1,5 +1,18 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Bot, ChevronRight, CircleAlert, Database, Search, TrendingUp } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Bot,
+  ChevronRight,
+  CircleAlert,
+  Database,
+  Landmark,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
 import { getDashboardData, getStockScopeScreener } from "@/lib/api";
 import type { StockScopeScreenerRow } from "@/lib/data";
 import { pageMetadata } from "@/lib/seo";
@@ -11,26 +24,42 @@ export default async function MarketOverview() {
     getDashboardData(),
     getStockScopeScreener({ limit: 10, sort_by: "market_cap", sort_dir: "desc" }),
   ]);
-  const rows: StockScopeScreenerRow[] = screener.items.length ? screener.items : fallbackRows;
+  const rows: StockScopeScreenerRow[] = screener.items;
   const indexItems = dashboard.indexes.slice(0, 5);
   const uci = indexItems.find((item) => item.ticker.toLowerCase().includes("uci") || item.name.toLowerCase().includes("uci")) ?? indexItems[0];
-  const topTurnover = sortedBy(rows, (row) => row.volume30d ?? row.volume7d ?? row.volume1d ?? row.marketCap).slice(0, 5);
-  const topGrowth = sortedBy(rows, (row) => row.change1d ?? row.roe).slice(0, 5);
-  const topDecline = sortedBy(rows, (row) => row.change1d ?? row.roe, "asc").slice(0, 5);
+  const topTurnover = sortedBy(rows, (row) => row.volume30d ?? row.volume7d ?? row.volume1d).slice(0, 5);
+  const topGrowth = sortedBy(rows, (row) => row.change1d).slice(0, 5);
+  const topDecline = sortedBy(rows, (row) => row.change1d, "asc").slice(0, 5);
   const latestReports = [...rows].sort((a, b) => String(b.latestPeriod ?? "").localeCompare(String(a.latestPeriod ?? ""))).slice(0, 5);
   const latestTrades = rows.filter((row) => row.currentPrice != null).slice(0, 5);
   const marketIsLive = indexItems.length > 0 && indexItems.every((item) => item.sourceStatus === "live");
 
   return (
     <div className="market-overview">
-      <div className="page-heading enter">
-        <div>
-          <p className="eyebrow">UZBEKISTAN MARKET INTELLIGENCE</p>
-          <h1>Понять рынок. Проверить компанию. Принять решение.</h1>
-          <p>Финансовая отчётность, торговая статистика и AI-анализ узбекских компаний в одном исследовательском терминале.</p>
+      <section className="home-hero enter" aria-labelledby="home-title">
+        <div className="hero-copy">
+          <p className="eyebrow">EINVEST UZBEKISTAN MARKETS</p>
+          <h1 id="home-title">Инвестиционный терминал для рынка Узбекистана</h1>
+          <p className="hero-lede">Проверяйте эмитентов, ликвидность, отчётность и рыночные сигналы в одном рабочем пространстве с AI-помощником для учебного анализа.</p>
+          <div className="hero-actions" aria-label="Основные действия">
+            <Link href="/screener" className="terminal-button primary">Открыть скринер <ArrowRight size={15} /></Link>
+            <Link href="/ai" className="terminal-button">Спросить AI <Bot size={15} /></Link>
+          </div>
+          <div className="hero-proof" aria-label="Ключевые возможности">
+            <span><Activity size={15} /> UZSE и индексы</span>
+            <span><ShieldCheck size={15} /> отчётность OpenInfo</span>
+            <span><Landmark size={15} /> макро ЦБ / Stat.uz</span>
+          </div>
         </div>
-        <span className="as-of">Данные обновляются</span>
-      </div>
+        <div className="hero-visual" aria-label="Визуальный концепт InvestAI">
+          <Image src="/images/einvestuz-hero.png" alt="InvestAI mobile interface for Uzbekistan markets" fill priority sizes="(max-width: 900px) 100vw, 48vw" />
+          <div className="hero-signal-card">
+            <span><Sparkles size={13} /> AI brief</span>
+            <strong>Ликвидность важнее красивого мультипликатора</strong>
+            <em>Проверяйте объём торгов перед оценкой идеи.</em>
+          </div>
+        </div>
+      </section>
 
       <section className="command-bar enter enter-delay" aria-label="Поиск по рынку">
         <Search size={20} />
@@ -47,7 +76,7 @@ export default async function MarketOverview() {
                 <span>{item.name}</span><b>{item.value}</b><em className={item.change >= 0 ? "positive" : "negative"}>{item.change >= 0 ? "+" : ""}{item.change.toFixed(2)}%</em>
               </div>
             )) : <EmptyInline text="Индексы временно недоступны" />}
-            <div className="pulse-item"><span>Компаний в базе</span><b>{screener.coverage?.total ?? screener.total ?? 166}</b><em>UZSE</em></div>
+            <div className="pulse-item"><span>Компаний в базе</span><b>{(screener.coverage?.total ?? screener.total) || "—"}</b><em>UZSE</em></div>
           </div>
         </section>
 
@@ -73,9 +102,9 @@ export default async function MarketOverview() {
             </div>
           ) : <EmptyInline text="Индекс рынка временно недоступен" />}
         </section>
-        <MarketMiniList title="Топ по обороту" rows={topTurnover} metric={(row) => formatCompact(row.volume30d ?? row.volume7d ?? row.volume1d ?? row.marketCap)} note="объём UZSE / fallback market cap" />
-        <MarketMiniList title="Топ роста" rows={topGrowth} metric={(row) => formatPercent(row.change1d ?? row.roe)} note="1D / fallback ROE" />
-        <MarketMiniList title="Топ падения" rows={topDecline} metric={(row) => formatPercent(row.change1d ?? row.roe)} note="1D / fallback ROE" />
+        <MarketMiniList title="Топ по обороту" rows={topTurnover} metric={(row) => formatCompact(row.volume30d ?? row.volume7d ?? row.volume1d)} note="объём UZSE" />
+        <MarketMiniList title="Топ роста" rows={topGrowth} metric={(row) => formatPercent(row.change1d)} note="изменение 1D" />
+        <MarketMiniList title="Топ падения" rows={topDecline} metric={(row) => formatPercent(row.change1d)} note="изменение 1D" />
       </div>
 
       <div className="insight-grid">
@@ -108,33 +137,25 @@ export default async function MarketOverview() {
             ))}</tbody>
           </table>
         </div>
+        {!rows.length ? <div className="empty-state"><Search /><strong>Данные скринера недоступны</strong><span>Проверьте backend API и источники StockScope / UZSE.</span></div> : null}
       </section>
 
-      <div className="insight-grid">
+      <div className="insight-grid wide-grid">
         <section className="panel">
           <div className="panel-header"><h2>Экономика Узбекистана</h2><span className="badge"><Database size={11} /> CBU / STAT.UZ</span></div>
           <div className="macro-grid">
-            {(dashboard.macro.length ? dashboard.macro.slice(0, 4) : fallbackMacro).map((item) => <div key={item.label}><span>{item.label}</span><b>{item.value}</b><small>{item.source ?? "официальные данные"}</small></div>)}
+            {dashboard.macro.length ? dashboard.macro.slice(0, 4).map((item) => <div key={item.label}><span>{item.label}</span><b>{item.value}</b><small>{item.source ?? "официальные данные"}</small></div>) : <EmptyInline text="Макроданные временно недоступны" />}
           </div>
         </section>
         <section className="panel news-panel">
           <div className="panel-header"><h2>События рынка</h2><Link href="/ai">AI-сводка</Link></div>
-          <div>{dashboard.news.slice(0, 4).map((item) => <article key={item.id}><span>{item.source} · {item.time}</span><h3>{item.title}</h3><p><CircleAlert size={13} /> AI оценит влияние на связанные компании</p></article>)}</div>
+          <div>{dashboard.news.length ? dashboard.news.slice(0, 4).map((item) => <article key={item.id}><span>{item.source} · {item.time}</span><h3>{item.title}</h3><p><CircleAlert size={13} /> AI оценит влияние на связанные компании</p></article>) : <div className="empty-state"><CircleAlert /><strong>Новостей нет</strong><span>Источник новостей сейчас не вернул актуальные публикации.</span></div>}</div>
         </section>
       </div>
     </div>
   );
 }
 
-const fallbackMacro = [
-  { label: "Ставка ЦБ", value: "14,0%", source: "ЦБ Узбекистана" },
-  { label: "Инфляция", value: "5,5%", source: "ЦБ Узбекистана" },
-  { label: "ВВП", value: "+8,7%", source: "Stat.uz" },
-  { label: "Резервы", value: "$41,2B", source: "ЦБ Узбекистана" },
-];
-const fallbackRows: StockScopeScreenerRow[] = [
-  { ticker: "A011030", name: "O'zlitineftgaz aksiyadorlik jamiyati", currentPrice: 242500, marketCap: 47312962500, roe: 9.371, roa: 2.8195, pe: 7.9192, pb: 0.7421, dividendYield: 6.1856, reportsCount: 37, indicatorsCount: 37, dividendsCount: 11, pricePointsCount: 813 },
-];
 function formatMoney(value?: number | null) { return value == null ? "—" : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value)} UZS`; }
 function formatCompact(value?: number | null) { return value == null ? "—" : new Intl.NumberFormat("ru-RU", { notation: "compact", maximumFractionDigits: 1 }).format(value); }
 function formatPercent(value?: number | null) { return value == null ? "—" : `${value.toFixed(1)}%`; }
@@ -155,13 +176,13 @@ function MarketMiniList({ title, rows, metric, note }: { title: string; rows: St
   return (
     <section className="panel">
       <div className="panel-header"><h2>{title}</h2><span>{note}</span></div>
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <Link key={`${title}-${row.ticker}`} href={`/stocks/${row.ticker}`} className="flex items-center justify-between gap-3 rounded-[14px] border border-[#dbe4ef] bg-[#f8fafc] p-3 text-sm transition hover:bg-white">
-            <span><strong className="text-[#0f172a]">{row.ticker}</strong><small className="block text-[#64748b]">{row.name}</small></span>
+      <div className="mini-list">
+        {rows.length ? rows.map((row) => (
+          <Link key={`${title}-${row.ticker}`} href={`/stocks/${row.ticker}`} className="mini-list-item">
+            <span><strong>{row.ticker}</strong><small>{row.name}</small></span>
             <b className={tone(row.change1d ?? row.roe)}>{metric(row)}</b>
           </Link>
-        ))}
+        )) : <div className="empty-state"><strong>Нет данных</strong><span>Источник пока не вернул строки для этого блока.</span></div>}
       </div>
     </section>
   );

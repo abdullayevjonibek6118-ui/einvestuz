@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, GitCompareArrows, Search } from "lucide-react";
 import { PageHeader, SourceStatusBadge } from "@/components/ui";
-import { getStockScopeBatchDetails } from "@/lib/api";
+import { getStockScopeBatchDetails, getStockScopeScreener } from "@/lib/api";
 import type { StockScopeDetails, StockScopeIndicatorPeriod } from "@/lib/data";
 import { pageMetadata } from "@/lib/seo";
 export const dynamic="force-dynamic";
@@ -9,7 +9,7 @@ export const metadata = pageMetadata({ title: "Сравнение публичн
 type SearchParams=Promise<Record<string,string|string[]|undefined>>;
 const rows=[["ROE","ROE","%"],["ROA","ROA","%"],["NetProfitMargin","Чистая маржа","%"],["GrossProfitMargin","Валовая маржа","%"],["DebtToEquity","Долг / капитал","x"],["CurrentRatio","Текущая ликвидность","x"],["Revenue","Выручка",""] ,["Earnings","Чистая прибыль",""]] as const;
 export default async function ComparePage({searchParams}:{searchParams?:SearchParams}){
- const p=(await Promise.resolve(searchParams??Promise.resolve({}))) as Record<string,string|string[]|undefined>; const raw=first(p.tickers)||"A011030,AGBA,UZMK"; const tickers=[...new Set(raw.split(/[,\s]+/).map(x=>x.trim().toUpperCase()).filter(Boolean))].slice(0,6); const data=await getStockScopeBatchDetails(tickers); const companies=data.items.filter(x=>x.ticker);
+ const p=(await Promise.resolve(searchParams??Promise.resolve({}))) as Record<string,string|string[]|undefined>; const raw=first(p.tickers); const requestedTickers=[...new Set(raw.split(/[,\s]+/).map(x=>x.trim().toUpperCase()).filter(Boolean))].slice(0,6); const tickers=requestedTickers.length?requestedTickers:(await getStockScopeScreener({limit:3,sort_by:"market_cap",sort_dir:"desc"})).items.map(x=>x.ticker).filter(Boolean).slice(0,3); const data=await getStockScopeBatchDetails(tickers); const companies=data.items.filter(x=>x.ticker);
  return <><PageHeader title="Сравнение компаний" subtitle="Сопоставьте качество бизнеса, оценку и раскрытие нескольких эмитентов на одной шкале."/>
  <section className="panel compare-command"><form><div className="input-control"><Search size={16}/><input name="tickers" defaultValue={tickers.join(", ")} aria-label="Тикеры для сравнения"/></div><button className="terminal-button primary"><GitCompareArrows size={15}/>Сравнить</button><Link href="/screener" className="terminal-button">Выбрать в скринере</Link></form></section>
  {companies.length?<><section className="compare-company-grid">{companies.map(c=><Company key={c.ticker} company={c}/>)}</section><section className="panel"><div className="panel-header"><div><h2>Матрица показателей</h2><span>{companies.length} компаний</span></div><SourceStatusBadge source="StockScope" status="delayed"/></div><div className="data-table-wrap"><table className="data-table compare-table"><thead><tr><th>Показатель</th>{companies.map(c=><th key={c.ticker}>{c.ticker}</th>)}</tr></thead><tbody>{rows.map(([k,l,s])=><tr key={k}><td>{l}</td>{companies.map(c=><td key={c.ticker}>{fmt(values(c)[k],s)}</td>)}</tr>)}<Extra label="Отчёты" companies={companies} value={c=>String(c.reports?.length??0)}/><Extra label="Дивиденды" companies={companies} value={c=>String(c.dividends?.length??0)}/><Extra label="Точек цены" companies={companies} value={c=>String(c.priceHistory?.points?.length??0)}/></tbody></table></div></section></>:<div className="empty-state panel"><GitCompareArrows/><strong>Нет данных для сравнения</strong><span>Проверьте тикеры.</span></div>}</>;

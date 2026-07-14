@@ -222,9 +222,9 @@ SOURCES: list[DataSource] = [
         market="Узбекистан",
         coverage="Макроэкономические и госданные, где доступен машинный доступ",
         update_mode="Публичный портал; прямое API discovery пока не подключено",
-        status="fallback",
+        status="offline",
         url="https://data.egov.uz/",
-        notes="Пока служит metadata placeholder; приоритет отдан проверенному api.stat.uz.",
+        notes="Прямой API discovery пока не подключен; источник не используется для текущих значений.",
     ),
     DataSource(
         id="stat-uz",
@@ -319,14 +319,6 @@ QUOTE_UNIVERSE = {**STOCK_UNIVERSE, **MARKET_UNIVERSE}
 _QUOTE_CACHE = TTLCache(ttl_seconds=20)
 _DETAIL_CACHE = TTLCache(ttl_seconds=300)
 
-FALLBACK_NEWS = [
-    ("Technology", "Nvidia расширяет партнерства по AI-серверам с облачными провайдерами", "Market Watch"),
-    ("US", "Индексы США растут на фоне ожидания новых данных по инфляции", "Reuters"),
-    ("Crypto", "Притоки в спотовые Bitcoin ETF восстановились после волатильной недели", "CoinDesk"),
-    ("ETF", "Спрос на дивидендные ETF растет среди долгосрочных инвесторов", "ETF.com"),
-]
-
-
 def get_sources() -> list[dict[str, str]]:
     return [asdict(source) for source in SOURCES]
 
@@ -336,25 +328,27 @@ def get_source_catalog() -> list[dict[str, str]]:
 
 
 def get_stocks() -> list[Quote]:
-    return _get_quotes_parallel(list(STOCK_UNIVERSE.values()))
+    return _usable_quotes(_get_quotes_parallel(list(STOCK_UNIVERSE.values())))
 
 
 def get_stock(ticker: str) -> Quote | None:
     spec = STOCK_UNIVERSE.get(ticker.upper())
     if spec is None:
         return None
-    return _get_quote(spec)
+    quote = _get_quote(spec)
+    return quote if _is_usable_quote(quote) else None
 
 
 def get_quote_snapshot(ticker: str) -> Quote | None:
     spec = QUOTE_UNIVERSE.get(ticker.upper())
     if spec is None:
         return None
-    return _get_quote(spec)
+    quote = _get_quote(spec)
+    return quote if _is_usable_quote(quote) else None
 
 
 def get_market() -> list[Quote]:
-    return _get_quotes_parallel(list(MARKET_UNIVERSE.values()))
+    return _usable_quotes(_get_quotes_parallel(list(MARKET_UNIVERSE.values())))
 
 
 def get_dashboard_market_table() -> list[dict[str, Any]]:
@@ -368,10 +362,11 @@ def get_dashboard_market_table() -> list[dict[str, Any]]:
         for future in as_completed(futures):
             ticker = futures[future]
             try:
-                rows.append(future.result())
+                row = future.result()
+                if _coerce_float(row.get("price")):
+                    rows.append(row)
             except Exception:
-                spec = STOCK_UNIVERSE.get(ticker) or SymbolSpec(ticker, ticker, ticker, "unknown")
-                rows.append(_fallback_dashboard_market_row(spec))
+                continue
 
     rows.sort(key=lambda row: (-float(row.get("_market_cap_sort") or 0.0), str(row.get("name") or ""), str(row.get("ticker") or "")))
     for index, row in enumerate(rows, start=1):
@@ -389,7 +384,7 @@ def get_quotes(symbols: list[str]) -> list[Quote]:
             specs.append(SymbolSpec(ticker, ticker, ticker, "unknown"))
         else:
             specs.append(spec)
-    return _get_quotes_parallel(specs)
+    return _usable_quotes(_get_quotes_parallel(specs))
 
 
 def get_fundamentals(ticker: str) -> Fundamentals:
@@ -444,8 +439,6 @@ def get_fx_rates() -> list[FxRate]:
             )
         preferred = {"USD": 0, "EUR": 1, "RUB": 2}
         rates.sort(key=lambda rate: (preferred.get(rate.ccy, 100), rate.ccy))
-    if not rates:
-        rates = _fallback_fx_rates()
     _DETAIL_CACHE.set("fx:rates", rates)
     return rates
 
@@ -466,51 +459,25 @@ def get_macro_summary() -> MacroSummary:
         if source is not None
     ]
     fx_rates = get_fx_rates()
-    fx_reference = {
-        rate.ccy: round(rate.rate, 2)
+    indicators = [
+        {
+            "name": f"{rate.ccy}/UZS",
+            "value": round(rate.rate, 2),
+            "unit": "UZS",
+            "as_of": rate.date.isoformat() if rate.date else None,
+            "source": "cbu-uz",
+            "status": rate.status,
+        }
         for rate in fx_rates
         if rate.ccy in {"USD", "EUR", "RUB"}
-    }
-    usd_rate = next((rate for rate in fx_rates if rate.ccy == "USD"), None)
+    ]
+    status: SourceStatus = "delayed" if indicators else "offline"
     summary = MacroSummary(
-        status="delayed",
-        summary="Проверенные макропоказатели с датой наблюдения и статусом источника.",
+        status=status,
+        summary="Проверенные макропоказатели с датой наблюдения и статусом источника." if indicators else "Макроданные временно недоступны из официальных источников.",
         sources=source_catalog,
-        indicators=[
-            {
-                "name": "USD/UZS",
-                "value": fx_reference.get("USD"),
-                "unit": "UZS",
-                "as_of": usd_rate.date.isoformat() if usd_rate and usd_rate.date else None,
-                "source": "cbu-uz",
-                "status": "delayed",
-            },
-            {
-                "name": "Инфляция (г/г)",
-                "value": 5.5,
-                "unit": "%",
-                "as_of": "2026-05-01",
-                "source": "api.stat.uz",
-                "status": "delayed",
-            },
-            {
-                "name": "Рост ВВП (г/г)",
-                "value": 8.7,
-                "unit": "%",
-                "as_of": "2026-03-31",
-                "source": "api.stat.uz",
-                "status": "delayed",
-            },
-            {
-                "name": "Ключевая ставка ЦБ",
-                "value": 14.0,
-                "unit": "%",
-                "as_of": "2026-06-17",
-                "source": "cbu.uz/monetary-policy",
-                "status": "delayed",
-            },
-        ],
-        fallback_reason=None,
+        indicators=indicators,
+        fallback_reason=None if indicators else "Official macro endpoints returned no usable rows.",
         as_of=datetime.now(timezone.utc),
     )
     _DETAIL_CACHE.set("macro:summary", summary)
@@ -522,21 +489,7 @@ def get_news(symbol: str | None = None, category: str | None = None) -> list[dic
         items = _company_news(symbol)
         if items:
             return items
-        now = datetime.now(timezone.utc)
-        fallback_category = _category_for_symbol(symbol)
-        return [
-            {
-                "id": hash((symbol, "fallback")) & 0x7FFFFFFF,
-                "title": f"Finnhub news unavailable for {symbol}",
-                "source": "Einvestuz fallback",
-                "category": fallback_category,
-                "published_at": now,
-                "url": "",
-                "summary": "Company news is temporarily unavailable, so the backend is showing a placeholder item.",
-                "related": symbol,
-                "source_status": "fallback",
-            }
-        ]
+        return []
 
     symbols = ["AAPL", "NVDA", "MSFT", "TSLA"]
     items: list[dict[str, Any]] = []
@@ -547,21 +500,7 @@ def get_news(symbol: str | None = None, category: str | None = None) -> list[dic
             return _dedupe_news(items)
         filtered = [item for item in _dedupe_news(items) if str(item.get("category", "")).lower() == category.lower()]
         return filtered
-    return [
-        {
-            "id": hash((category_name, title, source)) & 0x7FFFFFFF,
-            "title": title,
-            "source": source,
-            "category": category_name,
-            "published_at": datetime.now(timezone.utc),
-            "url": "",
-            "summary": "",
-            "related": "",
-            "source_status": "fallback",
-        }
-        for index, (category_name, title, source) in enumerate(FALLBACK_NEWS)
-        if category is None or category_name.lower() == category.lower()
-    ]
+    return []
 
 
 def _get_quotes_parallel(specs: list[SymbolSpec]) -> list[Quote]:
@@ -579,6 +518,14 @@ def _get_quotes_parallel(specs: list[SymbolSpec]) -> list[Quote]:
             except Exception:
                 results[index] = _empty_quote(spec)
     return [results[index] for index in range(len(specs))]
+
+
+def _usable_quotes(quotes: list[Quote]) -> list[Quote]:
+    return [quote for quote in quotes if _is_usable_quote(quote)]
+
+
+def _is_usable_quote(quote: Quote | None) -> bool:
+    return bool(quote and quote.status != "offline" and quote.source != "unavailable" and quote.price > 0)
 
 
 def _get_quote(spec: SymbolSpec) -> Quote:
@@ -958,16 +905,6 @@ def _dedupe_news(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return result
 
 
-def _fallback_fx_rates() -> list[FxRate]:
-    now = datetime.now(timezone.utc)
-    stale_date = date(2024, 12, 1)
-    return [
-        FxRate(ccy="USD", rate=12017.04, diff=26.78, date=stale_date, name="US Dollar", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
-        FxRate(ccy="EUR", rate=13712.64, diff=-25.8, date=stale_date, name="Euro", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
-        FxRate(ccy="RUB", rate=160.63, diff=-1.6, date=stale_date, name="Russian Ruble", source="cbu-uz", provider="cbu-uz", status="fallback", as_of=now),
-    ]
-
-
 def _finnhub_get_json(path: str, params: dict[str, Any]) -> Any | None:
     api_key = os.getenv("FINNHUB_API_KEY", "").strip()
     if not api_key:
@@ -1163,36 +1100,10 @@ def _build_dashboard_market_row(spec: SymbolSpec) -> dict[str, Any]:
         "volume_24h": volume_24h,
         "circulating_supply": circulating_supply_value,
         "sparkline_7d": sparkline,
-        "source": quote.source or "fallback",
+        "source": quote.source or "unavailable",
         "status": quote.status,
         "as_of": as_of or datetime.now(timezone.utc),
         "_market_cap_sort": market_cap_value or 0.0,
-    }
-
-
-def _fallback_dashboard_market_row(spec: SymbolSpec) -> dict[str, Any]:
-    quote = _empty_quote(spec)
-    return {
-        "rank": 0,
-        "branding": {
-            "logo_url": None,
-            "monogram": _monogram_for_name(spec.name or spec.ticker),
-            "monogram_color": _monogram_color(spec.ticker),
-        },
-        "name": quote.name or spec.name,
-        "ticker": quote.ticker,
-        "price": quote.price,
-        "change_1h": round(quote.change or 0.0, 2),
-        "change_24h": round(quote.change or 0.0, 2),
-        "change_7d": round(quote.change or 0.0, 2),
-        "market_cap": quote.market_cap,
-        "volume_24h": "N/A",
-        "circulating_supply": "N/A",
-        "sparkline_7d": [],
-        "source": quote.source,
-        "status": quote.status,
-        "as_of": quote.as_of or datetime.now(timezone.utc),
-        "_market_cap_sort": 0.0,
     }
 
 

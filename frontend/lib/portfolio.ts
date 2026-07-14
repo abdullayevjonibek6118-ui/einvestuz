@@ -1,9 +1,15 @@
-import { positions, stocks, type Stock } from "@/lib/data";
+import type { Stock } from "@/lib/data";
 
-export function portfolioRows(marketStocks: Stock[] = stocks) {
+export type PortfolioPosition = {
+  ticker: string;
+  quantity: number;
+  buyPrice: number;
+};
+
+export function portfolioRows(positions: PortfolioPosition[] = [], marketStocks: Stock[] = []) {
   return positions.map((position) => {
     const stock = marketStocks.find((item) => item.ticker.toLowerCase() === position.ticker.toLowerCase());
-    const currentPrice = stock?.price ?? position.buyPrice;
+    const currentPrice = stock?.price ?? 0;
     const value = currentPrice * position.quantity;
     const cost = position.buyPrice * position.quantity;
     return {
@@ -23,6 +29,6 @@ export function portfolioSummary(rows = portfolioRows()) {
   return {
     value,
     pnl: value - cost,
-    pnlPercent: ((value - cost) / cost) * 100,
+    pnlPercent: cost > 0 ? ((value - cost) / cost) * 100 : 0,
   };
 }

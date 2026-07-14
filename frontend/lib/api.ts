@@ -1,5 +1,4 @@
 import {
-  getStock as getFallbackStock,
   type FxRate,
   type LiveSourceStatus,
   type MarketIndex,
@@ -468,8 +467,7 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 function normalizeStock(stock: BackendStock): Stock {
-  const fallback = getFallbackStock(stock.ticker);
-  const fundamentals = normalizeFundamentals(stock, fallback);
+  const fundamentals = normalizeFundamentals(stock);
   const earnings = normalizeEarnings(stock.earnings ?? stock.earnings_data);
   const news = stock.news?.length ? stock.news.map(normalizeNewsItem) : undefined;
   const sources = normalizeStockSources(stock);
@@ -479,26 +477,26 @@ function normalizeStock(stock: BackendStock): Stock {
     name: stock.name,
     price: stock.price,
     change: stock.change,
-    marketCap: stock.marketCap ?? stock.market_cap ?? fallback?.marketCap ?? "N/A",
+    marketCap: stock.marketCap ?? stock.market_cap ?? "N/A",
     pe: stock.pe,
     dividend: stock.dividend,
-    sector: stock.sector ?? fallback?.sector ?? "N/A",
-    description: stock.description || fallback?.description || "",
-    source: stock.source ?? fallback?.source,
-    sourceStatus: normalizeSourceStatus(stock.sourceStatus ?? stock.source_status ?? fallback?.sourceStatus),
-    asOf: stock.asOf ?? stock.as_of ?? fallback?.asOf,
-    currency: stock.currency ?? fallback?.currency ?? "USD",
-    market: stock.market ?? fallback?.market,
-    isin: stock.isin ?? fallback?.isin,
-    listingCategory: stock.listingCategory ?? stock.listing_category ?? fallback?.listingCategory,
-    stockType: stock.stockType ?? stock.stock_type ?? fallback?.stockType,
-    openinfoId: stock.openinfoId ?? stock.openinfo_id ?? fallback?.openinfoId,
-    website: stock.website ?? fallback?.website,
-    insight: normalizeStockInsight(stock.insight ?? fallback?.insight),
-    riskFactors: normalizeStockRiskFactors(stock.riskFactors ?? stock.risk_factors ?? fallback?.riskFactors),
-    decisionSummary: normalizeDecisionSummary(stock.decisionSummary ?? stock.decision_summary ?? fallback?.decisionSummary),
-    sourceMeta: normalizeDecisionSourceMeta(isDecisionSourceMeta(stock.source_meta) ? stock.source_meta : undefined) ?? fallback?.sourceMeta,
-    stockscope: normalizeStockScopeDetails(stock.stockscope ?? fallback?.stockscope),
+    sector: stock.sector ?? "N/A",
+    description: stock.description || "",
+    source: stock.source,
+    sourceStatus: normalizeSourceStatus(stock.sourceStatus ?? stock.source_status),
+    asOf: stock.asOf ?? stock.as_of,
+    currency: stock.currency ?? "USD",
+    market: stock.market,
+    isin: stock.isin,
+    listingCategory: stock.listingCategory ?? stock.listing_category,
+    stockType: stock.stockType ?? stock.stock_type,
+    openinfoId: stock.openinfoId ?? stock.openinfo_id,
+    website: stock.website,
+    insight: normalizeStockInsight(stock.insight),
+    riskFactors: normalizeStockRiskFactors(stock.riskFactors ?? stock.risk_factors),
+    decisionSummary: normalizeDecisionSummary(stock.decisionSummary ?? stock.decision_summary),
+    sourceMeta: normalizeDecisionSourceMeta(isDecisionSourceMeta(stock.source_meta) ? stock.source_meta : undefined),
+    stockscope: normalizeStockScopeDetails(stock.stockscope),
     fundamentals,
     earnings,
     news,
@@ -594,16 +592,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function normalizeFundamentals(stock: BackendStock, fallback?: Stock): StockFundamentals | undefined {
+function normalizeFundamentals(stock: BackendStock): StockFundamentals | undefined {
   const source = stock.fundamentals ?? stock.fundamentals_data;
   const resolved = source || stock.market_cap || stock.marketCap || stock.pe || stock.dividend || stock.sector ? source ?? {} : undefined;
   const metrics = resolved?.metrics ?? {};
 
-  if (!resolved && !fallback) return undefined;
+  if (!resolved) return undefined;
 
   return {
-    marketCap: resolved?.marketCap ?? resolved?.market_cap ?? stock.marketCap ?? stock.market_cap ?? fallback?.marketCap,
-    pe: resolved?.pe ?? numberMetric(metrics, "peNormalizedAnnual", "peBasicExclExtraTTM") ?? stock.pe ?? fallback?.pe,
+    marketCap: resolved?.marketCap ?? resolved?.market_cap ?? stock.marketCap ?? stock.market_cap,
+    pe: resolved?.pe ?? numberMetric(metrics, "peNormalizedAnnual", "peBasicExclExtraTTM") ?? stock.pe,
     eps: resolved?.eps ?? numberMetric(metrics, "epsExclExtraItemsTTM", "epsTTM", "epsInclExtraItemsTTM"),
     revenueGrowth: resolved?.revenueGrowth ?? resolved?.revenue_growth,
     grossMargin: resolved?.grossMargin ?? resolved?.gross_margin ?? percentMetric(metrics, "grossMarginTTM", "grossMarginAnnual"),
@@ -1048,15 +1046,7 @@ export async function getDashboardData(): Promise<{
       stocks: [],
       marketTable: [],
       news: [],
-      sources: [
-        {
-          id: "fallback",
-          name: "Резервные демо-данные",
-          status: "fallback",
-          assetClasses: ["indexes", "stocks"],
-          detail: "API котировок пока недоступен, показываются резервные данные.",
-        },
-      ],
+      sources: [],
       fxRates: [],
       macro: [],
     };
@@ -1081,17 +1071,7 @@ export async function getMarket(): Promise<MarketIndex[]> {
 
 export async function getSources(): Promise<MarketDataSource[]> {
   const data = await fetchJson<BackendSource[]>("/sources");
-  if (!data?.length) {
-    return [
-      {
-        id: "fallback",
-        name: "Резервные демо-данные",
-        status: "fallback",
-        assetClasses: ["indexes", "stocks"],
-        detail: "API котировок пока недоступен, показываются резервные данные.",
-      },
-    ];
-  }
+  if (!data?.length) return [];
 
   return data.map(normalizeSource);
 }
@@ -1141,7 +1121,7 @@ export async function getStock(ticker: string): Promise<Stock | undefined> {
       ],
     });
   }
-  return getFallbackStock(ticker);
+  return undefined;
 }
 
 export async function getStockScopeScreener(params: Record<string, string | number | undefined> = {}): Promise<StockScopeScreenerResponse> {

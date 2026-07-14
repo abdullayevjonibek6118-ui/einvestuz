@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight, Banknote, Bot, ChartNoAxesCombined, FileText, Globe2, Newspaper, Plus, ShieldAlert, Star, TriangleAlert, type LucideIcon } from "lucide-react";
 import { ChangeBadge, Metric, PageHeader, Panel, SourceStatusBadge } from "@/components/ui";
-import { getNews, getStock, getStockScopeBatchDetails, getStockScopeScreener } from "@/lib/api";
+import { getStock, getStockScopeBatchDetails, getStockScopeScreener } from "@/lib/api";
 import { type Stock, type StockRiskFactor, type StockScopeChart, type StockScopeIndicatorPeriod, type StockScopeTradingRow, type StockSourceMeta } from "@/lib/data";
 import { pageMetadata, SITE_URL } from "@/lib/seo";
 
@@ -22,8 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
 
 export default async function StockPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await params;
-  const [initialStock, news] = await Promise.all([getStock(ticker), getNews()]);
-  let stock = initialStock;
+  let stock = await getStock(ticker);
   if (!stock) {
     const screener = await getStockScopeScreener({ q: ticker, limit: 1 });
     const row = screener.items.find((item) => item.ticker.toUpperCase() === ticker.toUpperCase());
@@ -62,7 +61,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const companyMetrics = resolveCompanyMetrics(stock, fundamentals);
   const earnings = stock.earnings ?? [];
   const sources = stock.sources?.length ? stock.sources : resolveSources(stock);
-  const companyNews = stock.news?.length ? stock.news : news.slice(0, 3);
+  const companyNews = stock.news ?? [];
   const peerRows: Array<{ ticker: string; market?: string; currency?: string }> = [];
   const isLocal = stock.market === "uzbekistan" || stock.currency === "UZS" || (stock.source ?? "").toLowerCase().includes("stockscope");
   const riskTone = resolveRiskTone(fundamentals, stock);
@@ -345,14 +344,14 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
             ) : null}
 
             <div className="space-y-2">
-              {companyNews.map((item) => (
+              {companyNews.length ? companyNews.map((item) => (
                 <Link key={item.id} href="/dashboard" className="block rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4 transition hover:border-[#c7d2fe] hover:bg-white">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">
                     {item.category} · {item.time}
                   </p>
                   <h3 className="mt-2 text-sm font-semibold leading-6 text-[#0f172a]">{item.title}</h3>
                 </Link>
-              ))}
+              )) : <p className="rounded-[16px] border border-[#dbe4ef] bg-[#f8fafc] p-4 text-sm text-[#64748b]">Актуальные новости по этому эмитенту сейчас недоступны.</p>}
             </div>
           </div>
         </Panel>
@@ -791,12 +790,12 @@ function TradeHistory({ rows }: { rows: StockScopeTradingRow[] }) {
 
 function SourcePriorityTable({ stock }: { stock: Stock }) {
   const rows = [
-    { priority: 1, source: "UZSE", purpose: "цены, сделки, листинг, торговая статистика", status: stock.stockscope?.tradingStats?.daily?.length ? "delayed" : "fallback" },
-    { priority: 2, source: "openinfo.uz", purpose: "финансовая отчётность эмитентов", status: stock.stockscope?.reports?.length ? "delayed" : "fallback" },
+    { priority: 1, source: "UZSE", purpose: "цены, сделки, листинг, торговая статистика", status: stock.stockscope?.tradingStats?.daily?.length ? "delayed" : "offline" },
+    { priority: 2, source: "openinfo.uz", purpose: "финансовая отчётность эмитентов", status: stock.stockscope?.reports?.length ? "delayed" : "offline" },
     { priority: 3, source: "CBU", purpose: "курс валют, ставка ЦБ", status: "delayed" },
     { priority: 4, source: "stat.uz", purpose: "инфляция, ВВП, макро", status: "delayed" },
-    { priority: 5, source: "StockScope", purpose: "UX-референс, KPI, проверка логики", status: stock.stockscope ? "delayed" : "fallback" },
-    { priority: 6, source: "Новости / сайты эмитентов", purpose: "события и раскрытие информации", status: stock.news?.length ? "delayed" : "fallback" },
+    { priority: 5, source: "StockScope", purpose: "UX-референс, KPI, проверка логики", status: stock.stockscope ? "delayed" : "offline" },
+    { priority: 6, source: "Новости / сайты эмитентов", purpose: "события и раскрытие информации", status: stock.news?.length ? "delayed" : "offline" },
   ] as const;
 
   return (

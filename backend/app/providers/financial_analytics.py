@@ -93,19 +93,8 @@ class CBUMacroProvider:
             return []
 
     def get_key_rate(self) -> MacroIndicator | None:
-        """Return the latest rate confirmed by a dated CBU policy decision.
-
-        The generic statistics page contains many percentages, so scraping the
-        first nearby number is unsafe (it previously returned 80%).
-        """
-        return MacroIndicator(
-            name="Ключевая ставка ЦБ",
-            value=14.0,
-            unit="%",
-            source="cbu.uz/monetary-policy",
-            as_of="2026-06-17",
-            status="delayed",
-        )
+        """Key rate scraping is intentionally disabled until a stable endpoint is available."""
+        return None
 
     def get_macro_summary(self) -> list[MacroIndicator]:
         """Aggregate key macro indicators for Uzbekistan."""
@@ -130,13 +119,6 @@ class CBUMacroProvider:
                     as_of=str(rate.get("date") or datetime.now(timezone.utc).date().isoformat()),
                     status="delayed",
                 ))
-
-        # Static indicators from known data
-        verified = [
-            MacroIndicator("Инфляция (г/г)", 5.5, "%", "cbu.uz", "2026-05-01", "delayed"),
-            MacroIndicator("ВВП (г/г)", 8.7, "%", "stat.uz", "2026-03-31", "delayed"),
-        ]
-        indicators.extend(verified)
 
         return indicators
 

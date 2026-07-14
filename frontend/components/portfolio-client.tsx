@@ -11,22 +11,16 @@ type Position = {
   buyPrice: number;
 };
 
-const initialPositions: Position[] = [
-  { ticker: "NVDA", quantity: 4, buyPrice: 126.3 },
-  { ticker: "MSFT", quantity: 3, buyPrice: 431.1 },
-  { ticker: "AAPL", quantity: 5, buyPrice: 203.7 },
-];
-
 const STORAGE_KEY = "einvestuz-portfolio";
 
 export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; initialTicker?: string }) {
-  const fallbackTicker = resolveTicker(stocks, initialTicker) ?? stocks[0]?.ticker ?? "AAPL";
+  const fallbackTicker = resolveTicker(stocks, initialTicker) ?? stocks[0]?.ticker ?? "";
   const fallbackStock = stocks.find((stock) => stock.ticker.toLowerCase() === fallbackTicker.toLowerCase());
-  const [positions, setPositions] = useState<Position[]>(initialPositions);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [ticker, setTicker] = useState(fallbackTicker);
   const [quantity, setQuantity] = useState(1);
-  const [buyPrice, setBuyPrice] = useState(safePositive(fallbackStock?.price) ?? 100);
+  const [buyPrice, setBuyPrice] = useState(safePositive(fallbackStock?.price) ?? 0);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -74,6 +68,10 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
   function addPosition(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedTicker = ticker.trim().toUpperCase();
+    if (!stocks.length) {
+      setError("Список активов сейчас недоступен. Проверьте подключение к API данных.");
+      return;
+    }
     if (!normalizedTicker || quantity <= 0 || buyPrice <= 0 || !Number.isFinite(quantity) || !Number.isFinite(buyPrice)) {
       setError("Введите тикер, количество и цену покупки больше нуля.");
       return;
@@ -114,7 +112,8 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
         <form onSubmit={addPosition} className="grid gap-3">
           <label className="text-sm font-medium text-[var(--text)]">
             Тикер
-            <select value={ticker} onChange={(event) => selectTicker(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-3 text-[var(--text)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]">
+            <select value={ticker} onChange={(event) => selectTicker(event.target.value)} disabled={!stocks.length} className="mt-1 h-10 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-3 text-[var(--text)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]">
+              {!stocks.length ? <option value="">Активы недоступны</option> : null}
               {stocks.map((stock) => (
                 <option key={stock.ticker}>{stock.ticker}</option>
               ))}
@@ -185,10 +184,10 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
 }
 
 function loadPositions() {
-  if (typeof window === "undefined") return initialPositions;
+  if (typeof window === "undefined") return [];
   try {
     const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as Position[] | null;
-    if (!Array.isArray(parsed)) return initialPositions;
+    if (!Array.isArray(parsed)) return [];
     const sanitized = parsed
       .map((position) => ({
         ticker: String(position.ticker ?? "").trim().toUpperCase(),
@@ -196,9 +195,9 @@ function loadPositions() {
         buyPrice: Number(position.buyPrice),
       }))
       .filter((position) => position.ticker && safePositive(position.quantity) && safePositive(position.buyPrice));
-    return sanitized.length ? sanitized : initialPositions;
+    return sanitized;
   } catch {
-    return initialPositions;
+    return [];
   }
 }
 

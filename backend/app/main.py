@@ -274,7 +274,7 @@ class NewsItem(BaseModel):
     url: str = ""
     summary: str = ""
     related: str = ""
-    source_status: Literal["live", "delayed", "fallback", "needs_license", "offline"] = "fallback"
+    source_status: Literal["live", "delayed", "fallback", "needs_license", "offline"] = "offline"
 
 
 class ChatHistoryMessage(BaseModel):
@@ -293,13 +293,6 @@ class ChatResponse(BaseModel):
     response: str
     disclaimer: str = "Это образовательная информация, не индивидуальная инвестиционная рекомендация."
 
-
-NEWS = [
-    NewsItem(id=1, title="Nvidia расширяет партнерства по AI-серверам с облачными провайдерами", source="Market Watch", category="Technology", published_at=datetime.now(timezone.utc)),
-    NewsItem(id=2, title="Индексы США растут на фоне ожидания новых данных по инфляции", source="Reuters", category="US", published_at=datetime.now(timezone.utc)),
-    NewsItem(id=3, title="Притоки в спотовые Bitcoin ETF восстановились после волатильной недели", source="CoinDesk", category="Crypto", published_at=datetime.now(timezone.utc)),
-    NewsItem(id=4, title="Спрос на дивидендные ETF растет среди долгосрочных инвесторов", source="ETF.com", category="ETF", published_at=datetime.now(timezone.utc)),
-]
 
 ACADEMY = [
     {"level": "Beginner", "title": "Акции, ETF и дивиденды", "duration_minutes": 22, "source": "Материалы сайта"},
@@ -411,7 +404,7 @@ def dashboard_data() -> dict:
     macro = (
         _macro_response(macro_summary)
         if macro_summary is not None
-        else MacroSummaryResponse(status="fallback", summary="Макроданные временно недоступны.", sources=[], indicators=[], as_of=datetime.now(timezone.utc))
+        else MacroSummaryResponse(status="offline", summary="Макроданные временно недоступны.", sources=[], indicators=[], fallback_reason="Macro providers did not respond before the dashboard timeout.", as_of=datetime.now(timezone.utc))
     ).model_dump(mode="json")
     news = [_news_response(item).model_dump(mode="json") for item in _future_result(news_future, [])]
     return {
@@ -516,7 +509,7 @@ def uzse_quotes() -> list[dict[str, Any]]:
             "source": row.get("source"),
             "status": row.get("status", "delayed"),
             "as_of": row.get("as_of"),
-            "note": "Fallback snapshot: UZSE trade table did not return rows.",
+            "note": "StockScope snapshot used because UZSE trade table did not return rows.",
         }
         for row in _stockscope_market_table_rows()
         if row.get("price")
@@ -1033,7 +1026,7 @@ def _earnings_response(ticker: str, earnings: list[Any]) -> EarningsResponse:
         )
         for item in earnings
     ]
-    status = items[0].status if items else "fallback"
+    status = items[0].status if items else "offline"
     source = items[0].source if items else "finnhub"
     provider = items[0].provider if items else "finnhub"
     return EarningsResponse(
@@ -1082,7 +1075,7 @@ def _news_response(item: Any) -> NewsItem:
         url = item.get("url") or ""
         summary = item.get("summary") or ""
         related = item.get("related") or ""
-        source_status = item.get("source_status") or "fallback"
+        source_status = item.get("source_status") or "offline"
     else:
         raw_category = str(getattr(item, "category", "US"))
         published_at = getattr(item, "published_at", None)
@@ -1092,7 +1085,7 @@ def _news_response(item: Any) -> NewsItem:
         url = getattr(item, "url", "")
         summary = getattr(item, "summary", "")
         related = getattr(item, "related", "")
-        source_status = getattr(item, "source_status", "fallback")
+        source_status = getattr(item, "source_status", "offline")
 
     category = _news_category(raw_category)
     if isinstance(published_at, (int, float)):
@@ -1434,8 +1427,8 @@ def _market_table_row_response(row: dict[str, Any]) -> MarketTableRow:
         volume_24h=str(row.get("volume_24h") or "N/A"),
         circulating_supply=str(row.get("circulating_supply") or "N/A"),
         sparkline_7d=[float(value) for value in (row.get("sparkline_7d") or [])],
-        source=str(row.get("source") or "fallback"),
-        status=str(row.get("status") or "fallback"),
+        source=str(row.get("source") or "unavailable"),
+        status=str(row.get("status") or "offline"),
         as_of=row.get("as_of") or datetime.now(timezone.utc),
         market=row.get("market"),
         currency=str(row.get("currency") or "USD"),

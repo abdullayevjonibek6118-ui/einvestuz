@@ -8,13 +8,25 @@ from backend.app.providers.financial_analytics import compute_financial_ratios
 from backend.app.providers.siat_provider import SiatProvider
 
 
-def test_official_macro_values_are_current_and_dated() -> None:
+def test_macro_summary_uses_observed_cbu_fx_only(monkeypatch) -> None:
+    market_data._DETAIL_CACHE._values.pop("fx:rates", None)
+    market_data._DETAIL_CACHE._values.pop("macro:summary", None)
+
+    def fake_fetch_json(url: str, timeout: int):
+        assert "cbu.uz" in url
+        return [
+            {"Ccy": "USD", "Rate": "12021.32", "Diff": "-20.73", "Date": "08.07.2026", "Nominal": "1", "CcyNm_EN": "US Dollar"},
+            {"Ccy": "EUR", "Rate": "13734.36", "Diff": "-10.44", "Date": "08.07.2026", "Nominal": "1", "CcyNm_EN": "Euro"},
+        ]
+
+    monkeypatch.setattr(market_data, "_fetch_json", fake_fetch_json)
     indicators = {item["name"]: item for item in get_macro_summary().indicators}
 
-    assert indicators["Инфляция (г/г)"]["value"] == 5.5
-    assert indicators["Инфляция (г/г)"]["as_of"] == "2026-05-01"
-    assert indicators["Рост ВВП (г/г)"]["value"] == 8.7
-    assert indicators["Ключевая ставка ЦБ"]["value"] == 14.0
+    assert indicators["USD/UZS"]["value"] == 12021.32
+    assert indicators["USD/UZS"]["as_of"] == "2026-07-08"
+    assert "Инфляция (г/г)" not in indicators
+    assert "Рост ВВП (г/г)" not in indicators
+    assert "Ключевая ставка ЦБ" not in indicators
 
 
 def test_unavailable_quote_is_not_replaced_with_plausible_price() -> None:
@@ -104,7 +116,7 @@ def test_stockscope_snapshot_rows_are_auditable() -> None:
 
 
 def test_cbu_fx_rates_keep_all_official_currencies(monkeypatch) -> None:
-    market_data._DETAIL_CACHE.set("fx:rates", None)
+    market_data._DETAIL_CACHE._values.pop("fx:rates", None)
 
     def fake_fetch_json(url: str, timeout: int):
         assert "cbu.uz" in url
