@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
+import html
 import json
 import os
 import re
@@ -491,8 +492,9 @@ def get_news(symbol: str | None = None, category: str | None = None) -> list[dic
             return items
         return []
 
+    local_items = _local_market_news()
     symbols = ["AAPL", "NVDA", "MSFT", "TSLA"]
-    items: list[dict[str, Any]] = []
+    items: list[dict[str, Any]] = [*local_items]
     for ticker in symbols:
         items.extend(_company_news(ticker, limit=3))
     if items:
@@ -893,6 +895,48 @@ def _company_news(symbol: str, limit: int = 10) -> list[dict[str, Any]]:
     return items
 
 
+def _local_market_news(limit: int = 8) -> list[dict[str, Any]]:
+    cached = _DETAIL_CACHE.get("news:local")
+    if cached is not None:
+        return cached
+
+    items = _cbu_news(limit=limit)
+    _DETAIL_CACHE.set("news:local", items)
+    return items
+
+
+def _cbu_news(limit: int = 8) -> list[dict[str, Any]]:
+    html_text = _fetch_text("https://cbu.uz/ru/press_center/news/", timeout=8)
+    if not html_text:
+        return []
+
+    cards = re.findall(r'<a\s+href="(?P<href>/ru/press_center/news/\d+/)"\s+class="news">(?P<body>.*?)</a>', html_text, re.S)
+    items: list[dict[str, Any]] = []
+    for index, match in enumerate(cards[:limit], start=1):
+        href, body = match
+        title_match = re.search(r'<div\s+class="news__title">\s*(?P<title>.*?)\s*</div>', body, re.S)
+        date_match = re.search(r'<div\s+class="news__date">.*?<span>(?P<date>.*?)</span>', body, re.S)
+        summary_match = re.search(r'<div\s+class="news__text">\s*(?P<summary>.*?)\s*</div>', body, re.S)
+        title = _clean_html(title_match.group("title") if title_match else "")
+        if not title:
+            continue
+        published_at = _parse_russian_news_date(_clean_html(date_match.group("date") if date_match else "")) or datetime.now(timezone.utc)
+        items.append(
+            {
+                "id": hash(("cbu", href, title)) & 0x7FFFFFFF,
+                "title": title,
+                "source": "Central Bank of Uzbekistan",
+                "category": "Macro",
+                "published_at": published_at,
+                "url": f"https://cbu.uz{href}",
+                "summary": _clean_html(summary_match.group("summary") if summary_match else ""),
+                "related": "UZS, banking, macro",
+                "source_status": "delayed",
+            }
+        )
+    return items
+
+
 def _dedupe_news(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set[tuple[str, str]] = set()
     result: list[dict[str, Any]] = []
@@ -959,11 +1003,56 @@ PROVIDERS: dict[str, MarketDataProvider] = {
 
 
 def _fetch_json(url: str, timeout: int) -> dict[str, Any] | None:
-    request = Request(url, headers={"User-Agent": "Einvestuz/0.1"})
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; Einvestuz/0.1)"})
     try:
         with urlopen(request, timeout=timeout, context=_ssl_context()) as response:
             return json.loads(response.read().decode("utf-8"))
     except Exception:
+        return None
+
+
+def _fetch_text(url: str, timeout: int) -> str:
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; Einvestuz/0.1)"})
+    try:
+        with urlopen(request, timeout=timeout, context=_ssl_context()) as response:
+            charset = response.headers.get_content_charset() or "utf-8"
+            return response.read().decode(charset, errors="replace")
+    except Exception:
+        return ""
+
+
+def _clean_html(value: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", value)
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _parse_russian_news_date(value: str) -> datetime | None:
+    months = {
+        "января": 1,
+        "февраля": 2,
+        "марта": 3,
+        "апреля": 4,
+        "мая": 5,
+        "июня": 6,
+        "июля": 7,
+        "августа": 8,
+        "сентября": 9,
+        "октября": 10,
+        "ноября": 11,
+        "декабря": 12,
+    }
+    match = re.search(r"(\d{1,2})\s+([а-яё]+)\s+(\d{4})", value.lower())
+    if not match:
+        return None
+    day = int(match.group(1))
+    month = months.get(match.group(2))
+    year = int(match.group(3))
+    if not month:
+        return None
+    try:
+        return datetime(year, month, day, tzinfo=timezone.utc)
+    except ValueError:
         return None
 
 

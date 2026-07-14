@@ -244,3 +244,23 @@ def test_ipo_summary_uses_listing_and_disclosure_signals(monkeypatch) -> None:
 
     assert result.total == 2
     assert [item["ticker"] for item in result.items] == ["IPO1", "NEW1"]
+
+
+def test_cbu_news_html_is_parsed_as_macro_news(monkeypatch) -> None:
+    html = """
+    <a href="/ru/press_center/news/3902211/" class="news">
+      <div class="news__title">Центральный банк опубликовал обзор</div>
+      <div class="news__date"><span>25 мая 2026</span></div>
+      <div class="news__text">Краткое описание</div>
+    </a>
+    """
+
+    monkeypatch.setattr(market_data, "_fetch_text", lambda url, timeout: html)
+    monkeypatch.setattr(market_data, "_company_news", lambda symbol, limit=10: [])
+    market_data._DETAIL_CACHE._values.pop("news:local", None)
+
+    items = market_data.get_news()
+
+    assert items[0]["title"] == "Центральный банк опубликовал обзор"
+    assert items[0]["category"] == "Macro"
+    assert items[0]["published_at"].isoformat().startswith("2026-05-25")

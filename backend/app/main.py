@@ -271,7 +271,7 @@ class NewsItem(BaseModel):
     id: int
     title: str
     source: str
-    category: Literal["US", "Technology", "ETF", "Crypto"]
+    category: Literal["US", "Technology", "ETF", "Crypto", "Macro", "Market", "Uzbekistan", "IPO"]
     published_at: datetime
     url: str = ""
     summary: str = ""
