@@ -139,6 +139,10 @@ def test_chat_uses_aimlapi_completion(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
     class FakeResponse:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+        content = '{"choices":[{"message":{"content":"Ответ из AIMLAPI"}}]}'.encode()
+
         def raise_for_status(self) -> None:
             return None
 
@@ -156,7 +160,8 @@ def test_chat_uses_aimlapi_completion(monkeypatch) -> None:
 
     assert result.response == "Ответ из AIMLAPI"
     assert captured["url"] == "https://api.aimlapi.com/v1/chat/completions"
-    assert captured["headers"] == {"Authorization": "Bearer test-key"}
+    assert captured["headers"]["Authorization"] == "Bearer test-key"
+    assert captured["headers"]["Accept"] == "application/json"
     assert captured["timeout"] == 45
     assert captured["json"]["model"] == "openai/gpt-5.4-nano"
 

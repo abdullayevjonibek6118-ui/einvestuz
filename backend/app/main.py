@@ -321,19 +321,31 @@ def _aimlapi_chat_completion(payload: ChatRequest) -> str:
     try:
         response = requests.post(
             AIMLAPI_CHAT_COMPLETIONS_URL,
-            headers={"Authorization": "Bearer " + api_key},
+            headers={
+                "Authorization": "Bearer " + api_key,
+                "Accept": "application/json",
+                "User-Agent": "Einvestuz/1.0",
+            },
             json={
                 "model": AIMLAPI_MODEL,
                 "messages": messages,
             },
             timeout=45,
         )
+        status_code = response.status_code
+        content_type = response.headers.get("content-type", "unknown")
         response.raise_for_status()
         data = response.json()
     except requests.exceptions.RequestException as exc:
-        raise HTTPException(status_code=502, detail="AIMLAPI request failed") from exc
+        upstream_status = getattr(getattr(exc, "response", None), "status_code", None)
+        detail = f"AIMLAPI request failed with status {upstream_status}" if upstream_status else "AIMLAPI request failed"
+        raise HTTPException(status_code=502, detail=detail) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=502, detail="AIMLAPI returned invalid JSON") from exc
+        body_size = len(response.content) if "response" in locals() else 0
+        raise HTTPException(
+            status_code=502,
+            detail=f"AIMLAPI returned invalid JSON (status={status_code}, content_type={content_type}, bytes={body_size})",
+        ) from exc
 
     choices = data.get("choices")
     if not isinstance(choices, list) or not choices:
