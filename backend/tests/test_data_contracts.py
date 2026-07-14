@@ -166,6 +166,32 @@ def test_chat_uses_aimlapi_completion(monkeypatch) -> None:
     assert captured["json"]["model"] == "openai/gpt-5.4-nano"
 
 
+def test_chat_removes_bom_from_aimlapi_key(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+        content = '{"choices":[{"message":{"content":"OK"}}]}'.encode()
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, list[dict[str, dict[str, str]]]]:
+            return {"choices": [{"message": {"content": "OK"}}]}
+
+    def fake_post(url: str, headers: dict[str, str], json: dict[str, object], timeout: int) -> FakeResponse:
+        captured["headers"] = headers
+        return FakeResponse()
+
+    monkeypatch.setenv("AIMLAPI_KEY", "\ufefftest-key")
+    monkeypatch.setattr(main.requests, "post", fake_post)
+
+    main.chat(main.ChatRequest(message="Hello", history=[]))
+
+    assert captured["headers"]["Authorization"] == "Bearer test-key"
+
+
 def test_chat_fails_when_aimlapi_key_is_missing(monkeypatch) -> None:
     monkeypatch.delenv("AIMLAPI_KEY", raising=False)
 

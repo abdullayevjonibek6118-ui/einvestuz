@@ -300,7 +300,7 @@ AIMLAPI_MODEL = os.getenv("AIMLAPI_MODEL", "openai/gpt-5.4-nano")
 
 
 def _aimlapi_chat_completion(payload: ChatRequest) -> str:
-    api_key = os.getenv("AIMLAPI_KEY", "").strip()
+    api_key = os.getenv("AIMLAPI_KEY", "").replace("\ufeff", "").strip()
     if not api_key:
         raise HTTPException(status_code=503, detail="AIMLAPI_KEY is not configured")
 
@@ -318,6 +318,9 @@ def _aimlapi_chat_completion(payload: ChatRequest) -> str:
     messages.extend({"role": item.role, "content": item.text} for item in payload.history[-10:])
     messages.append({"role": "user", "content": payload.message})
 
+    status_code: int | str = "unavailable"
+    content_type = "unknown"
+    body_size = 0
     try:
         response = requests.post(
             AIMLAPI_CHAT_COMPLETIONS_URL,
@@ -334,6 +337,7 @@ def _aimlapi_chat_completion(payload: ChatRequest) -> str:
         )
         status_code = response.status_code
         content_type = response.headers.get("content-type", "unknown")
+        body_size = len(response.content)
         response.raise_for_status()
         data = response.json()
     except requests.exceptions.RequestException as exc:
@@ -341,7 +345,6 @@ def _aimlapi_chat_completion(payload: ChatRequest) -> str:
         detail = f"AIMLAPI request failed with status {upstream_status}" if upstream_status else "AIMLAPI request failed"
         raise HTTPException(status_code=502, detail=detail) from exc
     except ValueError as exc:
-        body_size = len(response.content) if "response" in locals() else 0
         raise HTTPException(
             status_code=502,
             detail=f"AIMLAPI returned invalid JSON (status={status_code}, content_type={content_type}, bytes={body_size})",
