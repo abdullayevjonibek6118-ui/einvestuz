@@ -264,3 +264,9 @@ def test_cbu_news_html_is_parsed_as_macro_news(monkeypatch) -> None:
     assert items[0]["title"] == "Центральный банк опубликовал обзор"
     assert items[0]["category"] == "Macro"
     assert items[0]["published_at"].isoformat().startswith("2026-05-25")
+
+
+def test_news_response_preserves_macro_category() -> None:
+    item = main._news_response({"title": "CBU update", "source": "CBU", "category": "Macro"})
+
+    assert item.category == "Macro"

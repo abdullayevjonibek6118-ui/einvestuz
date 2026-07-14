@@ -1015,10 +1015,23 @@ def _fetch_text(url: str, timeout: int) -> str:
     request = Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; Einvestuz/0.1)"})
     try:
         with urlopen(request, timeout=timeout, context=_ssl_context()) as response:
+            payload = response.read()
             charset = response.headers.get_content_charset() or "utf-8"
-            return response.read().decode(charset, errors="replace")
+            candidates = []
+            for encoding in [charset, "utf-8", "windows-1251"]:
+                try:
+                    candidates.append(payload.decode(encoding, errors="strict"))
+                except UnicodeDecodeError:
+                    continue
+            if not candidates:
+                return payload.decode(charset, errors="replace")
+            return max(candidates, key=_cyrillic_score)
     except Exception:
         return ""
+
+
+def _cyrillic_score(value: str) -> int:
+    return sum(1 for char in value if "А" <= char <= "я" or char == "ё" or char == "Ё") - value.count("Ð") - value.count("Ñ")
 
 
 def _clean_html(value: str) -> str:

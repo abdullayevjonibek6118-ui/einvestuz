@@ -1249,7 +1249,7 @@ def _news_response(item: Any) -> NewsItem:
     )
 
 
-def _news_category(raw_category: str) -> Literal["US", "Technology", "ETF", "Crypto"]:
+def _news_category(raw_category: str) -> Literal["US", "Technology", "ETF", "Crypto", "Macro", "Market", "Uzbekistan", "IPO"]:
     normalized = raw_category.lower()
     if normalized == "technology":
         return "Technology"
@@ -1257,6 +1257,14 @@ def _news_category(raw_category: str) -> Literal["US", "Technology", "ETF", "Cry
         return "Crypto"
     if normalized == "etf":
         return "ETF"
+    if normalized == "macro":
+        return "Macro"
+    if normalized == "market":
+        return "Market"
+    if normalized == "uzbekistan":
+        return "Uzbekistan"
+    if normalized == "ipo":
+        return "IPO"
     return "US"
 
 
