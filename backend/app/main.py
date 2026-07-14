@@ -1,4 +1,5 @@
 import asyncio
+import math
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -276,6 +277,29 @@ class NewsItem(BaseModel):
     summary: str = ""
     related: str = ""
     source_status: Literal["live", "delayed", "fallback", "needs_license", "offline"] = "offline"
+
+
+class IndustrySummary(BaseModel):
+    name: str
+    slug: str
+    issuers: int
+    market_cap: float | None = None
+    volume_30d: float | None = None
+    average_roe: float | None = None
+    average_change_30d: float | None = None
+    with_reports: int
+    leaders: list[dict[str, Any]]
+    source: str = "stockscope.uz"
+    status: Literal["live", "delayed", "fallback", "needs_license", "offline"] = "delayed"
+    as_of: str | None = None
+
+
+class IpoSummary(BaseModel):
+    total: int
+    items: list[dict[str, Any]]
+    source: str = "stockscope.uz"
+    status: Literal["live", "delayed", "fallback", "needs_license", "offline"] = "delayed"
+    as_of: str | None = None
 
 
 class ChatHistoryMessage(BaseModel):
@@ -681,6 +705,69 @@ def stockscope_screener(
         min_indicators=min_indicators,
         sort_by=sort_by,
         sort_dir=sort_dir,
+    )
+
+
+@app.get("/industries/summary", response_model=list[IndustrySummary])
+def industries_summary() -> list[IndustrySummary]:
+    coverage = STOCKSCOPE_PROVIDER.get_listing_details_coverage()
+    rows = list(coverage.get("items") if isinstance(coverage, dict) else [])
+    as_of = str(coverage.get("generated_at") or "") if isinstance(coverage, dict) else None
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        sector = str(row.get("sector") or "").strip()
+        if not sector:
+            continue
+        grouped.setdefault(sector, []).append(row)
+
+    summaries: list[IndustrySummary] = []
+    for sector, sector_rows in grouped.items():
+        market_caps = [_coerce_numeric(row.get("market_cap")) for row in sector_rows]
+        volumes = [_coerce_numeric(row.get("volume_30d") or row.get("volume_7d") or row.get("volume_1d")) for row in sector_rows]
+        roes = [_coerce_numeric(row.get("roe")) for row in sector_rows]
+        changes = [_coerce_numeric(row.get("change_30d")) for row in sector_rows]
+        leaders = sorted(sector_rows, key=lambda row: _coerce_numeric(row.get("market_cap")) or 0, reverse=True)[:5]
+        summaries.append(
+            IndustrySummary(
+                name=sector,
+                slug=_slugify(sector),
+                issuers=len(sector_rows),
+                market_cap=_sum_numbers(market_caps),
+                volume_30d=_sum_numbers(volumes),
+                average_roe=_average_numbers(roes),
+                average_change_30d=_average_numbers(changes),
+                with_reports=sum(1 for row in sector_rows if _coerce_numeric(row.get("reports_count")) and _coerce_numeric(row.get("reports_count")) > 0),
+                leaders=[_industry_leader(row) for row in leaders],
+                as_of=as_of,
+            )
+        )
+    return sorted(summaries, key=lambda item: item.market_cap or item.issuers, reverse=True)
+
+
+@app.get("/ipo/summary", response_model=IpoSummary)
+def ipo_summary() -> IpoSummary:
+    coverage = STOCKSCOPE_PROVIDER.get_listing_details_coverage()
+    rows = list(coverage.get("items") if isinstance(coverage, dict) else [])
+    as_of = str(coverage.get("generated_at") or "") if isinstance(coverage, dict) else None
+    candidates = [
+        row
+        for row in rows
+        if "ipo" in str(row.get("listing_category") or row.get("listingCategory") or "").lower()
+        or "premium" in str(row.get("listing_category") or row.get("listingCategory") or "").lower()
+        or _coerce_numeric(row.get("reports_count")) == 0
+    ]
+    sorted_candidates = sorted(
+        candidates,
+        key=lambda row: (
+            _coerce_numeric(row.get("market_cap")) or 0,
+            _coerce_numeric(row.get("volume_30d") or row.get("volume_7d") or row.get("volume_1d")) or 0,
+        ),
+        reverse=True,
+    )[:40]
+    return IpoSummary(
+        total=len(candidates),
+        items=[_ipo_row(row) for row in sorted_candidates],
+        as_of=as_of,
     )
 
 
@@ -1240,6 +1327,46 @@ def _format_market_value(price: float, category: str) -> str:
 
 def _sector_for_ticker(ticker: str) -> str:
     return SECTOR_BY_TICKER.get(ticker.upper(), "Рынок")
+
+
+def _sum_numbers(values: list[float | None]) -> float | None:
+    numeric = [value for value in values if isinstance(value, (int, float)) and math.isfinite(value)]
+    return float(sum(numeric)) if numeric else None
+
+
+def _average_numbers(values: list[float | None]) -> float | None:
+    numeric = [value for value in values if isinstance(value, (int, float)) and math.isfinite(value)]
+    return round(float(sum(numeric) / len(numeric)), 2) if numeric else None
+
+
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.strip().lower())
+    return slug.strip("-") or "industry"
+
+
+def _industry_leader(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "ticker": str(row.get("ticker") or ""),
+        "name": str(row.get("name") or row.get("ticker") or ""),
+        "market_cap": _coerce_numeric(row.get("market_cap")),
+        "change_30d": _coerce_numeric(row.get("change_30d")),
+        "roe": _coerce_numeric(row.get("roe")),
+        "reports_count": int(_coerce_numeric(row.get("reports_count")) or 0),
+    }
+
+
+def _ipo_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "ticker": str(row.get("ticker") or ""),
+        "name": str(row.get("name") or row.get("ticker") or ""),
+        "sector": row.get("sector"),
+        "listing_category": row.get("listing_category") or row.get("listingCategory"),
+        "market_cap": _coerce_numeric(row.get("market_cap")),
+        "volume_30d": _coerce_numeric(row.get("volume_30d")),
+        "reports_count": int(_coerce_numeric(row.get("reports_count")) or 0),
+        "latest_period": row.get("latest_period") or row.get("latestPeriod"),
+        "source_url": row.get("source_url") or row.get("sourceUrl"),
+    }
 
 
 def _build_stock_decision_room(

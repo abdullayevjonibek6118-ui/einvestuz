@@ -199,3 +199,48 @@ def test_chat_fails_when_aimlapi_key_is_missing(monkeypatch) -> None:
         main.chat(main.ChatRequest(message="Hello", history=[]))
 
     assert exc.value.status_code == 503
+
+
+def test_industries_summary_groups_stockscope_rows(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main.STOCKSCOPE_PROVIDER,
+        "get_listing_details_coverage",
+        lambda: {
+            "generated_at": "2026-07-14T00:00:00Z",
+            "items": [
+                {"ticker": "AAA", "name": "A", "sector": "Financials", "market_cap": 100, "roe": 12, "change_30d": 3, "reports_count": 2},
+                {"ticker": "BBB", "name": "B", "sector": "Financials", "market_cap": 50, "roe": 8, "change_30d": -1, "reports_count": 0},
+                {"ticker": "CCC", "name": "C", "sector": "", "market_cap": 500},
+            ],
+        },
+    )
+
+    result = main.industries_summary()
+
+    assert len(result) == 1
+    assert result[0].name == "Financials"
+    assert result[0].issuers == 2
+    assert result[0].market_cap == 150
+    assert result[0].average_roe == 10
+    assert result[0].with_reports == 1
+    assert [leader["ticker"] for leader in result[0].leaders] == ["AAA", "BBB"]
+
+
+def test_ipo_summary_uses_listing_and_disclosure_signals(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main.STOCKSCOPE_PROVIDER,
+        "get_listing_details_coverage",
+        lambda: {
+            "generated_at": "2026-07-14T00:00:00Z",
+            "items": [
+                {"ticker": "IPO1", "name": "IPO Co", "listing_category": "IPO", "market_cap": 100, "reports_count": 1},
+                {"ticker": "NEW1", "name": "New Co", "listing_category": "Standard", "market_cap": 80, "reports_count": 0},
+                {"ticker": "OLD1", "name": "Old Co", "listing_category": "Standard", "market_cap": 60, "reports_count": 3},
+            ],
+        },
+    )
+
+    result = main.ipo_summary()
+
+    assert result.total == 2
+    assert [item["ticker"] for item in result.items] == ["IPO1", "NEW1"]

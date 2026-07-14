@@ -1,5 +1,7 @@
 import {
   type FxRate,
+  type IndustrySummary,
+  type IpoSummary,
   type LiveSourceStatus,
   type MarketIndex,
   type MarketDataSource,
@@ -144,6 +146,46 @@ type BackendStockScopeScreenerRow = {
   sourceUrl?: string;
   fetched_at?: string;
   fetchedAt?: string;
+};
+
+type BackendIndustrySummary = {
+  name: string;
+  slug: string;
+  issuers: number;
+  market_cap?: number | null;
+  volume_30d?: number | null;
+  average_roe?: number | null;
+  average_change_30d?: number | null;
+  with_reports: number;
+  leaders?: Array<{
+    ticker?: string;
+    name?: string;
+    market_cap?: number | null;
+    change_30d?: number | null;
+    roe?: number | null;
+    reports_count?: number;
+  }>;
+  source?: string;
+  status?: string;
+  as_of?: string | null;
+};
+
+type BackendIpoSummary = {
+  total?: number;
+  items?: Array<{
+    ticker?: string;
+    name?: string;
+    sector?: string | null;
+    listing_category?: string | null;
+    market_cap?: number | null;
+    volume_30d?: number | null;
+    reports_count?: number;
+    latest_period?: string | null;
+    source_url?: string | null;
+  }>;
+  source?: string;
+  status?: string;
+  as_of?: string | null;
 };
 
 type BackendStockScopeScreenerResponse = {
@@ -1172,6 +1214,53 @@ export async function getStockScopeBatchDetails(tickers: string[]): Promise<Stoc
     hasMore: Boolean(data?.has_more),
     tickers: data?.tickers ?? normalized,
     items,
+  };
+}
+
+export async function getIndustriesSummary(): Promise<IndustrySummary[]> {
+  const data = await fetchJson<BackendIndustrySummary[]>("/industries/summary");
+  if (!data?.length) return [];
+  return data.map((item) => ({
+    name: item.name,
+    slug: item.slug,
+    issuers: item.issuers,
+    marketCap: item.market_cap,
+    volume30d: item.volume_30d,
+    averageRoe: item.average_roe,
+    averageChange30d: item.average_change_30d,
+    withReports: item.with_reports,
+    leaders: (item.leaders ?? []).map((leader) => ({
+      ticker: leader.ticker ?? "",
+      name: leader.name ?? leader.ticker ?? "",
+      marketCap: leader.market_cap,
+      change30d: leader.change_30d,
+      roe: leader.roe,
+      reportsCount: leader.reports_count ?? 0,
+    })),
+    source: item.source ?? "stockscope.uz",
+    status: normalizeSourceStatus(item.status),
+    asOf: item.as_of,
+  }));
+}
+
+export async function getIpoSummary(): Promise<IpoSummary> {
+  const data = await fetchJson<BackendIpoSummary>("/ipo/summary");
+  return {
+    total: data?.total ?? 0,
+    items: (data?.items ?? []).map((item) => ({
+      ticker: item.ticker ?? "",
+      name: item.name ?? item.ticker ?? "",
+      sector: item.sector,
+      listingCategory: item.listing_category,
+      marketCap: item.market_cap,
+      volume30d: item.volume_30d,
+      reportsCount: item.reports_count ?? 0,
+      latestPeriod: item.latest_period,
+      sourceUrl: item.source_url,
+    })),
+    source: data?.source ?? "stockscope.uz",
+    status: normalizeSourceStatus(data?.status),
+    asOf: data?.as_of,
   };
 }
 

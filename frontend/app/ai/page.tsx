@@ -1,33 +1,34 @@
 import { AIChatClient } from "@/components/ai-chat-client";
 import { PageHeader, Panel } from "@/components/ui";
-import { getStocks } from "@/lib/api";
+import { getStockScopeScreener } from "@/lib/api";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({ title: "AI-анализ акций Узбекистана", description: "Задавайте вопросы об узбекских компаниях и получайте понятное объяснение показателей, рисков и доступных рыночных данных.", path: "/ai" });
 
 export default async function AIPage() {
-  const stocks = await getStocks();
+  const screener = await getStockScopeScreener({ limit: 6, sort_by: "market_cap", sort_dir: "desc" });
 
   return (
     <>
-      <PageHeader title="Учебный помощник" subtitle="Правиловый MVP-помощник объясняет доступные показатели; генеративная AI-модель пока не подключена." />
+      <PageHeader title="AI-аналитика" subtitle="Генеративный помощник AIMLAPI объясняет показатели, риски и рыночный контекст без персональных инвестиционных рекомендаций." />
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <Panel>
           <AIChatClient />
         </Panel>
 
-        <Panel title="Контекст">
+        <Panel title="Контекст рынка">
           <div className="space-y-3">
-            {stocks.slice(0, 5).map((stock) => (
-              <div key={stock.ticker} className="rounded-2xl border border-[#dde3eb] p-3">
+            {screener.items.slice(0, 5).map((stock) => (
+              <div key={stock.ticker} className="rounded-2xl border border-[#dde3eb] bg-white p-3">
                 <div className="flex justify-between gap-3">
                   <p className="text-sm font-semibold">{stock.ticker}</p>
-                  <p className="text-sm">${stock.price.toFixed(2)}</p>
+                  <p className="text-sm">{stock.currentPrice == null ? "—" : `${stock.currentPrice.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} UZS`}</p>
                 </div>
-                <p className="mt-1 text-xs text-[#667085]">P/E {stock.pe} · {stock.marketCap}</p>
+                <p className="mt-1 text-xs text-[#667085]">P/E {stock.pe?.toFixed(2) ?? "—"} · {stock.sector ?? "сектор не указан"}</p>
               </div>
             ))}
+            {!screener.items.length ? <p className="text-sm text-[var(--muted)]">StockScope screener сейчас не вернул компании.</p> : null}
           </div>
         </Panel>
       </div>

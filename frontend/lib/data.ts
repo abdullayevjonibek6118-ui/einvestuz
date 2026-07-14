@@ -345,6 +345,50 @@ export type NewsItem = {
   related?: string;
 };
 
+export type IndustryLeader = {
+  ticker: string;
+  name: string;
+  marketCap?: number | null;
+  change30d?: number | null;
+  roe?: number | null;
+  reportsCount: number;
+};
+
+export type IndustrySummary = {
+  name: string;
+  slug: string;
+  issuers: number;
+  marketCap?: number | null;
+  volume30d?: number | null;
+  averageRoe?: number | null;
+  averageChange30d?: number | null;
+  withReports: number;
+  leaders: IndustryLeader[];
+  source: string;
+  status: LiveSourceStatus;
+  asOf?: string | null;
+};
+
+export type IpoSummaryItem = {
+  ticker: string;
+  name: string;
+  sector?: string | null;
+  listingCategory?: string | null;
+  marketCap?: number | null;
+  volume30d?: number | null;
+  reportsCount: number;
+  latestPeriod?: string | null;
+  sourceUrl?: string | null;
+};
+
+export type IpoSummary = {
+  total: number;
+  items: IpoSummaryItem[];
+  source: string;
+  status: LiveSourceStatus;
+  asOf?: string | null;
+};
+
 export type AcademyLesson = {
   level: "Beginner" | "Intermediate" | "Advanced";
   title: string;

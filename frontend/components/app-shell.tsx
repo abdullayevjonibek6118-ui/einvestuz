@@ -28,10 +28,10 @@ const primaryNav = [
 const desktopNav = [
   { href: "/", label: "Рынок", icon: LayoutDashboard },
   { href: "/screener", label: "Компании", icon: SlidersHorizontal },
-  { href: "/#industries", label: "Отрасли", icon: LayoutDashboard },
-  { href: "/#macro", label: "Макро", icon: GitCompareArrows },
-  { href: "/screener?listing=ipo", label: "IPO", icon: BriefcaseBusiness },
-  { href: "/#news", label: "Новости", icon: Bot },
+  { href: "/industries", label: "Отрасли", icon: LayoutDashboard },
+  { href: "/macro", label: "Макро", icon: GitCompareArrows },
+  { href: "/ipo", label: "IPO", icon: BriefcaseBusiness },
+  { href: "/news", label: "Новости", icon: Bot },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
