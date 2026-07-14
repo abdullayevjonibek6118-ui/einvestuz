@@ -6,6 +6,8 @@ from datetime import datetime, time as clock_time, timezone
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
+import requests
+
 _EXECUTOR = ThreadPoolExecutor(max_workers=7)
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -14,7 +16,6 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from .market_data import DataSource as MarketDataSource
-from .market_data import STOCK_UNIVERSE
 from .market_data import get_earnings as fetch_earnings
 from .market_data import get_fx_rates as fetch_fx_rates
 from .market_data import get_fundamentals as fetch_fundamentals
@@ -292,6 +293,58 @@ class ChatResponse(BaseModel):
     message: str
     response: str
     disclaimer: str = "Это образовательная информация, не индивидуальная инвестиционная рекомендация."
+
+
+AIMLAPI_CHAT_COMPLETIONS_URL = "https://api.aimlapi.com/v1/chat/completions"
+AIMLAPI_MODEL = os.getenv("AIMLAPI_MODEL", "openai/gpt-5.4-nano")
+
+
+def _aimlapi_chat_completion(payload: ChatRequest) -> str:
+    api_key = os.getenv("AIMLAPI_KEY", "").strip()
+    if not api_key:
+        raise HTTPException(status_code=503, detail="AIMLAPI_KEY is not configured")
+
+    messages: list[dict[str, str]] = [
+        {
+            "role": "system",
+            "content": (
+                "Ты AI-аналитик Einvestuz Analytics Terminal. Отвечай на русском языке, "
+                "кратко и структурно. Не выдавай персональные инвестиционные рекомендации. "
+                "Если вопрос требует текущих котировок, отчётности или макроданных, не выдумывай "
+                "числа: прямо укажи, что нужно сверить live-разделы терминала или официальный источник."
+            ),
+        }
+    ]
+    messages.extend({"role": item.role, "content": item.text} for item in payload.history[-10:])
+    messages.append({"role": "user", "content": payload.message})
+
+    try:
+        response = requests.post(
+            AIMLAPI_CHAT_COMPLETIONS_URL,
+            headers={"Authorization": "Bearer " + api_key},
+            json={
+                "model": AIMLAPI_MODEL,
+                "messages": messages,
+            },
+            timeout=45,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(status_code=502, detail="AIMLAPI request failed") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail="AIMLAPI returned invalid JSON") from exc
+
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise HTTPException(status_code=502, detail="AIMLAPI returned no choices")
+
+    message = choices[0].get("message") if isinstance(choices[0], dict) else None
+    content = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(content, str) or not content.strip():
+        raise HTTPException(status_code=502, detail="AIMLAPI returned an empty response")
+
+    return content.strip()
 
 
 ACADEMY = [
@@ -669,18 +722,7 @@ def newsletter(payload: NewsletterRequest) -> dict[str, bool | str]:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
-    message = " ".join([*(item.text for item in payload.history[-6:]), payload.message]).lower()
-    company = next((stock for stock in STOCK_UNIVERSE.values() if stock.ticker.lower() in message or stock.name.lower() in message), None)
-    if company is None:
-        response = "Я могу объяснять инвестиционные термины, риск портфеля, ETF, дивиденды и компании из текущего MVP-списка."
-    else:
-        response = (
-            f"{company.name}: {company.description} "
-            "Плюсы: масштаб бизнеса, рыночная позиция и долгосрочные драйверы спроса. "
-            "Риски: оценка компании, конкуренция, регулирование и волатильность рынка. "
-            "Актуальную цену и показатели смотрите на странице акции или в дашборде."
-        )
-    return ChatResponse(message=payload.message, response=response)
+    return ChatResponse(message=payload.message, response=_aimlapi_chat_completion(payload))
 
 
 @app.get("/academy")

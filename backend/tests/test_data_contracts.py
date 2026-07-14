@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from backend.app import main
 from backend.app import market_data
 from backend.app.market_data import SymbolSpec, _empty_quote, get_macro_summary
@@ -132,3 +133,38 @@ def test_cbu_fx_rates_keep_all_official_currencies(monkeypatch) -> None:
 
     assert [rate.ccy for rate in rates] == ["USD", "EUR", "RUB", "GBP"]
     assert rates[3].rate == 16085.73
+
+
+def test_chat_uses_aimlapi_completion(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, list[dict[str, dict[str, str]]]]:
+            return {"choices": [{"message": {"content": "Ответ из AIMLAPI"}}]}
+
+    def fake_post(url: str, headers: dict[str, str], json: dict[str, object], timeout: int) -> FakeResponse:
+        captured.update({"url": url, "headers": headers, "json": json, "timeout": timeout})
+        return FakeResponse()
+
+    monkeypatch.setenv("AIMLAPI_KEY", "test-key")
+    monkeypatch.setattr(main.requests, "post", fake_post)
+
+    result = main.chat(main.ChatRequest(message="Hello", history=[]))
+
+    assert result.response == "Ответ из AIMLAPI"
+    assert captured["url"] == "https://api.aimlapi.com/v1/chat/completions"
+    assert captured["headers"] == {"Authorization": "Bearer test-key"}
+    assert captured["timeout"] == 45
+    assert captured["json"]["model"] == "openai/gpt-5.4-nano"
+
+
+def test_chat_fails_when_aimlapi_key_is_missing(monkeypatch) -> None:
+    monkeypatch.delenv("AIMLAPI_KEY", raising=False)
+
+    with pytest.raises(main.HTTPException) as exc:
+        main.chat(main.ChatRequest(message="Hello", history=[]))
+
+    assert exc.value.status_code == 503
