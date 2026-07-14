@@ -1,73 +1,135 @@
 import Link from "next/link";
-import { Bell, History, Star } from "lucide-react";
-import { PageHeader, Panel } from "@/components/ui";
-import { getStocks } from "@/lib/api";
+import { ArrowRight, Bell, BriefcaseBusiness, CircleUserRound, DatabaseZap, GitCompareArrows, ShieldCheck, Star } from "lucide-react";
+import { SourceStatusBadge } from "@/components/ui";
+import { getStockScopeScreener } from "@/lib/api";
 import { pageMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata({ title: "Профиль пользователя", description: "Персональные настройки, избранные компании и уведомления EInvest.", path: "/profile", noIndex: true });
+export const dynamic = "force-dynamic";
+
+export const metadata = pageMetadata({
+  title: "Личный кабинет и Watchlist",
+  description: "Рабочее пространство пользователя EInvest: watchlist, портфель, сравнение и контроль источников.",
+  path: "/profile",
+  noIndex: true,
+});
 
 export default async function ProfilePage() {
-  const stocks = await getStocks();
-  const watchlist = stocks.slice(0, 4);
+  const screener = await getStockScopeScreener({ limit: 6, sort_by: "volume_30d", sort_dir: "desc" });
+  const watchlistCandidates = screener.items.filter((item) => item.ticker).slice(0, 4);
+  const coverage = screener.coverage;
 
   return (
-    <>
-      <PageHeader title="Демо-профиль" subtitle="Предпросмотр будущего кабинета: watchlist, уведомления и история пока не сохраняются." />
+    <div className="stitch-page">
+      <section className="stitch-page-hero">
+        <div>
+          <span><CircleUserRound size={18} aria-hidden="true" /> EINVEST WORKSPACE</span>
+          <h1>Личный кабинет и Watchlist</h1>
+          <p>
+            Один экран для избранных компаний, учебного портфеля и быстрых переходов к анализу.
+            Рыночные кандидаты ниже подтягиваются из StockScope, без фиктивных позиций.
+          </p>
+        </div>
+        <Link className="stitch-button stitch-button-secondary" href="/portfolio">
+          Открыть портфель <ArrowRight size={18} aria-hidden="true" />
+        </Link>
+      </section>
 
-      <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <Panel title="Watchlist" action={<Star size={18} className="text-[#d97706]" fill="currentColor" />}>
-          <div className="space-y-3">
-            {watchlist.map((stock) => (
-              <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="group flex items-center justify-between gap-3 rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3 transition hover:border-[#bfdbfe] hover:bg-white hover:shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] text-xs font-bold text-[#1d4ed8]">{stock.ticker.slice(0, 2)}</span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#0f172a]">{stock.ticker}</p>
-                    <p className="truncate text-xs text-[#64748b]">{stock.name}</p>
-                  </div>
-                </div>
-                <p className="tabular-data text-sm font-semibold text-[#0f172a]">${stock.price.toFixed(2)}</p>
-              </Link>
-            ))}
+      <section className="stitch-profile-grid">
+        <article className="stitch-profile-card stitch-profile-card-primary">
+          <div>
+            <span className="stitch-card-icon"><BriefcaseBusiness size={22} aria-hidden="true" /></span>
+            <h2>Портфель в этом браузере</h2>
+            <p>
+              Позиции и watchlist сохраняются локально в браузере пользователя. Сервер не подменяет их моками и не создаёт
+              “примерные” сделки.
+            </p>
           </div>
-        </Panel>
+          <Link className="stitch-card-link" href="/portfolio">
+            Перейти к позициям <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </article>
 
-        <Panel title="Настройки">
-          <div className="space-y-3">
-            <Toggle title="Изменение цены" subtitle="Уведомлять при движении watchlist более чем на 3%." checked />
-            <Toggle title="Важные новости" subtitle="События по компаниям из избранного." checked />
-            <Toggle title="Еженедельная сводка" subtitle="Портфель, уроки и главные рынки." />
+        <article className="stitch-profile-card">
+          <span className="stitch-card-icon"><DatabaseZap size={22} aria-hidden="true" /></span>
+          <h2>Покрытие данных</h2>
+          <dl className="stitch-profile-metrics">
+            <div><dt>Эмитентов</dt><dd>{coverage?.total ?? screener.total}</dd></div>
+            <div><dt>С отчётами</dt><dd>{coverage?.withReports ?? "—"}</dd></div>
+            <div><dt>С ценами</dt><dd>{coverage?.withPriceHistory ?? "—"}</dd></div>
+          </dl>
+          <SourceStatusBadge source="StockScope" status="delayed" />
+        </article>
+
+        <article className="stitch-profile-card">
+          <span className="stitch-card-icon"><ShieldCheck size={22} aria-hidden="true" /></span>
+          <h2>Auth-слой</h2>
+          <p>
+            Для серверного профиля нужны авторизация, база пользователей и согласие на хранение персональных настроек.
+            До этого кабинет не имитирует личные данные.
+          </p>
+          <Link className="stitch-card-link" href="/ai">
+            Проверить через AI <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </article>
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Watchlist-кандидаты по ликвидности</h2>
+            <span>Компании из живого скринера: удобно добавить в локальный портфель или сравнение.</span>
           </div>
-        </Panel>
-      </div>
-
-        <Panel title="Примеры запросов" action={<History size={18} className="text-[#667085]" />} className="mt-4">
-        <div className="space-y-2 text-sm">
-          {["Стоит ли покупать Nvidia?", "Объясни ETF простыми словами", "Какие риски у Tesla?"].map((item) => (
-            <div key={item} className="rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3 text-[#334155]">{item}</div>
+          <Star size={18} className="text-[#0041cd]" fill="currentColor" aria-hidden="true" />
+        </div>
+        <div className="stitch-watchlist-grid">
+          {watchlistCandidates.map((stock) => (
+            <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="stitch-watchlist-row">
+              <span>{stock.ticker.slice(0, 2)}</span>
+              <div>
+                <b>{stock.ticker}</b>
+                <small>{stock.name}</small>
+              </div>
+              <strong>{formatMoney(stock.currentPrice)}</strong>
+            </Link>
           ))}
         </div>
-      </Panel>
-    </>
+        {!watchlistCandidates.length ? (
+          <div className="stitch-empty">
+            <Bell size={24} aria-hidden="true" />
+            <b>Скринер не вернул компании</b>
+            <span>Когда источник станет доступен, кандидаты появятся автоматически.</span>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="stitch-profile-actions">
+        <Link href={`/compare?tickers=${encodeURIComponent(watchlistCandidates.map((item) => item.ticker).slice(0, 3).join(","))}`}>
+          <GitCompareArrows size={19} aria-hidden="true" />
+          <span>
+            <b>Сравнить watchlist</b>
+            <small>Открыть матрицу показателей</small>
+          </span>
+        </Link>
+        <Link href="/news">
+          <Bell size={19} aria-hidden="true" />
+          <span>
+            <b>Новости и события</b>
+            <small>Локальные макро-новости и рынок</small>
+          </span>
+        </Link>
+        <Link href="/industries">
+          <DatabaseZap size={19} aria-hidden="true" />
+          <span>
+            <b>Отрасли</b>
+            <small>Группировка эмитентов</small>
+          </span>
+        </Link>
+      </section>
+    </div>
   );
 }
 
-function Toggle({ title, subtitle, checked = false }: { title: string; subtitle: string; checked?: boolean }) {
-  return (
-    <label className="group flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-[#dbe4ef] bg-[#f8fafc] p-3 transition hover:border-[#bfdbfe] hover:bg-white">
-      <span className="flex gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8]">
-          <Bell size={18} />
-        </span>
-        <span>
-          <span className="block text-sm font-semibold">{title}</span>
-          <span className="mt-1 block text-xs text-[#667085]">{subtitle}</span>
-        </span>
-      </span>
-      <span className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-[#cbd5e1] bg-white p-1 transition has-[:checked]:border-[#3861fb] has-[:checked]:bg-[#3861fb] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#93c5fd]">
-        <input type="checkbox" defaultChecked={checked} disabled className="peer sr-only" />
-        <span className="size-5 rounded-full bg-[#cbd5e1] shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-white" />
-      </span>
-    </label>
-  );
+function formatMoney(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  return `${value.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} UZS`;
 }
