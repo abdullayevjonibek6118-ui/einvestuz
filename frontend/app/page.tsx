@@ -185,7 +185,7 @@ export default async function MarketOverview() {
       <section id="news" className="stitch-container stitch-section stitch-news-section">
         <div className="stitch-section-head">
           <h2>Последние новости</h2>
-          <Link href="/ai">Все новости <ChevronRight size={17} aria-hidden="true" /></Link>
+          <Link href="/news">Все новости <ChevronRight size={17} aria-hidden="true" /></Link>
         </div>
         <div className="stitch-news-grid">
           {latestNews.map((item, index) => <NewsCard item={item} image={newsImages[index % newsImages.length]} key={item.id} />)}
