@@ -8,3 +8,4 @@ backend/.vercel
 __pycache__
 *.pyc
 *.log
+stitch-export
