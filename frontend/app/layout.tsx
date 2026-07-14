@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Fira_Code, IBM_Plex_Sans } from "next/font/google";
+import { Fira_Code, Inter } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-const ibmPlexSans = IBM_Plex_Sans({
+const inter = Inter({
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-sans",
   display: "swap",
 });
@@ -42,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${ibmPlexSans.variable} ${firaCode.variable}`}>
+      <body className={`${inter.variable} ${firaCode.variable}`}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema).replace(/</g, "\\u003c") }} />
         <AppShell>{children}</AppShell>
       </body>

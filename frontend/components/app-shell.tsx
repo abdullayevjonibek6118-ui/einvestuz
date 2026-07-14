@@ -19,10 +19,19 @@ import {
 
 const primaryNav = [
   { href: "/", label: "Рынок", icon: LayoutDashboard },
-  { href: "/screener", label: "Скринер", icon: SlidersHorizontal },
+  { href: "/screener", label: "Компании", icon: SlidersHorizontal },
   { href: "/compare", label: "Сравнение", icon: GitCompareArrows },
-  { href: "/ai", label: "Помощник", icon: Bot },
+  { href: "/ai", label: "AI", icon: Bot },
   { href: "/portfolio", label: "Портфель", icon: BriefcaseBusiness },
+];
+
+const desktopNav = [
+  { href: "/", label: "Рынок", icon: LayoutDashboard },
+  { href: "/screener", label: "Компании", icon: SlidersHorizontal },
+  { href: "/#industries", label: "Отрасли", icon: LayoutDashboard },
+  { href: "/#macro", label: "Макро", icon: GitCompareArrows },
+  { href: "/screener?listing=ipo", label: "IPO", icon: BriefcaseBusiness },
+  { href: "/#news", label: "Новости", icon: Bot },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -57,13 +66,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <a href="#main-content" className="skip-link">Перейти к содержанию</a>
       <header className="topbar">
         <div className="topbar-inner">
-          <Link href="/" className="brand" aria-label="EInvest, главная">
-            <span className="brand-logo" aria-hidden="true"><span /></span>
-            <span className="brand-copy"><strong>EINVEST</strong><small>UZBEKISTAN MARKETS</small></span>
+          <Link href="/" className="brand" aria-label="EINVESTUZ, главная">
+            <span className="brand-copy"><strong>EINVESTUZ</strong></span>
           </Link>
 
           <nav className="desktop-nav" aria-label="Основная навигация">
-            {primaryNav.map((item) => {
+            {desktopNav.map((item) => {
               const Icon = item.icon;
               const active = item.href === "/" ? pathname === "/" || pathname === "/dashboard" : pathname.startsWith(item.href);
               return <Link key={item.href} href={item.href} className={active ? "nav-item active" : "nav-item"} aria-current={active ? "page" : undefined}><Icon size={16} />{item.label}</Link>;
@@ -73,10 +81,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="topbar-actions">
             <form onSubmit={submitSearch} className="global-search">
               <Search size={16} />
-              <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Тикер или компания" aria-label="Поиск компании" />
-              <kbd>⌘ K</kbd>
+              <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск инструментов..." aria-label="Поиск инструментов" />
             </form>
-            <Link href="/profile" className="icon-button" aria-label="Профиль"><CircleUserRound size={19} /></Link>
+            <Link href="/profile" className="login-button" aria-label="Войти в личный кабинет"><CircleUserRound size={18} />Войти</Link>
             <button className="icon-button mobile-menu-button" onClick={() => setMobileOpen((value) => !value)} aria-label={mobileOpen ? "Закрыть меню" : "Открыть меню"} aria-expanded={mobileOpen}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>
           </div>
         </div>
