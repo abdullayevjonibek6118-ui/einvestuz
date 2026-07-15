@@ -367,6 +367,7 @@ class StockScopeProvider:
         earnings_table = self._financial_table(fundamentals, "earnings", company_type)
         balance_table = self._financial_table(fundamentals, "balancesheet", company_type)
         indicators = self._performance_indicators(fundamentals, company_type)
+        self._attach_market_multiples(indicators, listing, dividend_facts)
         trading_stats = self._trading_stats(price_history)
         price_points = self._price_points(price_history)
         dividends = self._normalize_dividends(dividend_facts)
@@ -417,7 +418,7 @@ class StockScopeProvider:
         price_points = ((detail.get("price_history") or {}).get("points") if isinstance(detail.get("price_history"), dict) else []) or []
         current_price = self._number(listing.get("currentPrice"))
         shares = self._number(listing.get("noOfShares"))
-        market_cap = (current_price * shares) if current_price is not None and shares is not None else None
+        market_cap = self._market_cap(listing)
         latest_dividend = dividends[0] if dividends and isinstance(dividends[0], dict) else {}
         common_dividend = self._number(latest_dividend.get("common_dividend"))
         earnings_uzs = self._scaled_financial_value(latest_indicators.get("Earnings"))
@@ -437,9 +438,9 @@ class StockScopeProvider:
             "latest_period": indicators[0].get("period") if indicators and isinstance(indicators[0], dict) else None,
             "roe": latest_indicators.get("ROE"),
             "roa": latest_indicators.get("ROA"),
-            "pe": self._ratio(market_cap, earnings_uzs),
-            "pb": self._ratio(market_cap, equity_uzs),
-            "dividend_yield": self._ratio(common_dividend, current_price, 100),
+            "pe": latest_indicators.get("PE") or self._ratio(market_cap, earnings_uzs),
+            "pb": latest_indicators.get("PB") or self._ratio(market_cap, equity_uzs),
+            "dividend_yield": latest_indicators.get("DividendYield") or self._ratio(common_dividend, current_price, 100),
             "source_name": "StockScope",
             "source_url": detail.get("source_url") or self._stockscope_listing_url(ticker),
             "fetched_at": detail.get("fetched_at") or self._now_iso(),
@@ -543,12 +544,12 @@ class StockScopeProvider:
             earnings = item.get("earnings") if isinstance(item.get("earnings"), dict) else {}
             balance = item.get("balancesheet") if isinstance(item.get("balancesheet"), dict) else {}
             if company_type == "bank":
-                net_profit = self._number(earnings.get("292"))
-                revenue = self._number(earnings.get("246"))
-                gross_profit = self._number(earnings.get("276"))
-                assets = self._number(balance.get("208"))
-                equity = self._number(balance.get("233"))
-                debt = self._number(balance.get("221"))
+                net_profit = self._first_number(earnings, ["292"])
+                revenue = self._first_number(earnings, ["246"])
+                gross_profit = self._first_number(earnings, ["276"])
+                assets = self._first_number(balance, ["208"])
+                equity = self._first_number(balance, ["233"])
+                debt = self._first_number(balance, ["221"])
                 payload = {
                     "ROA": self._ratio(net_profit, assets, 100),
                     "ROE": self._ratio(net_profit, equity, 100),
@@ -562,26 +563,46 @@ class StockScopeProvider:
                     "Debt": debt,
                 }
             else:
-                net_profit = self._number(earnings.get("270"))
-                revenue = self._number(earnings.get("010"))
-                gross_profit = self._number(earnings.get("030"))
-                operating_income = self._number(earnings.get("100"))
-                assets = self._number(balance.get("400"))
-                equity = self._number(balance.get("480"))
-                liabilities = self._number(balance.get("770"))
-                current_assets = self._number(balance.get("390"))
-                current_liabilities = self._number(balance.get("600"))
-                interest_debt = sum(
-                    self._number(balance.get(key)) or 0
-                    for key in ["570", "580", "730", "740", "750"]
-                )
+                revenue = self._first_number(earnings, ["010"])
+                cost_of_revenue = self._first_number(earnings, ["020"])
+                gross_profit = self._first_number(earnings, ["030"])
+                if gross_profit is None and revenue is not None and cost_of_revenue is not None:
+                    gross_profit = revenue - cost_of_revenue
+                operating_expenses = self._sum_numbers(earnings, ["040", "050", "060", "070", "080"])
+                operating_income = self._first_number(earnings, ["100"])
+                if operating_income is None and gross_profit is not None and operating_expenses is not None:
+                    operating_income = gross_profit - operating_expenses
+                ebt = self._first_number(earnings, ["240"])
+                taxes = self._sum_numbers(earnings, ["250", "260"])
+                net_profit = self._first_number(earnings, ["270"])
+                if net_profit is None and ebt is not None and taxes is not None:
+                    net_profit = ebt - taxes
+
+                long_term_assets = self._first_number(balance, ["130"])
+                current_assets = self._first_number(balance, ["390"])
+                assets = self._first_number(balance, ["400"])
+                if assets is None:
+                    assets = self._sum_known([long_term_assets, current_assets])
+                long_term_liabilities = self._first_number(balance, ["490"])
+                current_liabilities = self._first_number(balance, ["600"])
+                liabilities = self._first_number(balance, ["770"])
+                if liabilities is None:
+                    liabilities = self._sum_known([long_term_liabilities, current_liabilities])
+                total_liabilities_and_equity = self._first_number(balance, ["780"])
+                equity = self._first_number(balance, ["480"])
+                if equity is None and total_liabilities_and_equity is not None and liabilities is not None:
+                    equity = total_liabilities_and_equity - liabilities
+                if equity is None and assets is not None and liabilities is not None:
+                    equity = assets - liabilities
+                interest_debt = self._sum_numbers(balance, ["570", "580", "730", "740", "750"])
+                working_capital = current_assets - current_liabilities if current_assets is not None and current_liabilities is not None else None
                 payload = {
                     "ROA": self._ratio(net_profit, assets, 100),
                     "ROE": self._ratio(net_profit, equity, 100),
                     "DebtToEquity": self._ratio(liabilities, equity),
                     "DebtToEbit": self._ratio(interest_debt, operating_income),
                     "CurrentRatio": self._ratio(current_assets, current_liabilities),
-                    "WorkingCapital": (current_assets or 0) - (current_liabilities or 0),
+                    "WorkingCapital": working_capital,
                     "GrossProfitMargin": self._ratio(gross_profit, revenue, 100),
                     "NetProfitMargin": self._ratio(net_profit, revenue, 100),
                     "Earnings": net_profit,
@@ -599,6 +620,26 @@ class StockScopeProvider:
                 }
             )
         return sorted(indicators, key=lambda row: str(row.get("date") or ""), reverse=True)
+
+    def _attach_market_multiples(
+        self,
+        indicators: list[dict[str, Any]],
+        listing: dict[str, Any],
+        dividend_facts: list[dict[str, Any]],
+    ) -> None:
+        market_cap = self._market_cap(listing)
+        current_price = self._number(listing.get("currentPrice"))
+        latest_dividend = dividend_facts[0] if dividend_facts and isinstance(dividend_facts[0], dict) else {}
+        common_dividend = self._number(latest_dividend.get("commonDividend"))
+        for row in indicators:
+            values = row.get("values") if isinstance(row.get("values"), dict) else {}
+            earnings_uzs = self._scaled_financial_value(values.get("Earnings"))
+            equity_uzs = self._scaled_financial_value(values.get("Equity"))
+            values["MarketCap"] = market_cap
+            values["PE"] = self._ratio(market_cap, earnings_uzs)
+            values["PB"] = self._ratio(market_cap, equity_uzs)
+            values["DividendYield"] = self._ratio(common_dividend, current_price, 100)
+            row["values"] = values
 
     def _trading_stats(self, price_history: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         prices = price_history.get("history") if isinstance(price_history.get("history"), dict) else {}
@@ -735,6 +776,31 @@ class StockScopeProvider:
             except ValueError:
                 return None
         return None
+
+    def _first_number(self, source: dict[str, Any], keys: list[str]) -> float | None:
+        for key in keys:
+            value = self._number(source.get(key))
+            if value is not None:
+                return value
+        return None
+
+    def _sum_numbers(self, source: dict[str, Any], keys: list[str]) -> float | None:
+        values = [self._number(source.get(key)) for key in keys]
+        known = [value for value in values if value is not None]
+        if not known:
+            return None
+        return sum(known)
+
+    def _sum_known(self, values: list[float | None]) -> float | None:
+        known = [value for value in values if value is not None]
+        if not known:
+            return None
+        return sum(known)
+
+    def _market_cap(self, listing: dict[str, Any]) -> float | None:
+        current_price = self._number(listing.get("currentPrice"))
+        shares = self._number(listing.get("noOfShares"))
+        return current_price * shares if current_price is not None and shares is not None else None
 
     def _ratio(self, numerator: float | None, denominator: float | None, multiplier: float = 1.0) -> float | None:
         if numerator is None or denominator in (None, 0):

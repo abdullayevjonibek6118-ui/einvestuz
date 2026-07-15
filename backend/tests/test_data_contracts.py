@@ -7,6 +7,7 @@ from backend.app import market_data
 from backend.app.market_data import SymbolSpec, _empty_quote, get_macro_summary
 from backend.app.providers.financial_analytics import compute_financial_ratios
 from backend.app.providers.siat_provider import SiatProvider
+from backend.app.providers.stockscope_provider import StockScopeProvider
 
 
 def test_macro_summary_uses_observed_cbu_fx_only(monkeypatch) -> None:
@@ -103,6 +104,78 @@ def test_ratios_are_calculated_from_raw_financial_rows() -> None:
     assert ratios.ps == 1.0
     assert ratios.pe == 10.0
     assert ratios.pb == 200 / 120
+
+
+def test_stockscope_indicators_fill_calculable_multiples_from_statements() -> None:
+    provider = StockScopeProvider()
+    fundamentals = [
+        {
+            "period": "2025",
+            "type": "annual",
+            "date": {"seconds": 1767139200},
+            "companyType": "jsc",
+            "earnings": {
+                "010": 1000,  # revenue
+                "020": 600,  # cost of revenue; gross profit should be derived
+                "270": 100,  # net profit
+            },
+            "balancesheet": {
+                "130": 350,  # long-term assets
+                "390": 150,  # current assets
+                "770": 300,  # liabilities
+                # equity is intentionally absent and should be assets - liabilities
+            },
+        }
+    ]
+
+    indicators = provider._performance_indicators(fundamentals, "jsc")
+    provider._attach_market_multiples(
+        indicators,
+        {"currentPrice": 20, "noOfShares": 10_000},
+        [{"commonDividend": 2}],
+    )
+    values = indicators[0]["values"]
+
+    assert values["GrossProfitMargin"] == 40
+    assert values["NetProfitMargin"] == 10
+    assert values["ROA"] == 20
+    assert values["ROE"] == 50
+    assert values["DebtToEquity"] == 1.5
+    assert values["CurrentRatio"] is None
+    assert values["WorkingCapital"] is None
+    assert values["PE"] == 2
+    assert values["PB"] == 1
+    assert values["DividendYield"] == 10
+
+
+def test_stockscope_coverage_row_reuses_calculated_pe_pb() -> None:
+    provider = StockScopeProvider()
+    row = provider._coverage_row(
+        "TEST",
+        {"ticker": "TEST", "name": "Test Co", "currentPrice": 20, "noOfShares": 10_000},
+        {
+            "indicators": [
+                {
+                    "period": "2025",
+                    "values": {
+                        "Earnings": 100,
+                        "Equity": 200,
+                        "ROE": 50,
+                        "ROA": 20,
+                        "PE": 2,
+                        "PB": 1,
+                    },
+                }
+            ],
+            "reports": [{}],
+            "dividends": [{"common_dividend": 2}],
+        },
+    )
+
+    assert row["pe"] == 2
+    assert row["pb"] == 1
+    assert row["roe"] == 50
+    assert row["roa"] == 20
 
 
 def test_stockscope_snapshot_rows_are_auditable() -> None:
