@@ -180,6 +180,10 @@ class StockScopeProvider:
                 or needle in str(row.get("name") or "").lower()
                 or needle in str(row.get("isin") or "").lower()
             ]
+        ratio_fields = {"roe", "roa", "pe", "pb", "dividend_yield"}
+        needs_ratio_filtering = any(value is not None for value in [min_roe, min_roa, min_dividend_yield, max_pe, max_pb])
+        if needs_ratio_filtering or sort_by in ratio_fields:
+            rows = self._enrich_screener_rows_with_calculated_multiples(rows)
         rows = [row for row in rows if self._passes_min(row.get("roe"), min_roe)]
         rows = [row for row in rows if self._passes_min(row.get("roa"), min_roa)]
         rows = [row for row in rows if self._passes_equal_text(row.get("listing_category") or row.get("listingCategory"), listing_category)]
@@ -233,6 +237,7 @@ class StockScopeProvider:
         start = max(offset, 0)
         page_size = max(1, min(limit, 200))
         selected = rows[start : start + page_size]
+        selected = self._enrich_screener_rows_with_calculated_multiples(selected)
         return {
             "total": len(rows),
             "offset": start,
@@ -250,6 +255,39 @@ class StockScopeProvider:
                 "with_price_history": coverage.get("with_price_history") if isinstance(coverage, dict) else None,
             },
         }
+
+    def _enrich_screener_rows_with_calculated_multiples(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        rows_by_ticker = {str(row.get("ticker") or "").strip().upper(): dict(row) for row in rows if row.get("ticker")}
+        missing = [
+            ticker
+            for ticker, row in rows_by_ticker.items()
+            if (row.get("reports_count") or row.get("indicators_count"))
+            and any(row.get(key) is None for key in ["pe", "pb", "roe", "roa", "dividend_yield"])
+        ]
+        if not missing:
+            return [dict(row) for row in rows]
+
+        def load(ticker: str) -> tuple[str, dict[str, Any] | None]:
+            try:
+                detail = self.get_listing_details(ticker)
+                listing = detail.get("listing") if isinstance(detail, dict) and isinstance(detail.get("listing"), dict) else {}
+                if not isinstance(detail, dict) or not listing:
+                    return ticker, None
+                return ticker, self._coverage_row(ticker, listing, detail)
+            except Exception:
+                return ticker, None
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            for ticker, calculated in executor.map(load, missing):
+                if not calculated:
+                    continue
+                row = rows_by_ticker.get(ticker)
+                if row is None:
+                    continue
+                for key in ["market_cap", "roe", "roa", "pe", "pb", "dividend_yield", "latest_period", "reports_count", "indicators_count"]:
+                    if calculated.get(key) is not None:
+                        row[key] = calculated[key]
+        return [rows_by_ticker.get(str(row.get("ticker") or "").strip().upper(), dict(row)) for row in rows]
 
     def _fetch_listing_details_coverage(self) -> dict[str, Any]:
         listings = self.get_listings()

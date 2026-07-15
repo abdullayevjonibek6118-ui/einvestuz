@@ -208,6 +208,48 @@ def test_stockscope_bank_ratios_use_latest_available_balance_sheet() -> None:
     assert latest["PB"] == 2.5
 
 
+def test_stockscope_screener_enriches_snapshot_rows_with_detail_ratios(monkeypatch) -> None:
+    provider = StockScopeProvider()
+    monkeypatch.setattr(
+        provider,
+        "get_listing_details_coverage",
+        lambda: {
+            "total": 1,
+            "items": [
+                {
+                    "ticker": "BANK",
+                    "name": "Bank",
+                    "reports_count": 2,
+                    "indicators_count": 2,
+                    "market_cap": 2_000_000,
+                    "pe": 20,
+                    "pb": None,
+                    "roe": None,
+                    "roa": None,
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        provider,
+        "get_listing_details",
+        lambda ticker: {
+            "listing": {"ticker": ticker, "name": "Bank", "currentPrice": 20, "noOfShares": 100_000},
+            "indicators": [{"period": "2025", "values": {"Earnings": 100, "Equity": 800, "ROE": 12.5, "ROA": 5, "PE": 20, "PB": 2.5}}],
+            "reports": [{}, {}],
+            "dividends": [],
+        },
+    )
+
+    result = provider.screen_listings(limit=1)
+    row = result["items"][0]
+
+    assert row["pe"] == 20
+    assert row["pb"] == 2.5
+    assert row["roe"] == 12.5
+    assert row["roa"] == 5
+
+
 def test_stockscope_snapshot_rows_are_auditable() -> None:
     path = Path("backend/app/data/stockscope_screener.json")
     snapshot = json.loads(path.read_text(encoding="utf-8"))
