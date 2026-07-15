@@ -79,7 +79,7 @@ export function AIChatClient({
     setMessages((current) => [...current, userMsg]);
 
     try {
-      const history = [...messages.slice(-5), userMsg].map(({ role, text }) => ({ role, text }));
+      const history = messages.slice(-5).map(({ role, text }) => ({ role, text }));
       const response = await fetch(getApiUrl("/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },

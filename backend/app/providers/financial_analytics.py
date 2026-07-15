@@ -307,68 +307,92 @@ def compute_financial_ratios(stockscope_data: dict[str, Any]) -> FinancialRatios
         val = stockscope_data.get(key)
         return _safe_float(val)
 
+    def _coalesce(*values: float | None) -> float | None:
+        return next((value for value in values if value is not None), None)
+
+    listing = stockscope_data.get("listing") if isinstance(stockscope_data.get("listing"), dict) else {}
+
     pe = _num("pe")
     pb = _num("pb")
     roe = _num("roe")
     roa = _num("roa")
-    dividend_yield = _num("dividendYield") or _num("dividend_yield")
+    dividend_yield = _coalesce(_num("dividendYield"), _num("dividend_yield"))
 
     # Extract from indicators if available
     indicators = stockscope_data.get("indicators", [])
     indicator_map: dict[str, float] = {}
+    stockscope_period_values = False
     if isinstance(indicators, list):
         for ind in indicators:
             if isinstance(ind, dict):
+                values = ind.get("values") if isinstance(ind.get("values"), dict) else None
+                if values is not None:
+                    stockscope_period_values = True
+                    for key, raw_value in values.items():
+                        val = _safe_float(raw_value)
+                        if val is not None and key not in indicator_map:
+                            indicator_map[str(key)] = val
+                    continue
                 key = ind.get("key") or ind.get("name", "")
                 val = _safe_float(ind.get("value"))
                 if val is not None:
-                    indicator_map[key] = val
+                    indicator_map[str(key)] = val
 
     # Try to extract revenue, earnings, equity, debt from indicators
     def _first(*keys: str) -> float | None:
         return next((indicator_map[key] for key in keys if key in indicator_map), None)
 
-    revenue = _first("revenue", "totalRevenue")
-    net_income = _first("netIncome", "earnings")
-    total_equity = _first("totalEquity", "equity")
+    pe = _coalesce(pe, _first("PE"))
+    pb = _coalesce(pb, _first("PB"))
+    roe = _coalesce(roe, _first("ROE"))
+    roa = _coalesce(roa, _first("ROA"))
+    dividend_yield = _coalesce(dividend_yield, _first("DividendYield"))
+
+    revenue = _first("revenue", "totalRevenue", "Revenue")
+    net_income = _first("netIncome", "earnings", "Earnings")
+    total_equity = _first("totalEquity", "equity", "Equity")
     prior_equity = _first("priorTotalEquity", "priorEquity")
-    total_debt = _first("totalDebt", "debt", "totalLiabilities")
-    total_assets = _first("totalAssets", "assets")
+    total_debt = _first("totalDebt", "debt", "totalLiabilities", "Debt")
+    total_assets = _first("totalAssets", "assets", "Assets")
     prior_assets = _first("priorTotalAssets", "priorAssets")
-    current_assets = indicator_map.get("currentAssets")
-    current_liabilities = indicator_map.get("currentLiabilities")
+    current_assets = _first("currentAssets", "CurrentAssets")
+    current_liabilities = _first("currentLiabilities", "CurrentLiabilities")
     ebitda = indicator_map.get("ebitda")
-    interest_expense = indicator_map.get("interestExpense")
-    operating_income = indicator_map.get("operatingIncome") or indicator_map.get("ebit")
-    shares = _safe_float(stockscope_data.get("noOfShares"))
-    market_cap = _safe_float(stockscope_data.get("marketCap"))
+    interest_expense = _first("interestExpense", "InterestExpense")
+    operating_income = _coalesce(_first("operatingIncome"), _first("ebit"), _first("OperatingIncome"))
+    shares = _coalesce(_safe_float(stockscope_data.get("noOfShares")), _safe_float(listing.get("noOfShares")))
+    market_cap = _coalesce(_safe_float(stockscope_data.get("marketCap")), _safe_float(stockscope_data.get("market_cap")), _safe_float(listing.get("marketCap")), _first("MarketCap"))
     if market_cap is None:
-        price = _safe_float(stockscope_data.get("currentPrice"))
+        price = _coalesce(_safe_float(stockscope_data.get("currentPrice")), _safe_float(listing.get("currentPrice")))
         market_cap = price * shares if price is not None and shares is not None else None
+    financial_scale = 1000.0 if stockscope_period_values else 1.0
+    revenue_for_valuation = revenue * financial_scale if revenue is not None else None
+    net_income_for_valuation = net_income * financial_scale if net_income is not None else None
+    equity_for_valuation = total_equity * financial_scale if total_equity is not None else None
 
     # Compute ratios
     current_ratio = (current_assets / current_liabilities) if current_assets is not None and current_liabilities and current_liabilities > 0 else None
     quick_ratio = None  # Inventory data is unavailable; do not invent a value.
-    debt_to_equity = (total_debt / total_equity) if total_debt and total_equity and total_equity > 0 else None
-    debt_to_assets = (total_debt / total_assets) if total_debt and total_assets and total_assets > 0 else None
-    interest_coverage = (operating_income / interest_expense) if operating_income and interest_expense and interest_expense > 0 else None
+    debt_to_equity = _coalesce(_first("DebtToEquity"), (total_debt / total_equity) if total_debt is not None and total_equity and total_equity > 0 else None)
+    debt_to_assets = (total_debt / total_assets) if total_debt is not None and total_assets and total_assets > 0 else None
+    interest_coverage = (operating_income / interest_expense) if operating_income is not None and interest_expense and interest_expense > 0 else None
 
     average_equity = (total_equity + prior_equity) / 2 if total_equity is not None and prior_equity is not None else total_equity
     average_assets = (total_assets + prior_assets) / 2 if total_assets is not None and prior_assets is not None else total_assets
     roe = roe if roe is not None else ((net_income / average_equity) * 100 if net_income is not None and average_equity and average_equity > 0 else None)
     roa = roa if roa is not None else ((net_income / average_assets) * 100 if net_income is not None and average_assets and average_assets > 0 else None)
 
-    gross_margin = _first("grossMargin", "grossProfitMargin")
-    operating_margin = (operating_income / revenue * 100) if operating_income is not None and revenue and revenue > 0 else None
-    net_margin = (net_income / revenue * 100) if net_income is not None and revenue and revenue > 0 else None
+    gross_margin = _first("grossMargin", "grossProfitMargin", "GrossProfitMargin")
+    operating_margin = _coalesce(_first("OperatingProfitMargin"), (operating_income / revenue * 100) if operating_income is not None and revenue and revenue > 0 else None)
+    net_margin = _coalesce(_first("NetProfitMargin"), (net_income / revenue * 100) if net_income is not None and revenue and revenue > 0 else None)
 
-    ps = (market_cap / revenue) if market_cap and revenue and revenue > 0 else None
-    pe = pe if pe is not None else ((market_cap / net_income) if market_cap and net_income and net_income > 0 else None)
-    pb = pb if pb is not None else ((market_cap / total_equity) if market_cap and total_equity and total_equity > 0 else None)
+    ps = (market_cap / revenue_for_valuation) if market_cap and revenue_for_valuation and revenue_for_valuation > 0 else None
+    pe = pe if pe is not None else ((market_cap / net_income_for_valuation) if market_cap and net_income_for_valuation and net_income_for_valuation > 0 else None)
+    pb = pb if pb is not None else ((market_cap / equity_for_valuation) if market_cap and equity_for_valuation and equity_for_valuation > 0 else None)
     ev_ebitda = None  # Cash is unavailable, therefore net debt cannot be computed reliably.
 
-    eps = (net_income / shares) if net_income and shares and shares > 0 else None
-    book_value_per_share = (total_equity / shares) if total_equity and shares and shares > 0 else None
+    eps = (net_income_for_valuation / shares) if net_income_for_valuation is not None and shares and shares > 0 else None
+    book_value_per_share = (equity_for_valuation / shares) if equity_for_valuation is not None and shares and shares > 0 else None
 
     payout_ratio = None  # Requires actual dividends paid and attributable earnings.
 

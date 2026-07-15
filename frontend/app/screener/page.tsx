@@ -117,7 +117,7 @@ export default async function ScreenerPage({ searchParams }: { searchParams?: Se
                     <td className={tone(row.change1d)}>{pct(row.change1d)}</td>
                     <td className={tone(row.change7d)}>{pct(row.change7d)}</td>
                     <td className={tone(row.change30d)}>{pct(row.change30d)}</td>
-                    <td>{row.hasFreshReport ?? row.reportsCount > 0 ? row.latestPeriod ?? "есть" : "—"}</td>
+                    <td>{(row.hasFreshReport ?? row.reportsCount > 0) ? row.latestPeriod ?? "есть" : "—"}</td>
                     <td><Link className="row-arrow" href={`/stocks/${row.ticker}`}><ArrowRight size={14} /></Link></td>
                   </tr>
                 ))}</tbody>

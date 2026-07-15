@@ -114,7 +114,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
                   Сравнить компанию
                   <ChartNoAxesCombined size={16} />
                 </Link>
-                <Link href={`/ai?question=${encodeURIComponent(`Дай краткий учебный тезис по ${stock.ticker}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
+                <Link href={`/ai?ticker=${encodeURIComponent(stock.ticker)}&question=${encodeURIComponent(`Дай краткий учебный тезис по ${stock.ticker}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
                   Спросить помощника
                   <Bot size={16} />
                 </Link>
@@ -225,7 +225,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
                 Сравнить метрики
                 <ArrowRight size={16} />
               </Link>
-              <Link href={`/ai?question=${encodeURIComponent(`Проверь риски и источники по ${stock.ticker}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
+              <Link href={`/ai?ticker=${encodeURIComponent(stock.ticker)}&question=${encodeURIComponent(`Проверь риски и источники по ${stock.ticker}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-white px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#1e40af]">
                 Спросить помощника
                 <Bot size={16} />
               </Link>
@@ -443,7 +443,7 @@ function resolveCompanyMetrics(stock: Stock, fundamentals: ReturnType<typeof res
     volume1d: formatUzbekMoney(sumTradingVolume(dailyRows, 1)),
     volume7d: formatUzbekMoney(sumTradingVolume(dailyRows, 7)),
     volume30d: formatUzbekMoney(sumTradingVolume(dailyRows, 30)),
-    pe: formatNumber(fundamentals.pe),
+    pe: formatNumber(indicators.PE ?? indicators.PriceToEarnings ?? fundamentals.pe),
     pb: formatNumber(indicators.PB ?? indicators.PtoB ?? indicators.PriceToBook),
     roe: formatPercentValue(indicators.ROE),
     roa: formatPercentValue(indicators.ROA),

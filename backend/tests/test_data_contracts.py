@@ -106,6 +106,44 @@ def test_ratios_are_calculated_from_raw_financial_rows() -> None:
     assert ratios.pb == 200 / 120
 
 
+def test_ratios_read_stockscope_detail_period_values() -> None:
+    ratios = compute_financial_ratios(
+        {
+            "listing": {"currentPrice": 20, "noOfShares": 10_000},
+            "indicators": [
+                {
+                    "period": "FY_2025",
+                    "values": {
+                        "MarketCap": 200_000,
+                        "PE": 2,
+                        "PB": 1,
+                        "ROE": 50,
+                        "ROA": 20,
+                        "Revenue": 1000,
+                        "Earnings": 100,
+                        "Assets": 500,
+                        "Equity": 200,
+                        "Debt": 300,
+                        "GrossProfitMargin": 40,
+                        "NetProfitMargin": 10,
+                        "DividendYield": 0,
+                    },
+                }
+            ],
+        }
+    )
+
+    assert ratios.pe == 2
+    assert ratios.pb == 1
+    assert ratios.roe == 50
+    assert ratios.roa == 20
+    assert ratios.debt_to_equity == 1.5
+    assert ratios.net_margin == 10
+    assert ratios.dividend_yield == 0
+    assert ratios.eps == 10
+    assert ratios.book_value_per_share == 20
+
+
 def test_stockscope_indicators_fill_calculable_multiples_from_statements() -> None:
     provider = StockScopeProvider()
     fundamentals = [
