@@ -208,6 +208,22 @@ def test_stockscope_bank_ratios_use_latest_available_balance_sheet() -> None:
     assert latest["PB"] == 2.5
 
 
+def test_stockscope_market_multiples_fallback_to_latest_nonzero_denominator() -> None:
+    provider = StockScopeProvider()
+    indicators = [
+        {"period": "Q1_2026", "values": {"Earnings": 0, "Equity": 0}},
+        {"period": "FY_2025", "values": {"Earnings": 100, "Equity": 800}},
+    ]
+
+    provider._attach_market_multiples(indicators, {"currentPrice": 20, "noOfShares": 100_000}, [])
+    latest = indicators[0]["values"]
+
+    assert latest["PE"] == 20
+    assert latest["PB"] == 2.5
+    assert latest["PEBasisPeriod"] == "FY_2025"
+    assert latest["PBBasisPeriod"] == "FY_2025"
+
+
 def test_stockscope_screener_enriches_snapshot_rows_with_detail_ratios(monkeypatch) -> None:
     provider = StockScopeProvider()
     monkeypatch.setattr(

@@ -669,15 +669,35 @@ class StockScopeProvider:
         current_price = self._number(listing.get("currentPrice"))
         latest_dividend = dividend_facts[0] if dividend_facts and isinstance(dividend_facts[0], dict) else {}
         common_dividend = self._number(latest_dividend.get("commonDividend"))
+        earnings_fallback = self._latest_nonzero_indicator_value(indicators, "Earnings")
+        equity_fallback = self._latest_nonzero_indicator_value(indicators, "Equity")
         for row in indicators:
             values = row.get("values") if isinstance(row.get("values"), dict) else {}
-            earnings_uzs = self._scaled_financial_value(values.get("Earnings"))
-            equity_uzs = self._scaled_financial_value(values.get("Equity"))
+            earnings = self._number(values.get("Earnings"))
+            equity = self._number(values.get("Equity"))
+            earnings_basis = earnings if earnings else earnings_fallback[0]
+            equity_basis = equity if equity else equity_fallback[0]
+            earnings_uzs = self._scaled_financial_value(earnings_basis)
+            equity_uzs = self._scaled_financial_value(equity_basis)
             values["MarketCap"] = market_cap
             values["PE"] = self._ratio(market_cap, earnings_uzs)
             values["PB"] = self._ratio(market_cap, equity_uzs)
             values["DividendYield"] = self._ratio(common_dividend, current_price, 100)
+            if (not earnings) and earnings_fallback[1]:
+                values["PEBasisPeriod"] = earnings_fallback[1]
+            if (not equity) and equity_fallback[1]:
+                values["PBBasisPeriod"] = equity_fallback[1]
             row["values"] = values
+
+    def _latest_nonzero_indicator_value(self, indicators: list[dict[str, Any]], key: str) -> tuple[float | None, str | None]:
+        for row in indicators:
+            if not isinstance(row, dict):
+                continue
+            values = row.get("values") if isinstance(row.get("values"), dict) else {}
+            value = self._number(values.get(key))
+            if value:
+                return value, str(row.get("period") or "") or None
+        return None, None
 
     def _trading_stats(self, price_history: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         prices = price_history.get("history") if isinstance(price_history.get("history"), dict) else {}
