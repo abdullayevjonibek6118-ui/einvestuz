@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from backend.app import main
 from backend.app import market_data
+from backend.app.database import DatabaseHealth, SupabaseDataAPI
 from backend.app.market_data import SymbolSpec, _empty_quote, get_macro_summary
 from backend.app.providers.financial_analytics import compute_financial_ratios
 from backend.app.providers.siat_provider import SiatProvider
@@ -75,6 +76,39 @@ def test_server_portfolio_mutation_routes_are_not_exposed() -> None:
 
     assert "/portfolio/add" not in paths
     assert "/portfolio/remove" not in paths
+
+
+def test_supabase_configuration_reads_current_environment(monkeypatch) -> None:
+    database = SupabaseDataAPI()
+
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+    assert database.configured is False
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co/")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key")
+
+    assert database.configured is True
+    assert database.url == "https://example.supabase.co"
+
+
+def test_database_health_endpoint_does_not_expose_upstream_error_detail(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main.supabase,
+        "health",
+        lambda: DatabaseHealth(
+            configured=True,
+            connected=False,
+            detail='Supabase returned HTTP 401: {"message":"JWT expired","hint":"internal upstream detail"}',
+        ),
+    )
+
+    result = main.database_health()
+
+    assert result["configured"] is True
+    assert result["connected"] is False
+    assert result["detail"] == "Supabase Data API is unreachable"
+    assert "JWT" not in str(result)
 
 
 def test_siat_provider_follows_official_download_descriptor() -> None:

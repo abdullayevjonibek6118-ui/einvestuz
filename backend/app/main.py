@@ -631,10 +631,16 @@ def health() -> dict[str, str | bool]:
 @app.get("/health/database")
 def database_health() -> dict[str, str | bool]:
     database = supabase.health()
+    if database.connected:
+        detail = "Supabase Data API is reachable"
+    elif database.configured:
+        detail = "Supabase Data API is unreachable"
+    else:
+        detail = "Supabase is not configured"
     return {
         "configured": database.configured,
         "connected": database.connected,
-        "detail": database.detail,
+        "detail": detail,
     }
 
 

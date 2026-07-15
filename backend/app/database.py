@@ -17,9 +17,13 @@ class DatabaseHealth:
 
 
 class SupabaseDataAPI:
-    def __init__(self) -> None:
-        self.url = os.getenv("SUPABASE_URL", "").rstrip("/")
-        self.key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    @property
+    def url(self) -> str:
+        return os.getenv("SUPABASE_URL", "").rstrip("/")
+
+    @property
+    def key(self) -> str:
+        return os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
     @property
     def configured(self) -> bool:
@@ -63,10 +67,12 @@ class SupabaseDataAPI:
     ) -> Any:
         if not self.configured:
             raise RuntimeError("Supabase is not configured")
+        url = self.url
+        key = self.key
         suffix = f"?{urlencode(query)}" if query else ""
         headers = {
-            "apikey": self.key,
-            "Authorization": f"Bearer {self.key}",
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
             "Accept": "application/json",
         }
         if payload is not None:
@@ -74,7 +80,7 @@ class SupabaseDataAPI:
         if prefer:
             headers["Prefer"] = prefer
         request = Request(
-            f"{self.url}/rest/v1/{table}{suffix}",
+            f"{url}/rest/v1/{table}{suffix}",
             data=json.dumps(payload).encode("utf-8") if payload is not None else None,
             headers=headers,
             method=method,
