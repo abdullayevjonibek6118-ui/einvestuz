@@ -307,15 +307,22 @@ class ChatHistoryMessage(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 
 
+ChatMode = Literal["general", "investment_research", "financial_analysis", "data_quality", "macro_scenario"]
+
+
 class ChatRequest(BaseModel):
     user_id: str = Field(default="demo-user")
     message: str = Field(min_length=2, max_length=2000)
     history: list[ChatHistoryMessage] = Field(default_factory=list, max_length=12)
+    mode: ChatMode = "general"
+    ticker: str | None = Field(default=None, min_length=1, max_length=12)
 
 
 class ChatResponse(BaseModel):
     message: str
     response: str
+    mode: ChatMode = "general"
+    sources: list[str] = Field(default_factory=list)
     disclaimer: str = "Это образовательная информация, не индивидуальная инвестиционная рекомендация."
 
 
@@ -323,22 +330,54 @@ AIMLAPI_CHAT_COMPLETIONS_URL = "https://api.aimlapi.com/v1/chat/completions"
 AIMLAPI_MODEL = os.getenv("AIMLAPI_MODEL", "openai/gpt-5.4-nano")
 
 
-def _aimlapi_chat_completion(payload: ChatRequest) -> str:
+AI_MODE_INSTRUCTIONS: dict[str, str] = {
+    "general": (
+        "Роль: универсальный AI-аналитик терминала. Объясняй показатели, источники, риски и термины. "
+        "Если не хватает данных, называй конкретный недостающий источник или поле."
+    ),
+    "investment_research": (
+        "Роль: investment researcher по публичным компаниям Узбекистана. Структура ответа: "
+        "1) краткий тезис; 2) что подтверждают данные; 3) bull/base/bear case; "
+        "4) thesis breakers; 5) катализаторы; 6) что проверить перед решением. "
+        "Не давай buy/sell/hold как персональную рекомендацию."
+    ),
+    "financial_analysis": (
+        "Роль: financial analyst. Фокусируйся на мультипликаторах, прибыльности, балансе, ликвидности, "
+        "дивидендах и peer comparison. Всегда показывай формулы и указывай, где коэффициент рассчитан, "
+        "а где источник не дал достаточного знаменателя."
+    ),
+    "data_quality": (
+        "Роль: controller/data quality analyst. Проверяй полноту отчётности, пустые поля, нулевые знаменатели, "
+        "fallback-периоды, расхождения между price/market cap/fundamentals. Разделяй observed data, calculated data "
+        "и unavailable data."
+    ),
+    "macro_scenario": (
+        "Роль: FP&A/macro scenario analyst. Связывай компанию/сектор с FX, ставками, инфляцией, ликвидностью, "
+        "выручкой, маржинальностью и cost of capital. Давай base/upside/downside сценарии без выдуманных чисел."
+    ),
+}
+
+
+def _aimlapi_chat_completion(payload: ChatRequest, context: dict[str, Any] | None = None) -> str:
     api_key = os.getenv("AIMLAPI_KEY", "").replace("\ufeff", "").strip()
     if not api_key:
         raise HTTPException(status_code=503, detail="AIMLAPI_KEY is not configured")
 
+    context = context or _build_ai_context(payload)
     messages: list[dict[str, str]] = [
         {
             "role": "system",
             "content": (
                 "Ты AI-аналитик Einvestuz Analytics Terminal. Отвечай на русском языке, "
                 "кратко и структурно. Не выдавай персональные инвестиционные рекомендации. "
-                "Если вопрос требует текущих котировок, отчётности или макроданных, не выдумывай "
-                "числа: прямо укажи, что нужно сверить live-разделы терминала или официальный источник."
+                "Работай как исследователь: отделяй факты от выводов, называй assumptions и источники. "
+                "Если вопрос требует текущих котировок, отчётности или макроданных, не выдумывай числа. "
+                f"{AI_MODE_INSTRUCTIONS.get(payload.mode, AI_MODE_INSTRUCTIONS['general'])}"
             ),
         }
     ]
+    if context["content"]:
+        messages.append({"role": "system", "content": context["content"]})
     messages.extend({"role": item.role, "content": item.text} for item in payload.history[-10:])
     messages.append({"role": "user", "content": payload.message})
 
@@ -384,6 +423,166 @@ def _aimlapi_chat_completion(payload: ChatRequest) -> str:
         raise HTTPException(status_code=502, detail="AIMLAPI returned an empty response")
 
     return content.strip()
+
+
+def _build_ai_context(payload: ChatRequest) -> dict[str, Any]:
+    ticker = _normalize_ai_ticker(payload.ticker) or _extract_ticker_from_text(payload.message)
+    sources: list[str] = []
+    blocks: list[str] = [
+        "Контекст Einvestuz: используй только приведённые данные как evidence pack. Не придумывай отсутствующие значения.",
+    ]
+
+    if ticker:
+        company_context = _stockscope_ai_company_context(ticker)
+        if company_context:
+            blocks.append(company_context["content"])
+            sources.extend(company_context["sources"])
+        else:
+            blocks.append(f"Компания {ticker}: детальные данные StockScope сейчас недоступны или тикер не найден.")
+
+    if payload.mode in {"general", "investment_research", "financial_analysis", "macro_scenario"}:
+        market_context = _stockscope_ai_market_context()
+        if market_context:
+            blocks.append(market_context["content"])
+            sources.extend(market_context["sources"])
+
+    if payload.mode in {"macro_scenario"}:
+        macro_context = _macro_ai_context()
+        if macro_context:
+            blocks.append(macro_context["content"])
+            sources.extend(macro_context["sources"])
+
+    if payload.mode == "data_quality":
+        blocks.append(
+            "Data quality checklist: проверь reports_count, indicators_count, latest_period, PE/PB basis, "
+            "нулевые знаменатели, отсутствие price history/dividends и несоответствие market cap = price × shares."
+        )
+
+    unique_sources = list(dict.fromkeys(source for source in sources if source))
+    return {"content": "\n\n".join(blocks)[:12000], "sources": unique_sources[:8]}
+
+
+def _normalize_ai_ticker(value: str | None) -> str | None:
+    cleaned = re.sub(r"[^A-Za-z0-9]", "", value or "").upper()
+    return cleaned or None
+
+
+def _extract_ticker_from_text(text: str) -> str | None:
+    candidates = re.findall(r"\b[A-Z0-9]{3,6}\b", text.upper())
+    for candidate in candidates:
+        if not candidate.isdigit():
+            return candidate
+    return None
+
+
+def _stockscope_ai_company_context(ticker: str) -> dict[str, Any] | None:
+    try:
+        detail = STOCKSCOPE_PROVIDER.get_listing_details(ticker)
+    except Exception:
+        return None
+    if not detail:
+        return None
+    listing = detail.get("listing") if isinstance(detail.get("listing"), dict) else {}
+    indicators = detail.get("indicators") if isinstance(detail.get("indicators"), list) else []
+    latest = indicators[0] if indicators and isinstance(indicators[0], dict) else {}
+    values = latest.get("values") if isinstance(latest.get("values"), dict) else {}
+    reports = detail.get("reports") if isinstance(detail.get("reports"), list) else []
+    dividends = detail.get("dividends") if isinstance(detail.get("dividends"), list) else []
+    trading = detail.get("trading_stats") if isinstance(detail.get("trading_stats"), dict) else {}
+    daily = trading.get("daily") if isinstance(trading.get("daily"), list) else []
+    pe_basis = f" (basis {values.get('PEBasisPeriod')})" if values.get("PEBasisPeriod") else ""
+    pb_basis = f" (basis {values.get('PBBasisPeriod')})" if values.get("PBBasisPeriod") else ""
+    lines = [
+        f"Компания: {ticker} — {listing.get('name') or listing.get('uzseName') or 'название недоступно'}",
+        f"ISIN: {listing.get('isin') or 'нет данных'}; сектор: {listing.get('sector') or 'нет данных'}; тип: {detail.get('company_type') or 'нет данных'}",
+        f"Цена: {_fmt_ai_number(listing.get('currentPrice'))} UZS; акций: {_fmt_ai_number(listing.get('noOfShares'))}; market cap: {_fmt_ai_number(values.get('MarketCap'))} UZS",
+        (
+            "Latest financial period: "
+            f"{latest.get('period') or 'нет данных'}; reports={len(reports)}; indicators={len(indicators)}; "
+            f"price_history_rows={len(daily)}; dividends={len(dividends)}"
+        ),
+        (
+            "Multiples/profitability: "
+            f"PE={_fmt_ai_number(values.get('PE'))}{pe_basis}; "
+            f"PB={_fmt_ai_number(values.get('PB'))}{pb_basis}; "
+            f"ROE={_fmt_ai_number(values.get('ROE'))}%; ROA={_fmt_ai_number(values.get('ROA'))}%; "
+            f"DividendYield={_fmt_ai_number(values.get('DividendYield'))}%"
+        ),
+        (
+            "Financial statement facts: "
+            f"Revenue={_fmt_ai_number(values.get('Revenue'))}; Earnings={_fmt_ai_number(values.get('Earnings'))}; "
+            f"Assets={_fmt_ai_number(values.get('Assets'))}; Equity={_fmt_ai_number(values.get('Equity'))}; Debt={_fmt_ai_number(values.get('Debt'))}"
+        ),
+    ]
+    if reports:
+        first_report = reports[0] if isinstance(reports[0], dict) else {}
+        lines.append(f"Последний отчёт: period={first_report.get('period')}, date={first_report.get('date')}, url={first_report.get('url') or 'нет'}")
+    if dividends:
+        first_dividend = dividends[0] if isinstance(dividends[0], dict) else {}
+        lines.append(
+            "Последний дивиденд: "
+            f"common={_fmt_ai_number(first_dividend.get('common_dividend') or first_dividend.get('commonDividend'))}; "
+            f"published={first_dividend.get('published_date') or first_dividend.get('publishedDate') or 'нет данных'}"
+        )
+    return {
+        "content": "Evidence pack по компании:\n" + "\n".join(f"- {line}" for line in lines),
+        "sources": ["stockscope.uz", str(detail.get("source_url") or "")],
+    }
+
+
+def _stockscope_ai_market_context() -> dict[str, Any] | None:
+    try:
+        screener = STOCKSCOPE_PROVIDER.screen_listings(limit=6, sort_by="market_cap", sort_dir="desc")
+    except Exception:
+        return None
+    rows = screener.get("items") if isinstance(screener.get("items"), list) else []
+    if not rows:
+        return None
+    lines = []
+    for row in rows[:6]:
+        if not isinstance(row, dict):
+            continue
+        lines.append(
+            f"{row.get('ticker')}: market_cap={_fmt_ai_number(row.get('market_cap'))}, "
+            f"PE={_fmt_ai_number(row.get('pe'))}, PB={_fmt_ai_number(row.get('pb'))}, "
+            f"ROE={_fmt_ai_number(row.get('roe'))}%, reports={row.get('reports_count')}"
+        )
+    return {"content": "Market peer snapshot по крупнейшим компаниям:\n" + "\n".join(f"- {line}" for line in lines), "sources": ["stockscope.uz screener"]}
+
+
+def _macro_ai_context() -> dict[str, Any] | None:
+    lines: list[str] = []
+    sources: list[str] = []
+    try:
+        for rate in fetch_fx_rates()[:4]:
+            lines.append(f"FX {rate.ccy}/UZS: {rate.rate}, change={rate.diff}, date={rate.date}")
+        sources.append("cbu.uz")
+    except Exception:
+        pass
+    try:
+        macro = fetch_macro_summary()
+        for metric in macro.indicators[:6]:
+            lines.append(f"Macro {metric.get('label') or metric.get('name')}: {metric.get('value')} {metric.get('unit') or ''} ({metric.get('as_of') or metric.get('date') or 'date n/a'})")
+        sources.extend(str(source.get("id") or source.get("name") or "") for source in macro.sources)
+    except Exception:
+        pass
+    if not lines:
+        return None
+    return {"content": "Macro evidence pack:\n" + "\n".join(f"- {line}" for line in lines), "sources": sources}
+
+
+def _fmt_ai_number(value: Any) -> str:
+    number = _coerce_numeric(value)
+    if number is None:
+        return "нет данных"
+    abs_value = abs(number)
+    if abs_value >= 1_000_000_000_000:
+        return f"{number / 1_000_000_000_000:.2f}T"
+    if abs_value >= 1_000_000_000:
+        return f"{number / 1_000_000_000:.2f}B"
+    if abs_value >= 1_000_000:
+        return f"{number / 1_000_000:.2f}M"
+    return f"{number:.4g}"
 
 
 ACADEMY = [
@@ -824,7 +1023,13 @@ def newsletter(payload: NewsletterRequest) -> dict[str, bool | str]:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
-    return ChatResponse(message=payload.message, response=_aimlapi_chat_completion(payload))
+    context = _build_ai_context(payload)
+    return ChatResponse(
+        message=payload.message,
+        response=_aimlapi_chat_completion(payload, context),
+        mode=payload.mode,
+        sources=context["sources"],
+    )
 
 
 @app.get("/academy")

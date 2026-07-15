@@ -5,8 +5,12 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({ title: "AI-анализ акций Узбекистана", description: "Задавайте вопросы об узбекских компаниях и получайте понятное объяснение показателей, рисков и доступных рыночных данных.", path: "/ai" });
 
-export default async function AIPage() {
+export default async function AIPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = (await Promise.resolve(searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>;
+  const question = Array.isArray(params.question) ? params.question[0] : params.question;
+  const ticker = Array.isArray(params.ticker) ? params.ticker[0] : params.ticker;
   const screener = await getStockScopeScreener({ limit: 6, sort_by: "market_cap", sort_dir: "desc" });
+  const suggestedTickers = screener.items.map((stock) => stock.ticker).filter(Boolean);
 
   return (
     <>
@@ -14,7 +18,7 @@ export default async function AIPage() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <Panel>
-          <AIChatClient />
+          <AIChatClient suggestedTickers={suggestedTickers} initialQuestion={question} initialTicker={ticker} />
         </Panel>
 
         <Panel title="Контекст рынка">

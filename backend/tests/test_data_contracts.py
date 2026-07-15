@@ -316,10 +316,13 @@ def test_chat_uses_aimlapi_completion(monkeypatch) -> None:
 
     monkeypatch.setenv("AIMLAPI_KEY", "test-key")
     monkeypatch.setattr(main.requests, "post", fake_post)
+    monkeypatch.setattr(main, "_build_ai_context", lambda payload: {"content": "", "sources": []})
 
     result = main.chat(main.ChatRequest(message="Hello", history=[]))
 
     assert result.response == "Ответ из AIMLAPI"
+    assert result.mode == "general"
+    assert result.sources == []
     assert captured["url"] == "https://api.aimlapi.com/v1/chat/completions"
     assert captured["headers"]["Authorization"] == "Bearer test-key"
     assert captured["headers"]["Accept"] == "application/json"
@@ -347,6 +350,7 @@ def test_chat_removes_bom_from_aimlapi_key(monkeypatch) -> None:
 
     monkeypatch.setenv("AIMLAPI_KEY", "\ufefftest-key")
     monkeypatch.setattr(main.requests, "post", fake_post)
+    monkeypatch.setattr(main, "_build_ai_context", lambda payload: {"content": "", "sources": []})
 
     main.chat(main.ChatRequest(message="Hello", history=[]))
 
@@ -360,6 +364,74 @@ def test_chat_fails_when_aimlapi_key_is_missing(monkeypatch) -> None:
         main.chat(main.ChatRequest(message="Hello", history=[]))
 
     assert exc.value.status_code == 503
+
+
+def test_chat_investment_mode_injects_stockscope_evidence(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+        content = b'{"choices":[{"message":{"content":"brief"}}]}'
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, list[dict[str, dict[str, str]]]]:
+            return {"choices": [{"message": {"content": "brief"}}]}
+
+    monkeypatch.setenv("AIMLAPI_KEY", "test-key")
+
+    def fake_post(url: str, headers: dict[str, str], json: dict[str, object], timeout: int) -> FakeResponse:
+        captured["json"] = json
+        return FakeResponse()
+
+    monkeypatch.setattr(main.requests, "post", fake_post)
+    monkeypatch.setattr(
+        main.STOCKSCOPE_PROVIDER,
+        "get_listing_details",
+        lambda ticker: {
+            "ticker": ticker,
+            "listing": {"ticker": ticker, "name": "Test Bank", "currentPrice": 20, "noOfShares": 100_000, "isin": "UZTEST"},
+            "source_url": "https://stockscope.uz/ru/listings/TEST/general",
+            "company_type": "bank",
+            "indicators": [
+                {
+                    "period": "FY_2025",
+                    "values": {
+                        "MarketCap": 2_000_000,
+                        "PE": 20,
+                        "PB": 2.5,
+                        "ROE": 12.5,
+                        "ROA": 5,
+                        "Revenue": 1000,
+                        "Earnings": 100,
+                        "Assets": 2000,
+                        "Equity": 800,
+                        "Debt": 1200,
+                    },
+                }
+            ],
+            "reports": [{"period": "FY_2025", "date": "2026-03-01", "url": "https://example.com/report"}],
+            "dividends": [],
+            "trading_stats": {"daily": [{"date": "2026-07-15", "price": 20}]},
+        },
+    )
+    monkeypatch.setattr(
+        main.STOCKSCOPE_PROVIDER,
+        "screen_listings",
+        lambda **kwargs: {"items": [{"ticker": "TEST", "market_cap": 2_000_000, "pe": 20, "pb": 2.5, "roe": 12.5, "reports_count": 1}]},
+    )
+
+    result = main.chat(main.ChatRequest(message="Дай тезис", mode="investment_research", ticker="TEST"))
+    messages = captured["json"]["messages"]
+    context = "\n".join(message["content"] for message in messages)
+
+    assert result.mode == "investment_research"
+    assert "stockscope.uz" in result.sources
+    assert "Test Bank" in context
+    assert "PE=20" in context
+    assert "bull/base/bear" in context
 
 
 def test_industries_summary_groups_stockscope_rows(monkeypatch) -> None:
