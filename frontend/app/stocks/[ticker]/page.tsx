@@ -9,6 +9,8 @@ import { pageMetadata, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
+type PeerRow = { ticker: string; market?: string; currency?: string };
+
 export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
   const { ticker } = await params;
   const normalized = ticker.toUpperCase();
@@ -62,8 +64,10 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
   const earnings = stock.earnings ?? [];
   const sources = stock.sources?.length ? stock.sources : resolveSources(stock);
   const companyNews = stock.news ?? [];
-  const peerRows: Array<{ ticker: string; market?: string; currency?: string }> = [];
   const isLocal = stock.market === "uzbekistan" || stock.currency === "UZS" || (stock.source ?? "").toLowerCase().includes("stockscope");
+  const peerRows = isLocal ? await resolvePeerRows(stock) : [];
+  const compareHref = buildCompareHref(stock.ticker, peerRows);
+  const websiteHref = normalizeExternalUrl(stock.website);
   const riskTone = resolveRiskTone(fundamentals, stock);
   const insight = stock.insight;
   const decision = stock.decisionSummary;
@@ -110,7 +114,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link href={`/compare?tickers=${encodeURIComponent([stock.ticker, ...peerRows.slice(0, 2).map((peer) => peer.ticker)].join(","))}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
+                <Link href={compareHref} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
                   Сравнить компанию
                   <ChartNoAxesCombined size={16} />
                 </Link>
@@ -118,8 +122,8 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
                   Спросить помощника
                   <Bot size={16} />
                 </Link>
-                {stock.website ? (
-                  <a href={stock.website} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-[#f8fafc] px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-white">
+                {websiteHref ? (
+                  <a href={websiteHref} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-[#dbe4ef] bg-[#f8fafc] px-4 text-sm font-semibold text-[#0f172a] transition hover:border-[#bfdbfe] hover:bg-white">
                     Открыть сайт
                     <ArrowRight size={16} />
                   </a>
@@ -221,7 +225,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
             </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
-              <Link href={`/compare?tickers=${encodeURIComponent([stock.ticker, ...peerRows.slice(0, 2).map((peer) => peer.ticker)].join(","))}`} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
+              <Link href={compareHref} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0b63f6] px-4 text-sm font-semibold text-white transition hover:bg-[#084fc7]">
                 Сравнить метрики
                 <ArrowRight size={16} />
               </Link>
@@ -411,9 +415,10 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
 }
 
 function resolveFundamentals(stock: Stock) {
+  const indicators = stock.stockscope?.indicators?.[0]?.values ?? {};
   return {
     marketCap: stock.fundamentals?.marketCap ?? stock.marketCap,
-    pe: stock.fundamentals?.pe ?? stock.pe,
+    pe: stock.fundamentals?.pe ?? indicators.PE ?? indicators.PriceToEarnings ?? stock.pe,
     eps: stock.fundamentals?.eps,
     revenueGrowth: stock.fundamentals?.revenueGrowth,
     grossMargin: stock.fundamentals?.grossMargin,
@@ -425,6 +430,35 @@ function resolveFundamentals(stock: Stock) {
     source: stock.fundamentals?.source ?? stock.source,
     sourceStatus: stock.fundamentals?.sourceStatus ?? stock.sourceStatus,
   };
+}
+
+async function resolvePeerRows(stock: Stock): Promise<PeerRow[]> {
+  const ticker = stock.ticker.toUpperCase();
+  const peersBySector = stock.sector && stock.sector !== "N/A"
+    ? await getStockScopeScreener({ sector: stock.sector, limit: 8, sort_by: "market_cap", sort_dir: "desc" })
+    : undefined;
+  const sectorPeers = (peersBySector?.items ?? [])
+    .filter((peer) => peer.ticker.toUpperCase() !== ticker)
+    .map((peer) => ({ ticker: peer.ticker, market: peer.market, currency: peer.currency }));
+
+  if (sectorPeers.length >= 2) return sectorPeers.slice(0, 5);
+
+  const marketPeers = await getStockScopeScreener({ limit: 8, sort_by: "market_cap", sort_dir: "desc" });
+  const fallbackPeers = marketPeers.items
+    .filter((peer) => peer.ticker.toUpperCase() !== ticker)
+    .map((peer) => ({ ticker: peer.ticker, market: peer.market, currency: peer.currency }));
+
+  return [...sectorPeers, ...fallbackPeers.filter((peer) => !sectorPeers.some((existing) => existing.ticker === peer.ticker))].slice(0, 5);
+}
+
+function buildCompareHref(ticker: string, peers: PeerRow[]) {
+  return `/compare?tickers=${encodeURIComponent([ticker, ...peers.slice(0, 2).map((peer) => peer.ticker)].join(","))}`;
+}
+
+function normalizeExternalUrl(value?: string) {
+  if (!value?.trim()) return undefined;
+  const trimmed = value.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
 function resolveCompanyMetrics(stock: Stock, fundamentals: ReturnType<typeof resolveFundamentals>) {
