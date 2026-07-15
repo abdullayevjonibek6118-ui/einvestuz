@@ -538,18 +538,18 @@ class StockScopeProvider:
 
     def _performance_indicators(self, fundamentals: list[dict[str, Any]], company_type: str) -> list[dict[str, Any]]:
         indicators = []
-        for item in fundamentals:
+        for index, item in enumerate(fundamentals):
             if not isinstance(item, dict):
                 continue
             earnings = item.get("earnings") if isinstance(item.get("earnings"), dict) else {}
-            balance = item.get("balancesheet") if isinstance(item.get("balancesheet"), dict) else {}
+            balance = self._statement_with_nonzero_values(fundamentals, index, "balancesheet")
             if company_type == "bank":
                 net_profit = self._first_number(earnings, ["292"])
                 revenue = self._first_number(earnings, ["246"])
                 gross_profit = self._first_number(earnings, ["276"])
-                assets = self._first_number(balance, ["208"])
-                equity = self._first_number(balance, ["233"])
-                debt = self._first_number(balance, ["221"])
+                assets = self._first_nonzero_number(balance, ["208"])
+                equity = self._first_nonzero_number(balance, ["233"])
+                debt = self._first_nonzero_number(balance, ["221"])
                 payload = {
                     "ROA": self._ratio(net_profit, assets, 100),
                     "ROE": self._ratio(net_profit, equity, 100),
@@ -578,18 +578,18 @@ class StockScopeProvider:
                 if net_profit is None and ebt is not None and taxes is not None:
                     net_profit = ebt - taxes
 
-                long_term_assets = self._first_number(balance, ["130"])
-                current_assets = self._first_number(balance, ["390"])
-                assets = self._first_number(balance, ["400"])
+                long_term_assets = self._first_nonzero_number(balance, ["130"])
+                current_assets = self._first_nonzero_number(balance, ["390"])
+                assets = self._first_nonzero_number(balance, ["400"])
                 if assets is None:
                     assets = self._sum_known([long_term_assets, current_assets])
-                long_term_liabilities = self._first_number(balance, ["490"])
-                current_liabilities = self._first_number(balance, ["600"])
-                liabilities = self._first_number(balance, ["770"])
+                long_term_liabilities = self._first_nonzero_number(balance, ["490"])
+                current_liabilities = self._first_nonzero_number(balance, ["600"])
+                liabilities = self._first_nonzero_number(balance, ["770"])
                 if liabilities is None:
                     liabilities = self._sum_known([long_term_liabilities, current_liabilities])
-                total_liabilities_and_equity = self._first_number(balance, ["780"])
-                equity = self._first_number(balance, ["480"])
+                total_liabilities_and_equity = self._first_nonzero_number(balance, ["780"])
+                equity = self._first_nonzero_number(balance, ["480"])
                 if equity is None and total_liabilities_and_equity is not None and liabilities is not None:
                     equity = total_liabilities_and_equity - liabilities
                 if equity is None and assets is not None and liabilities is not None:
@@ -783,6 +783,35 @@ class StockScopeProvider:
             if value is not None:
                 return value
         return None
+
+    def _first_nonzero_number(self, source: dict[str, Any], keys: list[str]) -> float | None:
+        for key in keys:
+            value = self._number(source.get(key))
+            if value not in (None, 0):
+                return value
+        return None
+
+    def _statement_with_nonzero_values(self, fundamentals: list[dict[str, Any]], index: int, section: str) -> dict[str, Any]:
+        current_item = fundamentals[index] if 0 <= index < len(fundamentals) and isinstance(fundamentals[index], dict) else {}
+        current = current_item.get(section) if isinstance(current_item.get(section), dict) else {}
+        if self._has_nonzero_statement_value(current):
+            return current
+        for item in fundamentals[index + 1 :]:
+            if not isinstance(item, dict):
+                continue
+            candidate = item.get(section) if isinstance(item.get(section), dict) else {}
+            if self._has_nonzero_statement_value(candidate):
+                return candidate
+        for item in fundamentals[:index]:
+            if not isinstance(item, dict):
+                continue
+            candidate = item.get(section) if isinstance(item.get(section), dict) else {}
+            if self._has_nonzero_statement_value(candidate):
+                return candidate
+        return current
+
+    def _has_nonzero_statement_value(self, source: dict[str, Any]) -> bool:
+        return any((self._number(value) not in (None, 0)) for value in source.values())
 
     def _sum_numbers(self, source: dict[str, Any], keys: list[str]) -> float | None:
         values = [self._number(source.get(key)) for key in keys]

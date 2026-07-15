@@ -178,6 +178,36 @@ def test_stockscope_coverage_row_reuses_calculated_pe_pb() -> None:
     assert row["roa"] == 20
 
 
+def test_stockscope_bank_ratios_use_latest_available_balance_sheet() -> None:
+    provider = StockScopeProvider()
+    fundamentals = [
+        {
+            "period": "Q1_2026",
+            "type": "quarter",
+            "companyType": "bank",
+            "earnings": {"246": 1000, "276": 600, "292": 100},
+            "balancesheet": {"208": 0, "221": 0, "233": 0},
+        },
+        {
+            "period": "FY_2025",
+            "type": "annual",
+            "companyType": "bank",
+            "earnings": {"246": 900, "276": 500, "292": 80},
+            "balancesheet": {"208": 2000, "221": 1200, "233": 800},
+        },
+    ]
+
+    indicators = provider._performance_indicators(fundamentals, "bank")
+    provider._attach_market_multiples(indicators, {"currentPrice": 20, "noOfShares": 100_000}, [])
+    latest = indicators[0]["values"]
+
+    assert latest["ROA"] == 5
+    assert latest["ROE"] == 12.5
+    assert latest["DebtToEquity"] == 1.5
+    assert latest["PE"] == 20
+    assert latest["PB"] == 2.5
+
+
 def test_stockscope_snapshot_rows_are_auditable() -> None:
     path = Path("backend/app/data/stockscope_screener.json")
     snapshot = json.loads(path.read_text(encoding="utf-8"))
