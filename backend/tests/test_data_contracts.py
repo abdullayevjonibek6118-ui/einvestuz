@@ -294,6 +294,38 @@ def test_stockscope_stock_response_preserves_zero_dividend_yield() -> None:
     assert stock.dividend == "0.0%"
 
 
+def test_ai_number_formatter_does_not_invent_zero_for_missing_values() -> None:
+    assert main._fmt_ai_number(None) == "нет данных"
+    assert main._fmt_ai_number("not available") == "нет данных"
+    assert main._fmt_ai_number(0) == "0"
+
+
+def test_stockscope_ai_context_preserves_zero_dividend_and_missing_metrics(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main.STOCKSCOPE_PROVIDER,
+        "get_listing_details",
+        lambda ticker: {
+            "ticker": ticker,
+            "listing": {"ticker": ticker, "name": "Zero Co", "currentPrice": 0, "noOfShares": None},
+            "source_url": "https://stockscope.uz/ru/listings/ZERO/general",
+            "indicators": [{"period": "2025", "values": {"PE": 0, "PB": None, "DividendYield": 0}}],
+            "reports": [],
+            "dividends": [{"common_dividend": 0, "published_date": "2026-01-01"}],
+            "trading_stats": {"daily": []},
+        },
+    )
+
+    context = main._stockscope_ai_company_context("ZERO")
+
+    assert context is not None
+    content = context["content"]
+    assert "PE=0" in content
+    assert "PB=нет данных" in content
+    assert "DividendYield=0%" in content
+    assert "common=0" in content
+    assert "акций: нет данных" in content
+
+
 def test_stockscope_bank_ratios_use_latest_available_balance_sheet() -> None:
     provider = StockScopeProvider()
     fundamentals = [

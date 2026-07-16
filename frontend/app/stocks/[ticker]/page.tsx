@@ -554,7 +554,8 @@ function buildSignal(stock: Stock) {
 }
 
 function buildValuationLine(stock: Stock, fundamentals: ReturnType<typeof resolveFundamentals>) {
-  return `${stock.ticker}: ${fundamentals.pe ? `P/E ${formatNumber(fundamentals.pe)}` : "оценка требует уточнения"}, дивидендная доходность: ${fundamentals.dividendYield ?? "нет данных"}.`;
+  const peLine = typeof fundamentals.pe === "number" && Number.isFinite(fundamentals.pe) ? `P/E ${formatNumber(fundamentals.pe)}` : "оценка требует уточнения";
+  return `${stock.ticker}: ${peLine}, дивидендная доходность: ${fundamentals.dividendYield ?? "нет данных"}.`;
 }
 
 function buildRiskLine(stock: Stock, fundamentals: ReturnType<typeof resolveFundamentals>, riskTone: string) {
