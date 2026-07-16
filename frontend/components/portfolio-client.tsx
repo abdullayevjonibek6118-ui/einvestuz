@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { ChangeBadge, Panel } from "@/components/ui";
-import { formatCurrency, type Stock } from "@/lib/data";
+import type { Stock } from "@/lib/data";
 
 type Position = {
   ticker: string;
@@ -11,9 +11,11 @@ type Position = {
   buyPrice: number;
 };
 
+type PortfolioAsset = Pick<Stock, "ticker" | "name"> & Partial<Pick<Stock, "price" | "currency">>;
+
 const STORAGE_KEY = "einvestuz-portfolio";
 
-export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; initialTicker?: string }) {
+export function PortfolioClient({ stocks, initialTicker }: { stocks: PortfolioAsset[]; initialTicker?: string }) {
   const fallbackTicker = resolveTicker(stocks, initialTicker) ?? stocks[0]?.ticker ?? "";
   const fallbackStock = stocks.find((stock) => stock.ticker.toLowerCase() === fallbackTicker.toLowerCase());
   const [positions, setPositions] = useState<Position[]>([]);
@@ -46,6 +48,7 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
         return {
           ...position,
           name: stock?.name ?? position.ticker,
+          currency: stock?.currency ?? "UZS",
           currentPrice,
           value,
           pnl: value - cost,
@@ -159,9 +162,9 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: Stock[]; in
                 <tr key={row.ticker} className="border-b border-[var(--line)]">
                   <td className="py-3 font-semibold">{row.ticker}<span className="ml-2 font-normal text-[var(--muted)]">{row.name}</span></td>
                   <td>{row.quantity}</td>
-                  <td>{formatCurrency(row.buyPrice)}</td>
-                  <td>{formatCurrency(row.currentPrice)}</td>
-                  <td>{formatCurrency(row.value)}</td>
+                  <td>{formatMoney(row.buyPrice, row.currency)}</td>
+                  <td>{formatMoney(row.currentPrice, row.currency)}</td>
+                  <td>{formatMoney(row.value, row.currency)}</td>
                   <td><ChangeBadge value={row.pnlPercent} /></td>
                   <td>
                     <button onClick={() => removePosition(row.ticker)} className="grid size-8 place-items-center rounded-xl border border-transparent text-[var(--red)] hover:border-[var(--line)] hover:bg-[var(--surface-2)]" aria-label={`Удалить ${row.ticker}`}>
@@ -201,9 +204,22 @@ function loadPositions() {
   }
 }
 
-function resolveTicker(stocks: Stock[], ticker?: string) {
+function resolveTicker(stocks: PortfolioAsset[], ticker?: string) {
   if (!ticker) return undefined;
   return stocks.find((stock) => stock.ticker.toLowerCase() === ticker.toLowerCase())?.ticker;
+}
+
+function formatCurrency(value: number) {
+  return formatMoney(value, "UZS");
+}
+
+function formatMoney(value: number, currency = "UZS") {
+  if (!Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("ru-RU", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "UZS" ? 0 : 2,
+  }).format(value);
 }
 
 function safePositive(value?: number) {

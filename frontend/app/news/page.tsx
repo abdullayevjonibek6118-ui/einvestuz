@@ -12,11 +12,14 @@ export const metadata = pageMetadata({
 
 const images = ["/images/stitch-home/news-market.jpg", "/images/stitch-home/news-banking.jpg", "/images/stitch-home/news-macro.jpg"];
 
-export default async function NewsPage() {
+export default async function NewsPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = (await Promise.resolve(searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>;
+  const selectedCategory = first(params.category);
   const news = await getNews();
-  const featured = news[0];
-  const rest = news.slice(1);
   const categories = [...new Set(news.map((item) => item.category).filter(Boolean))];
+  const visibleNews = selectedCategory ? news.filter((item) => item.category === selectedCategory) : news;
+  const featured = visibleNews[0];
+  const rest = visibleNews.slice(1);
 
   return (
     <div className="stitch-page">
@@ -30,8 +33,8 @@ export default async function NewsPage() {
       </section>
 
       <section className="stitch-filter-row" aria-label="Категории новостей">
-        <Link href="/news" className="active">Все</Link>
-        {categories.map((category) => <Link href={`/news?category=${encodeURIComponent(category)}`} key={category}>{category}</Link>)}
+        <Link href="/news" className={selectedCategory ? undefined : "active"}>Все</Link>
+        {categories.map((category) => <Link href={`/news?category=${encodeURIComponent(category)}`} className={selectedCategory === category ? "active" : undefined} key={category}>{category}</Link>)}
       </section>
 
       {featured ? (
@@ -44,7 +47,7 @@ export default async function NewsPage() {
             <Link href={featured.url || "/ai"} target={featured.url ? "_blank" : undefined} rel={featured.url ? "noreferrer" : undefined}>Читать полностью <ArrowRight size={17} /></Link>
           </div>
         </section>
-      ) : <EmptyNews />}
+      ) : <EmptyNews category={selectedCategory} />}
 
       <section className="stitch-news-list-grid">
         {rest.map((item, index) => (
@@ -63,6 +66,16 @@ export default async function NewsPage() {
   );
 }
 
-function EmptyNews() {
-  return <div className="stitch-empty"><Search size={18} /><b>Новости временно недоступны</b><span>Backend не получил публикации от подключённых источников.</span></div>;
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function EmptyNews({ category }: { category?: string }) {
+  return (
+    <div className="stitch-empty">
+      <Search size={18} />
+      <b>{category ? "В этой категории новостей нет" : "Новости временно недоступны"}</b>
+      <span>{category ? "Выберите другую категорию или сбросьте фильтр." : "Backend не получил публикации от подключённых источников."}</span>
+    </div>
+  );
 }

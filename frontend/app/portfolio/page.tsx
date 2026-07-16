@@ -1,6 +1,6 @@
 import { PortfolioClient } from "@/components/portfolio-client";
 import { PageHeader } from "@/components/ui";
-import { getStocks } from "@/lib/api";
+import { getStockScopeScreener } from "@/lib/api";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({ title: "Виртуальный портфель", description: "Персональный учебный портфель пользователя EInvest.", path: "/portfolio", noIndex: true });
@@ -8,7 +8,13 @@ export const metadata = pageMetadata({ title: "Виртуальный портф
 type PortfolioSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function PortfolioPage({ searchParams }: { searchParams?: PortfolioSearchParams }) {
-  const stocks = await getStocks();
+  const screener = await getStockScopeScreener({ limit: 100, sort_by: "market_cap", sort_dir: "desc" });
+  const stocks = screener.items.map((stock) => ({
+    ticker: stock.ticker,
+    name: stock.name,
+    price: typeof stock.currentPrice === "number" && Number.isFinite(stock.currentPrice) ? stock.currentPrice : undefined,
+    currency: stock.currency ?? "UZS",
+  }));
   const resolvedSearchParams = (await Promise.resolve(searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>;
   const selectedTicker = firstQueryValue(resolvedSearchParams.ticker).toUpperCase();
 

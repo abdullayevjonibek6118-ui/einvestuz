@@ -2,7 +2,7 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 import type { LiveSourceStatus } from "@/lib/data";
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
-  return <header className="page-heading enter"><div><p className="eyebrow">EINVEST RESEARCH</p><h1>{title}</h1><p>{subtitle}</p></div><span className="as-of">ДАННЫЕ ОБНОВЛЕНЫ · LIVE</span></header>;
+  return <header className="page-heading enter"><div><p className="eyebrow">EINVEST RESEARCH</p><h1>{title}</h1><p>{subtitle}</p></div><span className="as-of">ДАННЫЕ · ПО ДОСТУПНЫМ ИСТОЧНИКАМ</span></header>;
 }
 
 export function Panel({ title, action, children, className = "" }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
