@@ -13,6 +13,12 @@ type Message = {
 
 type ChatMode = "general" | "investment_research" | "financial_analysis" | "data_quality" | "macro_scenario";
 
+type ChatResponsePayload = {
+  response?: unknown;
+  sources?: unknown;
+  detail?: unknown;
+};
+
 const modes: Array<{ id: ChatMode; label: string; hint: string; prompt: string }> = [
   {
     id: "investment_research",
@@ -85,8 +91,10 @@ export function AIChatClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, history, mode, ticker: ticker.trim().toUpperCase() || undefined }),
       });
-      const data = response.ok ? await response.json() : null;
-      if (!response.ok) {
+      const data = await readChatResponse(response);
+      const assistantText = typeof data?.response === "string" ? data.response.trim() : "";
+      const hasAssistantText = Boolean(assistantText);
+      if (!response.ok || !hasAssistantText) {
         setInput(message);
       } else {
         setInput("");
@@ -95,9 +103,9 @@ export function AIChatClient({
         ...current,
         {
           role: "assistant",
-          text: data?.response ?? "Сейчас не удалось получить ответ от AI. Проверьте backend API и повторите запрос.",
-          error: !response.ok,
-          sources: Array.isArray(data?.sources) ? data.sources : undefined,
+          text: response.ok && hasAssistantText ? assistantText : chatErrorMessage(response.status, data?.detail),
+          error: !response.ok || !hasAssistantText,
+          sources: response.ok && Array.isArray(data?.sources) ? data.sources.filter((source): source is string => typeof source === "string" && Boolean(source.trim())) : undefined,
         },
       ]);
     } catch {
@@ -206,4 +214,28 @@ export function AIChatClient({
 
 function Avatar({ icon }: { icon: React.ReactNode }) {
   return <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--line)] bg-[var(--surface-2)] text-[var(--muted)]">{icon}</div>;
+}
+
+async function readChatResponse(response: Response): Promise<ChatResponsePayload | null> {
+  try {
+    return (await response.json()) as ChatResponsePayload;
+  } catch {
+    return null;
+  }
+}
+
+function chatErrorMessage(status: number, detail: unknown) {
+  if (status === 503 && detail === "AIMLAPI_KEY is not configured") {
+    return "AI-чат временно недоступен: backend не настроен для AIMLAPI. Данные терминала остаются доступными без генеративного ответа.";
+  }
+
+  if (status >= 500) {
+    return "AI-провайдер сейчас недоступен или вернул некорректный ответ. Попробуйте ещё раз позже.";
+  }
+
+  if (status >= 400) {
+    return "Запрос к AI не прошёл проверку. Уточните вопрос, тикер или сократите историю диалога.";
+  }
+
+  return "AI API вернул пустой ответ. Повторите запрос позже.";
 }

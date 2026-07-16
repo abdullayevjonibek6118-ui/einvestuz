@@ -327,7 +327,7 @@ class ChatResponse(BaseModel):
 
 
 AIMLAPI_CHAT_COMPLETIONS_URL = "https://api.aimlapi.com/v1/chat/completions"
-AIMLAPI_MODEL = os.getenv("AIMLAPI_MODEL", "openai/gpt-5.4-nano")
+DEFAULT_AIMLAPI_MODEL = "openai/gpt-5.4-nano"
 
 
 AI_MODE_INSTRUCTIONS: dict[str, str] = {
@@ -362,6 +362,7 @@ def _aimlapi_chat_completion(payload: ChatRequest, context: dict[str, Any] | Non
     api_key = os.getenv("AIMLAPI_KEY", "").replace("\ufeff", "").strip()
     if not api_key:
         raise HTTPException(status_code=503, detail="AIMLAPI_KEY is not configured")
+    model = os.getenv("AIMLAPI_MODEL", DEFAULT_AIMLAPI_MODEL).replace("\ufeff", "").strip() or DEFAULT_AIMLAPI_MODEL
 
     context = context or _build_ai_context(payload)
     messages: list[dict[str, str]] = [
@@ -393,7 +394,7 @@ def _aimlapi_chat_completion(payload: ChatRequest, context: dict[str, Any] | Non
                 "User-Agent": "Einvestuz/1.0",
             },
             json={
-                "model": AIMLAPI_MODEL,
+                "model": model,
                 "messages": messages,
             },
             timeout=45,

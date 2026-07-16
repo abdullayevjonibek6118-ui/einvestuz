@@ -631,6 +631,34 @@ def test_chat_removes_bom_from_aimlapi_key(monkeypatch) -> None:
     assert captured["headers"]["Authorization"] == "Bearer test-key"
 
 
+def test_chat_reads_aimlapi_model_from_current_environment(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+        content = '{"choices":[{"message":{"content":"OK"}}]}'.encode()
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, list[dict[str, dict[str, str]]]]:
+            return {"choices": [{"message": {"content": "OK"}}]}
+
+    def fake_post(url: str, headers: dict[str, str], json: dict[str, object], timeout: int) -> FakeResponse:
+        captured["json"] = json
+        return FakeResponse()
+
+    monkeypatch.setenv("AIMLAPI_KEY", "test-key")
+    monkeypatch.setenv("AIMLAPI_MODEL", "\ufeffcustom/model ")
+    monkeypatch.setattr(main.requests, "post", fake_post)
+    monkeypatch.setattr(main, "_build_ai_context", lambda payload: {"content": "", "sources": []})
+
+    main.chat(main.ChatRequest(message="Hello", history=[]))
+
+    assert captured["json"]["model"] == "custom/model"
+
+
 def test_chat_fails_when_aimlapi_key_is_missing(monkeypatch) -> None:
     monkeypatch.delenv("AIMLAPI_KEY", raising=False)
 
