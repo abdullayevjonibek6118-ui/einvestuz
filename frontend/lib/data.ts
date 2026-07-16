@@ -14,7 +14,7 @@ export type Stock = {
   price: number;
   change: number;
   marketCap: string;
-  pe: number;
+  pe?: number | null;
   dividend: string;
   sector: string;
   description: string;
@@ -262,7 +262,7 @@ export type LiveSourceStatus = "live" | "delayed" | "stale" | "offline" | "fallb
 
 export type StockFundamentals = {
   marketCap?: string;
-  pe?: number;
+  pe?: number | null;
   eps?: number;
   revenueGrowth?: string;
   grossMargin?: string;

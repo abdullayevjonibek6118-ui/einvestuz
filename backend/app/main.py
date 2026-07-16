@@ -67,7 +67,7 @@ class Stock(BaseModel):
     price: float
     change: float
     market_cap: str
-    pe: float
+    pe: float | None = None
     dividend: str
     sector: str
     description: str
@@ -1261,6 +1261,7 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
     listing_category = item.get("listingCategory") or item.get("listing_category")
     stock_type = item.get("stockType") or item.get("stock_type")
     openinfo_id = item.get("openinfoId") or item.get("openinfo_id")
+    pe = _optional_float_preserve_zero(_first_present(item, "pe", "PE"))
     dividend_yield = _optional_float_preserve_zero(item.get("dividendYield"))
     if dividend_yield is None and "dividend_yield" in item:
         dividend_yield = _optional_float_preserve_zero(item.get("dividend_yield"))
@@ -1307,7 +1308,7 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         price=price,
         change=_stockscope_change(item, "yesterday"),
         market_cap=_format_uzs_value(market_cap_value) if market_cap_value else "N/A",
-        pe=_coerce_numeric(item.get("pe", 0)) or 0.0,
+        pe=pe,
         dividend=f"{dividend_yield:.1f}%" if dividend_yield is not None else "N/A",
         sector=str(item.get("sector") or "Рынок Узбекистана"),
         description=" ".join(description_parts),
@@ -2121,7 +2122,7 @@ def _uzse_stock_by_ticker(ticker: str) -> Stock | None:
             price=price,
             change=0.0,
             market_cap="N/A",
-            pe=0.0,
+            pe=None,
             dividend="N/A",
             sector="Рынок Узбекистана",
             description=f"{company.get('name', ticker_upper)} — акция UZSE.",

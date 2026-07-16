@@ -29,13 +29,14 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
     const screener = await getStockScopeScreener({ q: ticker, limit: 1 });
     const row = screener.items.find((item) => item.ticker.toUpperCase() === ticker.toUpperCase());
     if (row) {
+      const fallbackPrice = typeof row.currentPrice === "number" && Number.isFinite(row.currentPrice) ? row.currentPrice : Number.NaN;
       stock = {
         ticker: row.ticker,
         name: row.name,
-        price: row.currentPrice ?? 0,
+        price: fallbackPrice,
         change: 0,
-        marketCap: row.marketCap ? `UZS ${row.marketCap.toLocaleString("ru-RU")}` : "N/A",
-        pe: row.pe ?? 0,
+        marketCap: row.marketCap == null ? "N/A" : `UZS ${row.marketCap.toLocaleString("ru-RU")}`,
+        pe: row.pe,
         dividend: row.dividendYield == null ? "N/A" : `${row.dividendYield.toFixed(2)}%`,
         sector: "Uzbekistan",
         description: `${row.name} — эмитент рынка Узбекистана. Подробные данные источника временно загружаются.`,
@@ -470,7 +471,7 @@ function resolveCompanyMetrics(stock: Stock, fundamentals: ReturnType<typeof res
   const price = latestTrade?.price ?? stock.price;
 
   return {
-    price: price && Number.isFinite(price) ? `${price.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} ${stock.currency ?? "UZS"}` : "N/A",
+    price: typeof price === "number" && Number.isFinite(price) ? `${price.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} ${stock.currency ?? "UZS"}` : "N/A",
     priceDetail: latestTrade?.date ? `сделка ${latestTrade.date}` : stock.asOf ? `обновлено ${formatStamp(stock.asOf)}` : undefined,
     dayChange: `${stock.change >= 0 ? "+" : ""}${stock.change.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}%`,
     marketCap: fundamentals.marketCap ?? stock.marketCap ?? "N/A",
@@ -489,12 +490,13 @@ function resolveCompanyMetrics(stock: Stock, fundamentals: ReturnType<typeof res
 }
 
 function sumTradingVolume(rows: StockScopeTradingRow[], count: number) {
-  const value = rows.slice(0, count).reduce((sum, row) => sum + (row.volumeUzs ?? 0), 0);
-  return value || null;
+  const values = rows.slice(0, count).map((row) => row.volumeUzs).filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  if (!values.length) return null;
+  return values.reduce((sum, value) => sum + value, 0);
 }
 
 function formatUzbekMoney(value?: number | null) {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "нет данных";
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return "нет данных";
   return `${value.toLocaleString("ru-RU", { notation: "compact", maximumFractionDigits: 1 })} UZS`;
 }
 
@@ -621,7 +623,7 @@ function formatNumber(value?: number | null) {
 }
 
 function formatStockPrice(stock: Stock) {
-  if (!Number.isFinite(stock.price) || stock.price <= 0) return "N/A";
+  if (!Number.isFinite(stock.price) || stock.price < 0) return "N/A";
   if (stock.currency === "UZS") return `UZS ${stock.price.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
   return `$${stock.price.toFixed(2)}`;
 }

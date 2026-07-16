@@ -793,7 +793,7 @@ class StockScopeProvider:
                 "title": "ROE / ROA / margins",
                 "categories": [str(item.get("period") or "") for item in indicators if item.get("type") == "annual"][:6],
                 "series": [
-                    {"name": key, "data": [((item.get("values") or {}).get(key) or 0) for item in indicators if item.get("type") == "annual"][:6]}
+                    {"name": key, "data": [(item.get("values") or {}).get(key) for item in indicators if item.get("type") == "annual"][:6]}
                     for key in ["ROE", "ROA", "GrossProfitMargin", "NetProfitMargin"]
                 ],
             },
@@ -815,10 +815,16 @@ class StockScopeProvider:
         grouped: dict[str, dict[str, Any]] = {}
         for row in sorted(rows, key=lambda item: item["date"]):
             key = row["date"][:key_length]
-            bucket = grouped.setdefault(key, {"date": key, "price": 0, "volume_uzs": 0, "volume_pcs": 0})
-            bucket["price"] = row.get("price") or bucket["price"]
-            bucket["volume_uzs"] += row.get("volume_uzs") or 0
-            bucket["volume_pcs"] += row.get("volume_pcs") or 0
+            bucket = grouped.setdefault(key, {"date": key, "price": None, "volume_uzs": None, "volume_pcs": None})
+            price = row.get("price")
+            if price is not None:
+                bucket["price"] = price
+            volume_uzs = row.get("volume_uzs")
+            if volume_uzs is not None:
+                bucket["volume_uzs"] = (bucket["volume_uzs"] or 0) + volume_uzs
+            volume_pcs = row.get("volume_pcs")
+            if volume_pcs is not None:
+                bucket["volume_pcs"] = (bucket["volume_pcs"] or 0) + volume_pcs
         return sorted(grouped.values(), key=lambda row: row["date"], reverse=True)
 
     def _timestamp_to_iso(self, value: Any) -> str | None:

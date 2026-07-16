@@ -292,6 +292,58 @@ def test_stockscope_stock_response_preserves_zero_dividend_yield() -> None:
     )
 
     assert stock.dividend == "0.0%"
+    assert stock.pe == 0
+
+
+def test_stockscope_stock_response_does_not_invent_zero_pe_for_missing_value() -> None:
+    stock = main._stockscope_stock_response(
+        {
+            "ticker": "MISS",
+            "name": "Missing Co",
+            "current_price": 100,
+            "market_cap": 100_000,
+            "latest_period": "2025",
+        }
+    )
+
+    assert stock.pe is None
+
+
+def test_stockscope_indicator_charts_keep_missing_values_missing() -> None:
+    provider = StockScopeProvider()
+
+    charts = provider._charts(
+        fundamentals=[],
+        price_history={},
+        indicators=[
+            {"period": "2025", "type": "annual", "values": {"ROE": 0, "ROA": None}},
+            {"period": "2024", "type": "annual", "values": {"ROE": 12.5}},
+        ],
+        trading_stats={"monthly": []},
+        company_type="jsc",
+    )
+
+    series = {item["name"]: item["data"] for item in charts["indicators"]["series"]}
+    assert series["ROE"] == [0, 12.5]
+    assert series["ROA"] == [None, None]
+
+
+def test_stockscope_trading_aggregation_keeps_missing_volume_missing_and_zero_zero() -> None:
+    provider = StockScopeProvider()
+
+    missing = provider._aggregate_trading(
+        [{"date": "2026-07-01", "price": 10, "volume_uzs": None, "volume_pcs": None}],
+        7,
+    )
+    observed_zero = provider._aggregate_trading(
+        [{"date": "2026-07-02", "price": 10, "volume_uzs": 0, "volume_pcs": 0}],
+        7,
+    )
+
+    assert missing[0]["volume_uzs"] is None
+    assert missing[0]["volume_pcs"] is None
+    assert observed_zero[0]["volume_uzs"] == 0
+    assert observed_zero[0]["volume_pcs"] == 0
 
 
 def test_ai_number_formatter_does_not_invent_zero_for_missing_values() -> None:

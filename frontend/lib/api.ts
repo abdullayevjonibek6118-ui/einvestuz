@@ -39,7 +39,7 @@ type BackendStock = {
   change: number;
   market_cap?: string;
   marketCap?: string;
-  pe: number;
+  pe?: number | null;
   dividend: string;
   sector?: string;
   description: string;
