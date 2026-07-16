@@ -2107,12 +2107,12 @@ def _stockscope_listing_for_ticker(ticker: str) -> dict[str, Any] | None:
 def _uzse_stock_by_ticker(ticker: str) -> Stock | None:
     try:
         companies = UZSE_PROVIDER.get_companies()
-        listings = UZSE_PROVIDER.get_listings()
-        trades = UZSE_PROVIDER.get_trade_results()
         ticker_upper = ticker.upper()
         company = next((c for c in companies if str(c.get("ticker", "")).upper() == ticker_upper), None)
         if not company:
             return None
+        listings = UZSE_PROVIDER.get_listings()
+        trades = UZSE_PROVIDER.get_trade_results()
         listing = next((l for l in listings if str(l.get("ticker", "")).upper() == ticker_upper), {})
         trade = next((t for t in trades if str(t.get("ticker", "")).upper() == ticker_upper), {})
         price = _coerce_numeric(trade.get("price")) or _coerce_numeric(listing.get("current_price")) or 0.0

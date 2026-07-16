@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import ssl
+import time
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable
 from urllib.parse import urlparse
@@ -31,13 +33,24 @@ DATASETS = {
 class SiatProvider:
     """Downloads a SIAT export through its stable metadata endpoint."""
 
-    def __init__(self, timeout: int = 12, fetch_json: Callable[[str, int], Any] | None = None) -> None:
+    def __init__(
+        self,
+        timeout: int = 12,
+        fetch_json: Callable[[str, int], Any] | None = None,
+        cache_ttl_seconds: int = 900,
+    ) -> None:
         self.timeout = timeout
         self._fetch = fetch_json or _fetch_json
+        self._cache_ttl_seconds = cache_ttl_seconds
+        self._cache: dict[str, tuple[float, dict[str, Any]]] = {}
 
     def get_dataset(self, key: str) -> dict[str, Any]:
         if key not in DATASETS:
             raise KeyError(f"Unknown SIAT dataset: {key}")
+        now = time.time()
+        cached = self._cache.get(key)
+        if self._cache_ttl_seconds > 0 and cached and cached[0] > now:
+            return deepcopy(cached[1])
         spec = DATASETS[key]
         descriptor_url = f"{SIAT_API}/sdmx/{spec.dataset_id}/table/download/?download_format=json"
         descriptor = self._fetch(descriptor_url, self.timeout)
@@ -49,7 +62,10 @@ class SiatProvider:
         document = payload[0] if isinstance(payload, list) and payload else payload
         if not isinstance(document, dict) or not isinstance(document.get("data"), list):
             raise ValueError("SIAT dataset has an unsupported structure")
-        return {"dataset": key, "dataset_id": spec.dataset_id, "code": spec.code, "name": spec.name, "source": spec.page_url, "license": "CC BY 4.0", "updated_at": descriptor.get("updated_at"), "metadata": document.get("metadata") or [], "data": document["data"]}
+        result = {"dataset": key, "dataset_id": spec.dataset_id, "code": spec.code, "name": spec.name, "source": spec.page_url, "license": "CC BY 4.0", "updated_at": descriptor.get("updated_at"), "metadata": document.get("metadata") or [], "data": document["data"]}
+        if self._cache_ttl_seconds > 0:
+            self._cache[key] = (now + self._cache_ttl_seconds, deepcopy(result))
+        return result
 
 
 def _fetch_json(url: str, timeout: int) -> Any:

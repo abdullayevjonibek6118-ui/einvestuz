@@ -126,6 +126,49 @@ def test_siat_provider_follows_official_download_descriptor() -> None:
     assert len(calls) == 2
 
 
+def test_siat_provider_caches_successful_dataset_downloads() -> None:
+    calls: list[str] = []
+
+    def fetch(url: str, timeout: int):
+        calls.append(url)
+        if "table/download" in url:
+            return {"file": "https://api.siat.stat.uz/media/data.json", "updated_at": "2026-06-05"}
+        return [{"metadata": [{"name_en": "Unit", "value_en": "Percent"}], "data": [{"2026-M05": 100.2}]}]
+
+    provider = SiatProvider(fetch_json=fetch)
+    first = provider.get_dataset("cpi_monthly")
+    first["data"].append({"mutated": True})
+
+    second = provider.get_dataset("cpi_monthly")
+
+    assert second["data"] == [{"2026-M05": 100.2}]
+    assert len(calls) == 2
+
+
+def test_missing_uzse_stock_does_not_fetch_listing_or_trade_tables(monkeypatch) -> None:
+    class Provider:
+        listings_calls = 0
+        trades_calls = 0
+
+        def get_companies(self):
+            return [{"ticker": "KNOWN", "name": "Known Issuer"}]
+
+        def get_listings(self):
+            self.listings_calls += 1
+            return []
+
+        def get_trade_results(self):
+            self.trades_calls += 1
+            return []
+
+    provider = Provider()
+    monkeypatch.setattr(main, "UZSE_PROVIDER", provider)
+
+    assert main._uzse_stock_by_ticker("MISSING") is None
+    assert provider.listings_calls == 0
+    assert provider.trades_calls == 0
+
+
 def test_ratios_are_calculated_from_raw_financial_rows() -> None:
     ratios = compute_financial_ratios({"currentPrice": "20", "noOfShares": "10", "indicators": [
         {"key": "netIncome", "value": 20}, {"key": "revenue", "value": 200},
