@@ -177,6 +177,8 @@ FINNHUB_API_KEY=your_finnhub_key
 CORS_ORIGINS=http://localhost:3000
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+AIMLAPI_KEY=your_aimlapi_key
+# AIMLAPI_MODEL=openai/gpt-5.4-nano
 ```
 
 Создайте `frontend/.env.local`:
@@ -235,6 +237,8 @@ npm run dev
 | `CORS_ORIGINS` | Backend | Для production | Разделённый запятыми список разрешённых frontend origins. |
 | `SUPABASE_URL` | Backend | Для БД | URL проекта Supabase. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Backend | Для БД | Серверный ключ Data API; запрещено передавать на клиент. |
+| `AIMLAPI_KEY` | Backend | Для AI-чата | Серверный ключ AIMLAPI; не передавайте на клиент и не используйте префикс `NEXT_PUBLIC_`. |
+| `AIMLAPI_MODEL` | Backend | Нет | Модель AIMLAPI для AI-чата. По умолчанию `openai/gpt-5.4-nano`. |
 | `PORT` | Backend | На хостинге | Порт Uvicorn; Docker по умолчанию использует `8000`. |
 
 ## API
@@ -425,7 +429,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
 1. добавьте Railway URL в Vercel как `NEXT_PUBLIC_API_URL`;
 2. при необходимости укажите WebSocket URL в `NEXT_PUBLIC_WS_URL`;
 3. добавьте production-домен frontend в `CORS_ORIGINS` backend;
-4. задайте `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` и опциональный `FINNHUB_API_KEY`;
+4. задайте `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `AIMLAPI_KEY` и опциональные `FINNHUB_API_KEY`/`AIMLAPI_MODEL`;
 5. проверьте `/health`, `/health/database` и `/docs`.
 
 ### Docker

@@ -22,3 +22,15 @@ def test_docker_entrypoints_use_runtime_port() -> None:
     for dockerfile in dockerfiles:
         content = dockerfile.read_text()
         assert "${PORT:-" in content
+
+
+def test_docker_contexts_exclude_local_env_files() -> None:
+    root_dockerignore = (REPO_ROOT / ".dockerignore").read_text().splitlines()
+    backend_dockerignore = (REPO_ROOT / "backend" / ".dockerignore").read_text().splitlines()
+
+    for required_pattern in [".env", ".env*", ".env.local", ".env.*.local"]:
+        assert required_pattern in root_dockerignore
+        assert required_pattern in backend_dockerignore
+
+    for required_pattern in ["**/.env", "**/.env*", "**/.env.local", "**/.env.*.local"]:
+        assert required_pattern in root_dockerignore
