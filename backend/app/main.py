@@ -1158,6 +1158,7 @@ def analytics_technical(ticker: str) -> dict[str, Any]:
     highs: list[float] = []
     lows: list[float] = []
     volumes: list[float] = []
+    source_as_of: datetime | None = None
 
     if stockscope:
         trading_stats = stockscope.get("tradingStats") or stockscope.get("trading_stats") or {}
@@ -1168,6 +1169,7 @@ def analytics_technical(ticker: str) -> dict[str, Any]:
             if price and price > 0:
                 closes.append(price)
                 volumes.append(vol or 0)
+        source_as_of = _latest_dated_row_as_of(daily)
 
     # Fallback: try UZSE trade results
     if len(closes) < 5:
@@ -1179,6 +1181,7 @@ def analytics_technical(ticker: str) -> dict[str, Any]:
                 highs.append(bar.high)
                 lows.append(bar.low)
                 volumes.append(bar.volume)
+            source_as_of = _latest_datetime(source_as_of, *(_parse_stockscope_datetime(bar.date) for bar in ohlcv))
         except Exception:
             pass
 
@@ -1205,7 +1208,7 @@ def analytics_technical(ticker: str) -> dict[str, Any]:
             "obv": indicators.obv,
             "vwap": indicators.vwap,
         },
-        "as_of": datetime.now(timezone.utc).isoformat(),
+        "as_of": (source_as_of or datetime.now(timezone.utc)).isoformat(),
         "status": "calculated",
         "methodology": "Indicators are calculated from observed closes; ATR is returned only when real high/low data is available.",
         "estimated_fields": [],
@@ -1246,7 +1249,7 @@ def analytics_ratios(ticker: str) -> dict[str, Any]:
             "book_value_per_share": ratios.book_value_per_share,
             "fcf_yield": ratios.fcf_yield,
         },
-        "as_of": datetime.now(timezone.utc).isoformat(),
+        "as_of": (_stockscope_financial_as_of(stockscope) or datetime.now(timezone.utc)).isoformat(),
         "status": "calculated",
         "methodology": "Ratios are calculated only when every required source field is available; unavailable ratios remain null.",
         "estimated_fields": [],
@@ -2148,13 +2151,58 @@ def _stockscope_as_of(item: dict[str, Any]) -> datetime:
     seconds = _coerce_numeric(timestamp.get("seconds"))
     if seconds:
         return datetime.fromtimestamp(seconds, tz=timezone.utc)
+    for key in ("fetched_at", "generated_at", "as_of", "last_updated"):
+        parsed = _parse_stockscope_datetime(item.get(key))
+        if parsed is not None:
+            return parsed
     latest_period = item.get("latest_period")
     if latest_period:
-        try:
-            return datetime.fromisoformat(str(latest_period).replace("Z", "+00:00"))
-        except ValueError:
-            pass
+        parsed = _parse_stockscope_datetime(latest_period)
+        if parsed is not None:
+            return parsed
     return datetime.now(timezone.utc)
+
+
+def _parse_stockscope_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed.astimezone(timezone.utc) if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _latest_dated_row_as_of(rows: list[dict[str, Any]]) -> datetime | None:
+    return _latest_datetime(*(_parse_stockscope_datetime(row.get("date")) for row in rows if isinstance(row, dict)))
+
+
+def _latest_datetime(*values: Any) -> datetime | None:
+    candidates = [
+        value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        for value in values
+        if isinstance(value, datetime)
+    ]
+    return max(candidates) if candidates else None
+
+
+def _stockscope_financial_as_of(detail: dict[str, Any]) -> datetime | None:
+    reports = detail.get("reports") if isinstance(detail.get("reports"), list) else []
+    report_as_of = _latest_dated_row_as_of(reports)
+    if report_as_of is not None:
+        return report_as_of
+    indicators = detail.get("indicators") if isinstance(detail.get("indicators"), list) else []
+    indicator_as_of = _latest_dated_row_as_of(indicators)
+    if indicator_as_of is not None:
+        return indicator_as_of
+    price_history = detail.get("price_history") if isinstance(detail.get("price_history"), dict) else {}
+    return (
+        _parse_stockscope_datetime(price_history.get("last_update_at"))
+        or _parse_stockscope_datetime(detail.get("fetched_at"))
+        or _parse_stockscope_datetime(detail.get("generated_at"))
+    )
 
 
 def _stockscope_listing_for_ticker(ticker: str) -> dict[str, Any] | None:

@@ -11,6 +11,7 @@ export default async function AIPage({ searchParams }: { searchParams?: Promise<
   const ticker = Array.isArray(params.ticker) ? params.ticker[0] : params.ticker;
   const screener = await getStockScopeScreener({ limit: 6, sort_by: "market_cap", sort_dir: "desc" });
   const suggestedTickers = screener.items.map((stock) => stock.ticker).filter(Boolean);
+  const freshness = screener.coverage?.generatedAt ?? screener.items.find((stock) => stock.fetchedAt)?.fetchedAt;
 
   return (
     <>
@@ -22,6 +23,9 @@ export default async function AIPage({ searchParams }: { searchParams?: Promise<
         </Panel>
 
         <Panel title="Контекст рынка">
+          <p className="mb-3 text-xs text-[#667085]">
+            {screener.coverage?.sourceName ?? "StockScope"}{freshness ? ` · snapshot ${formatStamp(freshness)}` : ""}. Это входной контекст, не live-лента.
+          </p>
           <div className="space-y-3">
             {screener.items.slice(0, 5).map((stock) => (
               <div key={stock.ticker} className="rounded-2xl border border-[#dde3eb] bg-white p-3">
@@ -38,4 +42,9 @@ export default async function AIPage({ searchParams }: { searchParams?: Promise<
       </div>
     </>
   );
+}
+
+function formatStamp(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }

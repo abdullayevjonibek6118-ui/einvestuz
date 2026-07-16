@@ -48,6 +48,8 @@ export default async function ScreenerPage({ searchParams }: { searchParams?: Se
   };
   const data = await getStockScopeScreener(f);
   const leaders = data.items.slice(0, 3).map((item) => item.ticker).join(",");
+  const sourceName = data.coverage?.sourceName ?? data.items[0]?.sourceName ?? "StockScope";
+  const freshness = data.coverage?.generatedAt ?? data.items[0]?.fetchedAt;
 
   return (
     <>
@@ -96,8 +98,8 @@ export default async function ScreenerPage({ searchParams }: { searchParams?: Se
           </section>
           <section className="panel">
             <div className="panel-header">
-              <div><h2>Результаты</h2><span>{data.total} компаний · объёмы и 1D/7D/30D появятся после UZSE ingestion</span></div>
-              <div className="header-actions"><SourceStatusBadge source="UZSE / OpenInfo / StockScope" status="delayed" /><Link href={`/compare?tickers=${leaders}`} className="terminal-button"><GitCompareArrows size={14} /> Сравнить</Link></div>
+              <div><h2>Результаты</h2><span>{data.total} компаний · {sourceName}{freshness ? ` · snapshot ${formatStamp(freshness)}` : ""} · объёмы и 1D/7D/30D появятся после UZSE ingestion</span></div>
+              <div className="header-actions"><SourceStatusBadge source={sourceName} status="delayed" /><Link href={`/compare?tickers=${leaders}`} className="terminal-button"><GitCompareArrows size={14} /> Сравнить</Link></div>
             </div>
             <div className="data-table-wrap">
               <table className="data-table screener-table">
@@ -138,3 +140,7 @@ function ratio(v?: number | null) { return v == null ? "—" : v.toFixed(2); }
 function tone(v?: number | null) { return v == null ? "" : v > 0 ? "positive" : v < 0 ? "negative" : ""; }
 function money(v?: number | null) { return v == null ? "—" : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(v)} UZS`; }
 function compact(v?: number | null) { return v == null ? "—" : new Intl.NumberFormat("ru-RU", { notation: "compact", maximumFractionDigits: 1 }).format(v); }
+function formatStamp(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}

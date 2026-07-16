@@ -14,6 +14,8 @@ export default async function PortfolioPage({ searchParams }: { searchParams?: P
     name: stock.name,
     price: typeof stock.currentPrice === "number" && Number.isFinite(stock.currentPrice) ? stock.currentPrice : undefined,
     currency: stock.currency ?? "UZS",
+    source: stock.sourceName ?? screener.coverage?.sourceName ?? "StockScope",
+    asOf: stock.fetchedAt ?? screener.coverage?.generatedAt ?? undefined,
   }));
   const resolvedSearchParams = (await Promise.resolve(searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>;
   const selectedTicker = firstQueryValue(resolvedSearchParams.ticker).toUpperCase();
@@ -21,7 +23,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams?: P
   return (
     <>
       <PageHeader title="Виртуальный портфель" subtitle="Локальная симуляция без реальных денег: позиции сохраняются только в этом браузере." />
-      <PortfolioClient stocks={stocks} initialTicker={selectedTicker} />
+      <PortfolioClient stocks={stocks} initialTicker={selectedTicker} sourceLabel={screener.coverage?.sourceName ?? "StockScope"} asOf={screener.coverage?.generatedAt ?? undefined} />
     </>
   );
 }

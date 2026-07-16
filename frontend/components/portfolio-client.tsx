@@ -11,11 +11,11 @@ type Position = {
   buyPrice: number;
 };
 
-type PortfolioAsset = Pick<Stock, "ticker" | "name"> & Partial<Pick<Stock, "price" | "currency">>;
+type PortfolioAsset = Pick<Stock, "ticker" | "name"> & Partial<Pick<Stock, "price" | "currency" | "source" | "asOf">>;
 
 const STORAGE_KEY = "einvestuz-portfolio";
 
-export function PortfolioClient({ stocks, initialTicker }: { stocks: PortfolioAsset[]; initialTicker?: string }) {
+export function PortfolioClient({ stocks, initialTicker, sourceLabel, asOf }: { stocks: PortfolioAsset[]; initialTicker?: string; sourceLabel?: string; asOf?: string }) {
   const fallbackTicker = resolveTicker(stocks, initialTicker) ?? stocks[0]?.ticker ?? "";
   const fallbackStock = stocks.find((stock) => stock.ticker.toLowerCase() === fallbackTicker.toLowerCase());
   const [positions, setPositions] = useState<Position[]>([]);
@@ -41,30 +41,34 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: PortfolioAs
     () =>
       positions.map((position) => {
         const stock = stocks.find((item) => item.ticker.toLowerCase() === position.ticker.toLowerCase());
-        const currentPrice = safePositive(stock?.price) ?? safePositive(position.buyPrice) ?? 0;
-        const value = currentPrice * position.quantity;
+        const currentPrice = safePositive(stock?.price);
+        const value = currentPrice == null ? null : currentPrice * position.quantity;
         const cost = position.buyPrice * position.quantity;
 
         return {
           ...position,
           name: stock?.name ?? position.ticker,
           currency: stock?.currency ?? "UZS",
+          source: stock?.source,
+          asOf: stock?.asOf,
           currentPrice,
           value,
-          pnl: value - cost,
-          pnlPercent: safePercent(value - cost, cost),
+          pnl: value == null ? null : value - cost,
+          pnlPercent: value == null ? null : safePercent(value - cost, cost),
         };
       }),
     [positions, stocks],
   );
 
   const summary = useMemo(() => {
-    const value = rows.reduce((sum, row) => sum + row.value, 0);
-    const cost = rows.reduce((sum, row) => sum + row.buyPrice * row.quantity, 0);
+    const pricedRows = rows.filter((row) => row.value != null);
+    const value = pricedRows.reduce((sum, row) => sum + (row.value ?? 0), 0);
+    const cost = pricedRows.reduce((sum, row) => sum + row.buyPrice * row.quantity, 0);
     return {
       value,
       pnl: value - cost,
       pnlPercent: safePercent(value - cost, cost),
+      unpriced: rows.length - pricedRows.length,
     };
   }, [rows]);
 
@@ -138,6 +142,9 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: PortfolioAs
       </Panel>
 
       <Panel title="Позиции">
+        <p className="mb-3 text-xs text-[var(--muted)]">
+          Текущие цены: {sourceLabel ?? "доступный источник"}{asOf ? ` · snapshot ${formatStamp(asOf)}` : ""}. Позиции без котировки не входят в рыночную стоимость и P/L.
+        </p>
         <div className="mb-4 grid gap-3 sm:grid-cols-3">
           <Summary label="Стоимость" value={formatCurrency(summary.value)} />
           <Summary label="Доходность" value={formatCurrency(summary.pnl)} tone={summary.pnl >= 0 ? "green" : "red"} />
@@ -163,9 +170,17 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: PortfolioAs
                   <td className="py-3 font-semibold">{row.ticker}<span className="ml-2 font-normal text-[var(--muted)]">{row.name}</span></td>
                   <td>{row.quantity}</td>
                   <td>{formatMoney(row.buyPrice, row.currency)}</td>
-                  <td>{formatMoney(row.currentPrice, row.currency)}</td>
-                  <td>{formatMoney(row.value, row.currency)}</td>
-                  <td><ChangeBadge value={row.pnlPercent} /></td>
+                  <td>
+                    {row.currentPrice == null ? (
+                      <span className="text-[var(--muted)]">нет котировки</span>
+                    ) : (
+                      <span title={[row.source, row.asOf ? formatStamp(row.asOf) : undefined].filter(Boolean).join(" · ")}>
+                        {formatMoney(row.currentPrice, row.currency)}
+                      </span>
+                    )}
+                  </td>
+                  <td>{row.value == null ? "—" : formatMoney(row.value, row.currency)}</td>
+                  <td>{row.pnlPercent == null ? <span className="text-[var(--muted)]">—</span> : <ChangeBadge value={row.pnlPercent} />}</td>
                   <td>
                     <button onClick={() => removePosition(row.ticker)} className="grid size-8 place-items-center rounded-xl border border-transparent text-[var(--red)] hover:border-[var(--line)] hover:bg-[var(--surface-2)]" aria-label={`Удалить ${row.ticker}`}>
                       <Trash2 size={16} />
@@ -181,6 +196,7 @@ export function PortfolioClient({ stocks, initialTicker }: { stocks: PortfolioAs
             Портфель пуст. Добавьте первый актив через форму слева.
           </div>
         )}
+        {summary.unpriced ? <p className="mt-3 text-xs text-[var(--muted)]">{summary.unpriced} поз. без текущей котировки исключены из итогов.</p> : null}
       </Panel>
     </div>
   );
@@ -220,6 +236,12 @@ function formatMoney(value: number, currency = "UZS") {
     currency,
     maximumFractionDigits: currency === "UZS" ? 0 : 2,
   }).format(value);
+}
+
+function formatStamp(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 function safePositive(value?: number) {

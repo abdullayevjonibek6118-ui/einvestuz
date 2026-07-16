@@ -86,6 +86,7 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
   }, [uniqueSymbols]);
 
   const latestQuotes = Object.values(quotes).slice(0, 4);
+  const latestQuoteAsOf = latestStamp(latestQuotes.map((quote) => quote.asOf));
   const activeSources = sources.filter((source) => source.status === "live" || source.status === "delayed").length;
   const effectiveConnection: ConnectionState = uniqueSymbols.length ? connection : "offline";
   const connectionLabel = effectiveConnection === "live" ? "Обновляется" : effectiveConnection === "connecting" ? "Подключение" : "Ожидание API";
@@ -103,10 +104,10 @@ export function LiveMarketStatus({ sources, symbols }: { sources: MarketDataSour
             <Database size={15} />
             {activeSources}/{sources.length} источника активны
           </div>
-          {lastUpdate ? (
+          {latestQuoteAsOf || lastUpdate ? (
             <div className="tabular-data inline-flex h-8 items-center gap-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-3 text-xs font-semibold text-[var(--accent)]">
               <Activity size={15} />
-              {lastUpdate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              {latestQuoteAsOf ? `as of ${formatStamp(latestQuoteAsOf)}` : `получено ${lastUpdate?.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`}
             </div>
           ) : null}
         </div>
@@ -139,4 +140,14 @@ function formatQuotePrice(price: number, currency?: string) {
   if (currency === "RUB") return `${price.toFixed(2)} RUB`;
   if (currency === "UZS") return `${price.toLocaleString("en-US")} UZS`;
   return `$${price.toFixed(2)}`;
+}
+
+function latestStamp(values: Array<string | undefined>) {
+  return values.filter(Boolean).sort().at(-1);
+}
+
+function formatStamp(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }

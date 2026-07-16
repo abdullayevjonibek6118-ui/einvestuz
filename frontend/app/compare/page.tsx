@@ -34,6 +34,7 @@ export default async function ComparePage({ searchParams }: { searchParams?: Sea
     : (await getStockScopeScreener({ limit: 3, sort_by: "market_cap", sort_dir: "desc" })).items.map((item) => item.ticker).filter(Boolean).slice(0, 3);
   const data = await getStockScopeBatchDetails(defaultTickers);
   const companies = data.items.filter((item) => item.ticker);
+  const freshness = companies.find((company) => company.fetchedAt)?.fetchedAt;
 
   return (
     <div className="stitch-page">
@@ -75,7 +76,7 @@ export default async function ComparePage({ searchParams }: { searchParams?: Sea
             <div className="panel-header">
               <div>
                 <h2>Матрица показателей</h2>
-                <span>{companies.length} компаний · источник обновляется автоматически</span>
+                <span>{companies.length} компаний · StockScope snapshot{freshness ? ` ${formatStamp(freshness)}` : ""}</span>
               </div>
               <SourceStatusBadge source="StockScope" status="delayed" />
             </div>
@@ -163,6 +164,11 @@ function formatValue(value: number | null | undefined, suffix: string) {
   return typeof value === "number" && Number.isFinite(value)
     ? `${value.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}${suffix}`
     : "—";
+}
+
+function formatStamp(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 function first(value: string | string[] | undefined) {

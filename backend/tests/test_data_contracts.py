@@ -441,6 +441,60 @@ def test_stockscope_stock_response_does_not_invent_zero_pe_for_missing_value() -
     assert stock.pe is None
 
 
+def test_stockscope_stock_response_uses_snapshot_timestamp_for_as_of() -> None:
+    stock = main._stockscope_stock_response(
+        {
+            "ticker": "SNAP",
+            "name": "Snapshot Co",
+            "current_price": 100,
+            "market_cap": 100_000,
+            "latest_period": "2025",
+            "fetched_at": "2026-06-26T21:02:59Z",
+        }
+    )
+
+    assert stock.as_of.isoformat() == "2026-06-26T21:02:59+00:00"
+
+
+def test_technical_analytics_as_of_uses_latest_observed_price_date(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main.STOCKSCOPE_PROVIDER,
+        "get_listing_details",
+        lambda ticker: {
+            "trading_stats": {
+                "daily": [
+                    {"date": "2026-06-27", "price": 14, "volume_uzs": 140},
+                    {"date": "2026-06-25", "price": 12, "volume_uzs": 120},
+                    {"date": "2026-06-26", "price": 13, "volume_uzs": 130},
+                    {"date": "2026-06-24", "price": 11, "volume_uzs": 110},
+                    {"date": "2026-06-23", "price": 10, "volume_uzs": 100},
+                ]
+            }
+        },
+    )
+
+    result = main.analytics_technical("SNAP")
+
+    assert result["as_of"] == "2026-06-27T00:00:00+00:00"
+
+
+def test_ratio_analytics_as_of_uses_latest_financial_report_date(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main.STOCKSCOPE_PROVIDER,
+        "get_listing_details",
+        lambda ticker: {
+            "listing": {"ticker": ticker, "currentPrice": 20, "noOfShares": 100_000},
+            "fetched_at": "2026-07-16T12:00:00Z",
+            "reports": [{"date": "2026-03-01T00:00:00Z"}],
+            "indicators": [{"period": "FY_2025", "values": {"Earnings": 100, "Equity": 800}}],
+        },
+    )
+
+    result = main.analytics_ratios("SNAP")
+
+    assert result["as_of"] == "2026-03-01T00:00:00+00:00"
+
+
 def test_stockscope_indicator_charts_keep_missing_values_missing() -> None:
     provider = StockScopeProvider()
 
@@ -563,6 +617,9 @@ def test_stockscope_screener_enriches_snapshot_rows_with_detail_ratios(monkeypat
         "get_listing_details_coverage",
         lambda: {
             "total": 1,
+            "generated_at": "2026-07-14T00:00:00Z",
+            "source_name": "StockScope",
+            "source_url": "https://stockscope.uz/ru/screener",
             "items": [
                 {
                     "ticker": "BANK",
@@ -596,6 +653,8 @@ def test_stockscope_screener_enriches_snapshot_rows_with_detail_ratios(monkeypat
     assert row["pb"] == 2.5
     assert row["roe"] == 12.5
     assert row["roa"] == 5
+    assert result["coverage"]["generated_at"] == "2026-07-14T00:00:00Z"
+    assert result["coverage"]["source_url"] == "https://stockscope.uz/ru/screener"
 
 
 def test_stockscope_snapshot_rows_are_auditable() -> None:

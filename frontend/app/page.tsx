@@ -41,7 +41,9 @@ export default async function MarketOverview() {
   const coveragePercent = coverageRatio(screener.coverage?.withReports, screener.coverage?.total ?? screener.total);
   const sectors = buildSectorCards(rows);
   const latestNews = dashboard.news.slice(0, 3);
-  const marketIsLive = indexItems.length > 0 && indexItems.every((item) => item.sourceStatus === "live");
+  const latestMarketAsOf = latestStamp(indexItems.map((item) => item.asOf));
+  const screenerFreshness = screener.coverage?.generatedAt ?? rows.find((row) => row.fetchedAt)?.fetchedAt;
+  const marketIsLive = indexItems.length > 0 && indexItems.every((item) => item.sourceStatus === "live" && item.asOf);
   const activeIssuers = screener.coverage?.total ?? screener.total;
 
   return (
@@ -51,7 +53,7 @@ export default async function MarketOverview() {
           <div className="stitch-hero-copy">
             <div className="stitch-live-pill">
               <Sparkles size={18} aria-hidden="true" />
-              <span>{marketIsLive ? "LIVE: обновление рыночных данных" : "Данные показываются по доступным источникам"}</span>
+              <span>{marketIsLive ? `LIVE по источнику · ${formatStamp(latestMarketAsOf)}` : "Данные показываются по доступным источникам"}</span>
             </div>
             <h1 id="home-title">Платформа аналитики <br /> рынка капитала Узбекистана</h1>
             <p>
@@ -76,6 +78,7 @@ export default async function MarketOverview() {
                   <span>{uci?.value ?? "—"}</span>
                   {typeof uci?.change === "number" ? <b className={tone(uci.change)}>{formatSignedPercent(uci.change)}</b> : null}
                 </div>
+                <small>{uci?.source ?? "источник не указан"}{uci?.asOf ? ` · ${formatStamp(uci.asOf)}` : ""}</small>
               </div>
               <div className="stitch-periods" aria-label="Период графика">
                 <span>1D</span><b>1W</b><span>1M</span>
@@ -97,7 +100,7 @@ export default async function MarketOverview() {
         <div className="stitch-panel stitch-leaders">
           <div className="stitch-panel-head">
             <h2>Лидеры рынка</h2>
-            <Link href="/screener">Все котировки</Link>
+            <Link href="/screener">{screener.coverage?.sourceName ?? rows[0]?.sourceName ?? "StockScope"}{screenerFreshness ? ` · ${formatStamp(screenerFreshness)}` : ""}</Link>
           </div>
           <div className="stitch-table-wrap">
             <table className="stitch-table">
@@ -175,7 +178,7 @@ export default async function MarketOverview() {
             <div className="stitch-macro-card" key={item.key}>
               <span>{item.label}</span>
               <b>{item.value}</b>
-              <small>{item.source ?? "официальный источник"}</small>
+              <small>{item.source ?? "официальный источник"}{item.asOf ? ` · ${formatStamp(item.asOf)}` : ""}</small>
             </div>
           ))}
         </div>
@@ -273,6 +276,16 @@ function formatCompact(value?: number | null) {
 
 function formatSignedPercent(value?: number | null) {
   return value == null ? "—" : `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+function latestStamp(values: Array<string | undefined>) {
+  return values.filter(Boolean).sort().at(-1);
+}
+
+function formatStamp(value?: string) {
+  if (!value) return "нет времени";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 function tone(value?: number | null) {

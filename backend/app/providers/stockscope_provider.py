@@ -249,6 +249,9 @@ class StockScopeProvider:
             "items": selected,
             "coverage": {
                 "total": coverage.get("total") if isinstance(coverage, dict) else len(rows),
+                "generated_at": coverage.get("generated_at") if isinstance(coverage, dict) else None,
+                "source_name": coverage.get("source_name") if isinstance(coverage, dict) else None,
+                "source_url": coverage.get("source_url") if isinstance(coverage, dict) else None,
                 "with_reports": coverage.get("with_reports") if isinstance(coverage, dict) else None,
                 "with_indicators": coverage.get("with_indicators") if isinstance(coverage, dict) else None,
                 "with_dividends": coverage.get("with_dividends") if isinstance(coverage, dict) else None,

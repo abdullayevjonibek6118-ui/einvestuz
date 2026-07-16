@@ -30,13 +30,13 @@ export default async function MacroPage() {
         <div className="stitch-macro-card">
           <span>USD/UZS</span>
           <b>{usd ? usd.rate.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "—"}</b>
-          <small>{usd?.source ?? "CBU"}</small>
+          <small>{usd?.source ?? "CBU"}{usd?.asOf ? ` · ${formatStamp(usd.asOf)}` : ""}</small>
         </div>
         {dashboard.macro.slice(0, 7).map((item) => (
           <div className="stitch-macro-card" key={item.key}>
             <span>{item.label}</span>
             <b>{item.value}</b>
-            <small>{item.source ?? "официальный источник"}</small>
+            <small>{item.source ?? "официальный источник"}{item.asOf ? ` · ${formatStamp(item.asOf)}` : ""}</small>
           </div>
         ))}
       </section>
@@ -60,4 +60,9 @@ export default async function MacroPage() {
       </section>
     </div>
   );
+}
+
+function formatStamp(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }

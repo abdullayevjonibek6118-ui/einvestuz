@@ -42,6 +42,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
         description: `${row.name} — эмитент рынка Узбекистана. Подробные данные источника временно загружаются.`,
         source: "stockscope.uz",
         sourceStatus: "delayed",
+        asOf: row.fetchedAt,
         currency: "UZS",
         market: "uzbekistan",
         isin: row.isin,
@@ -268,6 +269,7 @@ export default async function StockPage({ params }: { params: Promise<{ ticker: 
                 <Metric label="Точек цены" value={`${stock.stockscope.priceHistory?.points?.length ?? 0}`} detail={stock.stockscope.priceHistory?.lastUpdateAt ? `обновлено ${formatStamp(stock.stockscope.priceHistory.lastUpdateAt)}` : "история"} />
                 <Metric label="Дивиденды" value={`${stock.stockscope.dividends?.length ?? 0}`} detail="утвержденные факты" />
                 <Metric label="Строк торгов" value={`${stock.stockscope.tradingStats?.daily?.length ?? 0}`} detail="дневной объём и цена" />
+                <Metric label="Snapshot" value={stock.stockscope.fetchedAt ? formatStamp(stock.stockscope.fetchedAt) : "N/A"} detail={stock.stockscope.source ?? "StockScope"} />
               </div>
             </div>
 
@@ -472,7 +474,7 @@ function resolveCompanyMetrics(stock: Stock, fundamentals: ReturnType<typeof res
 
   return {
     price: typeof price === "number" && Number.isFinite(price) ? `${price.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} ${stock.currency ?? "UZS"}` : "N/A",
-    priceDetail: latestTrade?.date ? `сделка ${latestTrade.date}` : stock.asOf ? `обновлено ${formatStamp(stock.asOf)}` : undefined,
+    priceDetail: latestTrade?.date ? `сделка ${latestTrade.date}` : stock.asOf ? `обновлено ${formatStamp(stock.asOf)}` : stock.stockscope?.fetchedAt ? `snapshot ${formatStamp(stock.stockscope.fetchedAt)}` : undefined,
     dayChange: `${stock.change >= 0 ? "+" : ""}${stock.change.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}%`,
     marketCap: fundamentals.marketCap ?? stock.marketCap ?? "N/A",
     volume1d: formatUzbekMoney(sumTradingVolume(dailyRows, 1)),

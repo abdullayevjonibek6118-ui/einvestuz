@@ -72,6 +72,7 @@ export type StockScopeDetails = {
   ticker?: string;
   source?: string;
   sourceUrl?: string;
+  fetchedAt?: string;
   companyType?: string;
   priceHistory?: {
     points?: Array<{ date: string; value?: number | null }>;
@@ -169,6 +170,9 @@ export type StockScopeScreenerResponse = {
   sortDir: "asc" | "desc" | string;
   coverage?: {
     total?: number | null;
+    generatedAt?: string | null;
+    sourceName?: string | null;
+    sourceUrl?: string | null;
     withReports?: number | null;
     withIndicators?: number | null;
     withDividends?: number | null;

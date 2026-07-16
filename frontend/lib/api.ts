@@ -78,6 +78,8 @@ type BackendStock = {
 type BackendStockScopeDetails = Record<string, unknown> & {
   source_url?: string;
   sourceUrl?: string;
+  fetched_at?: string;
+  fetchedAt?: string;
   company_type?: string;
   companyType?: string;
   price_history?: unknown;
@@ -198,6 +200,12 @@ type BackendStockScopeScreenerResponse = {
   sort_dir?: string;
   coverage?: {
     total?: number | null;
+    generated_at?: string | null;
+    generatedAt?: string | null;
+    source_name?: string | null;
+    sourceName?: string | null;
+    source_url?: string | null;
+    sourceUrl?: string | null;
     with_reports?: number | null;
     with_indicators?: number | null;
     with_dividends?: number | null;
@@ -555,6 +563,7 @@ function normalizeStockScopeDetails(source?: BackendStockScopeDetails | StockSco
     ticker: stringValue(raw.ticker),
     source: stringValue(raw.source),
     sourceUrl: stringValue(raw.sourceUrl ?? raw.source_url),
+    fetchedAt: stringValue(raw.fetchedAt ?? raw.fetched_at),
     companyType: stringValue(raw.companyType ?? raw.company_type),
     priceHistory: normalizeStockScopePriceHistory(raw.priceHistory ?? raw.price_history),
     fundamentals: normalizeStockScopeFundamentals(fundamentals),
@@ -865,10 +874,10 @@ function normalizeNewsItem(item: BackendNewsItem): NewsItem {
 }
 
 function relativeTime(value?: string) {
-  if (!value) return "сейчас";
+  if (!value) return "дата не указана";
 
   const publishedAt = new Date(value).getTime();
-  if (Number.isNaN(publishedAt)) return "сейчас";
+  if (Number.isNaN(publishedAt)) return "дата не указана";
 
   const minutes = Math.max(0, Math.round((Date.now() - publishedAt) / 60000));
   if (minutes < 1) return "сейчас";
@@ -1186,6 +1195,9 @@ export async function getStockScopeScreener(params: Record<string, string | numb
     coverage: data?.coverage
       ? {
           total: data.coverage.total,
+          generatedAt: data.coverage.generatedAt ?? data.coverage.generated_at,
+          sourceName: data.coverage.sourceName ?? data.coverage.source_name,
+          sourceUrl: data.coverage.sourceUrl ?? data.coverage.source_url,
           withReports: data.coverage.with_reports,
           withIndicators: data.coverage.with_indicators,
           withDividends: data.coverage.with_dividends,
