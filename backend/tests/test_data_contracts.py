@@ -63,6 +63,37 @@ def test_market_table_keeps_missing_values_missing() -> None:
     assert response.sparkline_7d == []
 
 
+def test_market_table_preserves_observed_zero_values() -> None:
+    response = main._market_table_row_response(
+        {
+            "rank": 1,
+            "branding": {"monogram": "Z"},
+            "name": "Zero",
+            "ticker": "ZERO",
+            "price": 0,
+            "change_1h": 0,
+            "change_24h": 0,
+            "change_7d": 0,
+            "market_cap": "UZS 0.00",
+            "volume_24h": "UZS 0.00",
+            "circulating_supply": "0 ZERO",
+            "market_cap_value": 0,
+            "volume_24h_value": 0,
+            "circulating_supply_value": 0,
+            "source": "test",
+            "status": "delayed",
+        }
+    )
+
+    assert response.price == 0
+    assert response.change_1h == 0
+    assert response.change_24h == 0
+    assert response.change_7d == 0
+    assert response.market_cap_value == 0
+    assert response.volume_24h_value == 0
+    assert response.circulating_supply_value == 0
+
+
 def test_ratios_do_not_invent_fields_without_source_inputs() -> None:
     ratios = compute_financial_ratios({"pe": 8, "dividendYield": 5})
 
