@@ -461,6 +461,9 @@ class StockScopeProvider:
         common_dividend = self._number(latest_dividend.get("common_dividend"))
         earnings_uzs = self._scaled_financial_value(latest_indicators.get("Earnings"))
         equity_uzs = self._scaled_financial_value(latest_indicators.get("Equity"))
+        pe = latest_indicators.get("PE")
+        pb = latest_indicators.get("PB")
+        dividend_yield = latest_indicators.get("DividendYield")
         return {
             "ticker": ticker,
             "name": listing.get("name") or listing.get("uzseName") or ticker,
@@ -476,9 +479,9 @@ class StockScopeProvider:
             "latest_period": indicators[0].get("period") if indicators and isinstance(indicators[0], dict) else None,
             "roe": latest_indicators.get("ROE"),
             "roa": latest_indicators.get("ROA"),
-            "pe": latest_indicators.get("PE") or self._ratio(market_cap, earnings_uzs),
-            "pb": latest_indicators.get("PB") or self._ratio(market_cap, equity_uzs),
-            "dividend_yield": latest_indicators.get("DividendYield") or self._ratio(common_dividend, current_price, 100),
+            "pe": pe if pe is not None else self._ratio(market_cap, earnings_uzs),
+            "pb": pb if pb is not None else self._ratio(market_cap, equity_uzs),
+            "dividend_yield": dividend_yield if dividend_yield is not None else self._ratio(common_dividend, current_price, 100),
             "source_name": "StockScope",
             "source_url": detail.get("source_url") or self._stockscope_listing_url(ticker),
             "fetched_at": detail.get("fetched_at") or self._now_iso(),

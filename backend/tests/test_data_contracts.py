@@ -250,6 +250,50 @@ def test_stockscope_coverage_row_reuses_calculated_pe_pb() -> None:
     assert row["roa"] == 20
 
 
+def test_stockscope_coverage_row_preserves_observed_zero_ratios() -> None:
+    provider = StockScopeProvider()
+    row = provider._coverage_row(
+        "ZERO",
+        {"ticker": "ZERO", "name": "Zero Co", "currentPrice": 100, "noOfShares": 1_000},
+        {
+            "indicators": [
+                {
+                    "period": "2025",
+                    "values": {
+                        "Earnings": 0,
+                        "Equity": 100,
+                        "PE": 0,
+                        "PB": 1,
+                        "DividendYield": 0,
+                    },
+                }
+            ],
+            "reports": [{}],
+            "dividends": [],
+        },
+    )
+
+    assert row["pe"] == 0
+    assert row["pb"] == 1
+    assert row["dividend_yield"] == 0
+
+
+def test_stockscope_stock_response_preserves_zero_dividend_yield() -> None:
+    stock = main._stockscope_stock_response(
+        {
+            "ticker": "ZERO",
+            "name": "Zero Co",
+            "current_price": 100,
+            "market_cap": 100_000,
+            "pe": 0,
+            "dividend_yield": 0,
+            "latest_period": "2025",
+        }
+    )
+
+    assert stock.dividend == "0.0%"
+
+
 def test_stockscope_bank_ratios_use_latest_available_balance_sheet() -> None:
     provider = StockScopeProvider()
     fundamentals = [

@@ -519,9 +519,10 @@ def _stockscope_ai_company_context(ticker: str) -> dict[str, Any] | None:
         lines.append(f"Последний отчёт: period={first_report.get('period')}, date={first_report.get('date')}, url={first_report.get('url') or 'нет'}")
     if dividends:
         first_dividend = dividends[0] if isinstance(dividends[0], dict) else {}
+        common_dividend = _first_present(first_dividend, "common_dividend", "commonDividend")
         lines.append(
             "Последний дивиденд: "
-            f"common={_fmt_ai_number(first_dividend.get('common_dividend') or first_dividend.get('commonDividend'))}; "
+            f"common={_fmt_ai_number(common_dividend)}; "
             f"published={first_dividend.get('published_date') or first_dividend.get('publishedDate') or 'нет данных'}"
         )
     return {
@@ -572,7 +573,7 @@ def _macro_ai_context() -> dict[str, Any] | None:
 
 
 def _fmt_ai_number(value: Any) -> str:
-    number = _coerce_numeric(value)
+    number = _optional_float_preserve_zero(value)
     if number is None:
         return "нет данных"
     abs_value = abs(number)
@@ -583,6 +584,14 @@ def _fmt_ai_number(value: Any) -> str:
     if abs_value >= 1_000_000:
         return f"{number / 1_000_000:.2f}M"
     return f"{number:.4g}"
+
+
+def _first_present(source: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = source.get(key)
+        if value is not None:
+            return value
+    return None
 
 
 ACADEMY = [
@@ -1252,7 +1261,9 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
     listing_category = item.get("listingCategory") or item.get("listing_category")
     stock_type = item.get("stockType") or item.get("stock_type")
     openinfo_id = item.get("openinfoId") or item.get("openinfo_id")
-    dividend_yield = _optional_float(item.get("dividendYield") or item.get("dividend_yield"))
+    dividend_yield = _optional_float_preserve_zero(item.get("dividendYield"))
+    if dividend_yield is None and "dividend_yield" in item:
+        dividend_yield = _optional_float_preserve_zero(item.get("dividend_yield"))
     decision_room = _build_stock_decision_room(
         ticker=ticker,
         name=str(item.get("name") or item.get("uzseName") or ticker),
@@ -1297,7 +1308,7 @@ def _stockscope_stock_response(item: dict[str, Any]) -> Stock:
         change=_stockscope_change(item, "yesterday"),
         market_cap=_format_uzs_value(market_cap_value) if market_cap_value else "N/A",
         pe=_coerce_numeric(item.get("pe", 0)) or 0.0,
-        dividend=f"{dividend_yield or 0:.1f}%" if dividend_yield else "N/A",
+        dividend=f"{dividend_yield:.1f}%" if dividend_yield is not None else "N/A",
         sector=str(item.get("sector") or "Рынок Узбекистана"),
         description=" ".join(description_parts),
         source="stockscope.uz",
@@ -2155,6 +2166,18 @@ def _coerce_numeric(value: Any) -> float:
 def _optional_float(value: Any) -> float | None:
     number = _coerce_numeric(value)
     return number if number else None
+
+
+def _optional_float_preserve_zero(value: Any) -> float | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value) if math.isfinite(value) else None
+    try:
+        number = float(str(value).replace(",", "").replace(" ", ""))
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
 
 
 def _parse_compact_value(value: Any) -> float:
