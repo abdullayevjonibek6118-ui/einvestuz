@@ -9,7 +9,8 @@ def test_backend_railway_start_command_uses_runtime_port() -> None:
     config = json.loads((REPO_ROOT / "backend" / "railway.json").read_text())
     start_command = config["deploy"]["startCommand"]
 
-    assert "$PORT" in start_command
+    assert start_command.startswith("sh -c ")
+    assert "${PORT:-8080}" in start_command
     assert "--port 8080" not in start_command
 
 
