@@ -2,6 +2,7 @@ import asyncio
 import math
 import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, time as clock_time, timezone
 from typing import Any, Literal
@@ -11,7 +12,7 @@ import requests
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=7)
 
-from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
@@ -51,6 +52,7 @@ app = FastAPI(
 
 DEFAULT_CORS_ORIGINS = "http://localhost:3000,https://einvestuz.com,https://www.einvestuz.com"
 CORS_ORIGINS = [origin.strip() for origin in os.getenv("CORS_ORIGINS", DEFAULT_CORS_ORIGINS).split(",") if origin.strip()]
+_RATE_LIMIT_BUCKETS: dict[str, list[float]] = {}
 
 app.add_middleware(
     CORSMiddleware,
@@ -59,6 +61,61 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _normalized_origin(origin: str | None) -> str | None:
+    cleaned = (origin or "").strip().rstrip("/")
+    return cleaned or None
+
+
+def _is_allowed_origin(origin: str | None) -> bool:
+    normalized = _normalized_origin(origin)
+    if normalized is None:
+        return True
+    allowed = {_normalized_origin(candidate) for candidate in CORS_ORIGINS}
+    return "*" in CORS_ORIGINS or normalized in allowed
+
+
+def _env_int(name: str, default: int, *, minimum: int, maximum: int) -> int:
+    try:
+        value = int(os.getenv(name, str(default)).strip())
+    except ValueError:
+        value = default
+    return min(max(value, minimum), maximum)
+
+
+def _env_float(name: str, default: float, *, minimum: float, maximum: float) -> float:
+    try:
+        value = float(os.getenv(name, str(default)).strip())
+    except ValueError:
+        value = default
+    return min(max(value, minimum), maximum)
+
+
+def _rate_limit_allows(key: str, *, max_requests: int, window_seconds: float, now: float | None = None) -> bool:
+    if max_requests <= 0:
+        return True
+    timestamp = time.monotonic() if now is None else now
+    cutoff = timestamp - window_seconds
+    bucket = [item for item in _RATE_LIMIT_BUCKETS.get(key, []) if item > cutoff]
+    if len(bucket) >= max_requests:
+        _RATE_LIMIT_BUCKETS[key] = bucket
+        return False
+    bucket.append(timestamp)
+    _RATE_LIMIT_BUCKETS[key] = bucket
+    return True
+
+
+def _client_rate_limit_key(request: Request, namespace: str) -> str:
+    host = request.client.host if request.client else "unknown"
+    return f"{namespace}:{host}"
+
+
+def _enforce_chat_rate_limit(request: Request) -> None:
+    max_requests = _env_int("CHAT_RATE_LIMIT_PER_MINUTE", 12, minimum=0, maximum=600)
+    window_seconds = _env_float("CHAT_RATE_LIMIT_WINDOW_SECONDS", 60.0, minimum=1.0, maximum=3600.0)
+    if not _rate_limit_allows(_client_rate_limit_key(request, "chat"), max_requests=max_requests, window_seconds=window_seconds):
+        raise HTTPException(status_code=429, detail="Too many requests")
 
 
 class Stock(BaseModel):
@@ -995,6 +1052,9 @@ def live_quotes(
 
 @app.websocket("/ws/quotes")
 async def quotes_websocket(websocket: WebSocket) -> None:
+    if not _is_allowed_origin(websocket.headers.get("origin")):
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     symbols = _parse_symbols(websocket.query_params.get("symbols", "AAPL,NVDA,MSFT,SBER"))
     interval = _parse_interval(websocket.query_params.get("interval"))
@@ -1038,7 +1098,9 @@ def newsletter(payload: NewsletterRequest) -> dict[str, bool | str]:
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(payload: ChatRequest) -> ChatResponse:
+def chat(payload: ChatRequest, request: Request = None) -> ChatResponse:
+    if request is not None:
+        _enforce_chat_rate_limit(request)
     context = _build_ai_context(payload)
     return ChatResponse(
         message=payload.message,

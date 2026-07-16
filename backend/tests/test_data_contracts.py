@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 from backend.app import main
 from backend.app import market_data
 from backend.app.database import DatabaseHealth, SupabaseDataAPI
@@ -140,6 +142,62 @@ def test_database_health_endpoint_does_not_expose_upstream_error_detail(monkeypa
     assert result["connected"] is False
     assert result["detail"] == "Supabase Data API is unreachable"
     assert "JWT" not in str(result)
+
+
+def test_rate_limit_window_blocks_until_old_entries_expire() -> None:
+    main._RATE_LIMIT_BUCKETS.clear()
+
+    assert main._rate_limit_allows("chat:test", max_requests=2, window_seconds=60, now=100)
+    assert main._rate_limit_allows("chat:test", max_requests=2, window_seconds=60, now=101)
+    assert not main._rate_limit_allows("chat:test", max_requests=2, window_seconds=60, now=102)
+    assert main._rate_limit_allows("chat:test", max_requests=2, window_seconds=60, now=161)
+
+
+def test_origin_policy_matches_configured_cors_origins(monkeypatch) -> None:
+    monkeypatch.setattr(main, "CORS_ORIGINS", ["https://einvestuz.com", "http://localhost:3000"])
+
+    assert main._is_allowed_origin("https://einvestuz.com")
+    assert main._is_allowed_origin("https://einvestuz.com/")
+    assert main._is_allowed_origin(None)
+    assert not main._is_allowed_origin("https://evil.example")
+
+
+def test_chat_endpoint_rate_limits_per_client(monkeypatch) -> None:
+    main._RATE_LIMIT_BUCKETS.clear()
+    monkeypatch.setenv("CHAT_RATE_LIMIT_PER_MINUTE", "1")
+    monkeypatch.setenv("CHAT_RATE_LIMIT_WINDOW_SECONDS", "60")
+    monkeypatch.setattr(main, "_build_ai_context", lambda payload: {"content": "", "sources": []})
+    monkeypatch.setattr(main, "_aimlapi_chat_completion", lambda payload, context=None: "OK")
+
+    client = TestClient(main.app)
+    first = client.post("/chat", json={"message": "Hello"})
+    second = client.post("/chat", json={"message": "Hello again"})
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.json()["detail"] == "Too many requests"
+
+
+def test_quotes_websocket_rejects_unconfigured_browser_origin() -> None:
+    client = TestClient(main.app)
+
+    with pytest.raises(WebSocketDisconnect) as exc:
+        with client.websocket_connect("/ws/quotes", headers={"origin": "https://evil.example"}):
+            pass
+
+    assert exc.value.code == 1008
+
+
+def test_quotes_websocket_allows_configured_origin(monkeypatch) -> None:
+    monkeypatch.setattr(main, "fetch_live_quotes", lambda symbols: [])
+    client = TestClient(main.app)
+
+    with client.websocket_connect("/ws/quotes?symbols=AAPL&interval=5", headers={"origin": "https://einvestuz.com"}) as websocket:
+        payload = websocket.receive_json()
+
+    assert payload["type"] == "quote_snapshot"
+    assert payload["symbols"] == ["AAPL"]
+    assert payload["quotes"] == []
 
 
 def test_siat_provider_follows_official_download_descriptor() -> None:
