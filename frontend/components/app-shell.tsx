@@ -12,6 +12,7 @@ import {
   GitCompareArrows,
   LayoutDashboard,
   Menu,
+  Rocket,
   Search,
   SlidersHorizontal,
   X,
@@ -31,6 +32,7 @@ const desktopNav = [
   { href: "/industries", label: "Отрасли", icon: LayoutDashboard },
   { href: "/macro", label: "Макро", icon: GitCompareArrows },
   { href: "/ipo", label: "IPO", icon: BriefcaseBusiness },
+  { href: "/startup-hub", label: "Стартапы", icon: Rocket },
   { href: "/news", label: "Новости", icon: Bot },
 ];
 
@@ -94,6 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mobile-drawer">
           <form onSubmit={submitSearch} className="mobile-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти тикер" aria-label="Поиск компании" /></form>
           {primaryNav.map((item) => { const Icon = item.icon; return <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}><Icon size={18} />{item.label}</Link>; })}
+          <Link href="/startup-hub" onClick={() => setMobileOpen(false)}><Rocket size={18} />Startup Hub</Link>
           <Link href="/academy" onClick={() => setMobileOpen(false)}><ChevronDown size={18} />Академия</Link>
         </div>
       ) : null}
